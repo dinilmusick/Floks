@@ -1,0 +1,65 @@
+{
+  "name": "@floks/ui",
+  "version": "1.0.0",
+  "description": "Floks UI \u2014 Reusable React Component Library with Theme Engine, Base Primitives, Containers, Composite & Layout",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./theme": {
+      "import": "./dist/theme/index.js",
+      "types": "./dist/theme/index.d.ts"
+    },
+    "./theme/tokens.css": "./src/theme/tokens.css",
+    "./base": {
+      "import": "./dist/components/base/index.js",
+      "types": "./dist/components/base/index.d.ts"
+    },
+    "./containers": {
+      "import": "./dist/components/containers/index.js",
+      "types": "./dist/components/containers/index.d.ts"
+    },
+    "./composite": {
+      "import": "./dist/components/composite/index.js",
+      "types": "./dist/components/composite/index.d.ts"
+    },
+    "./layout": {
+      "import": "./dist/components/layout/index.js",
+      "types": "./dist/components/layout/index.d.ts"
+    },
+    "./bottom-strip": {
+      "import": "./dist/components/bottom-strip/index.js",
+      "types": "./dist/components/bottom-strip/index.d.ts"
+    },
+    "./settings": {
+      "import": "./dist/components/settings/index.js",
+      "types": "./dist/components/settings/index.d.ts"
+    },
+    "./auth": {
+      "import": "./dist/components/auth/index.js",
+      "types": "./dist/components/auth/index.d.ts"
+    },
+    "./workspace": {
+      "import": "./dist/components/workspace/index.js",
+      "types": "./dist/components/workspace/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsup src/index.ts src/theme/index.ts src/components/base/index.ts src/components/containers/index.ts src/components/composite/index.ts src/components/layout/index.ts src/components/bottom-strip/index.ts src/components/settings/index.ts src/components/auth/index.ts src/components/workspace/index.ts --format esm --dts --clean --external react --external react-dom --external lucide-react",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "zod": "^3.24.1"
+  },
+  "peerDependencies": {
+    "lucide-react": ">=0.300.0",
+    "react": "^18.0.0 || ^19.0.0",
+    "react-dom": "^18.0.0 || ^19.0.0"
+  }
+}
