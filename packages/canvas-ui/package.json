@@ -1,8 +1,13 @@
 {
   "name": "@floks/canvas-ui",
   "version": "1.0.0",
-  "description": "Floks Canvas UI \u2014 Reusable React Visual Components for Infinite Canvas, Dock, Tile Menus, Code Editor, and Node Cards",
+  "description": "Floks Canvas UI — Reusable React Visual Components for Infinite Canvas, Dock, Tile Menus, Code Editor, and Node Cards",
   "type": "module",
+  "private": false,
+  "publishConfig": {
+    "access": "public"
+  },
+  "skipoManifest": "./floks.manifest.json",
   "main": "./dist/index.js",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -34,7 +39,7 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@floks/ui": "file:../ui"
+    "@floks/ui": "^1.0.0"
   },
   "peerDependencies": {
     "@dnd-kit/core": "^6.0.0",

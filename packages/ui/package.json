@@ -1,8 +1,13 @@
 {
   "name": "@floks/ui",
   "version": "1.0.0",
-  "description": "Floks UI \u2014 Reusable React Component Library with Theme Engine, Base Primitives, Containers, Composite & Layout",
+  "description": "Floks UI — Reusable React Component Library with Theme Engine, Base Primitives, Containers, Composite & Layout",
   "type": "module",
+  "private": false,
+  "publishConfig": {
+    "access": "public"
+  },
+  "skipoManifest": "./floks.manifest.json",
   "main": "./dist/index.js",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
