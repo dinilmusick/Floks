@@ -118,7 +118,8 @@ export const Node2DBase: React.FC<Node2DBaseProps> = ({
 
   return (
     <div
-      id={`qwnsr-node-2d-${node.id}`}
+      id={`floks-node-2d-${node.id}`}
+
       data-skipo-tip={nodeInspectionText}
       title={nodeInspectionText}
       onMouseEnter={onNodeMouseEnter}

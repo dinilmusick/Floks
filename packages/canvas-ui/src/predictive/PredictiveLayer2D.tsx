@@ -6,8 +6,9 @@ import { getSocketScreenPosition } from '../graph-2d/socketCoordinates.js';
 import { PredictiveGhostNodeCard } from './PredictiveGhostNodeCard.js';
 import { Zap, Sparkles } from 'lucide-react';
 
-interface PredictiveLayer2DProps {
+export interface PredictiveLayer2DProps {
   nodes: SpaceNode[];
+
   ghostNodes: PredictiveGhostNode[];
   traces: PredictiveTrace[];
   selectedNodesWithGhosts: Map<string, PredictiveGhostNode[]>;

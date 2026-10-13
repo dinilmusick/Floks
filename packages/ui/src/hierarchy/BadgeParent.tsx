@@ -150,3 +150,15 @@ export const StatusDot: React.FC<StatusDotProps> = ({
     />
   );
 };
+
+// ── Badge Model & Tone ──
+import { UIElementBase, UIVariant, UISize } from './UIElementBase';
+
+export class BadgeModel extends UIElementBase {
+  constructor(id: string, name: string, variant: UIVariant = 'primary', size: UISize = 'md') {
+    super(id, name, 'badge', variant, size);
+  }
+}
+
+export type BadgeTone = 'primary' | 'accent' | 'success' | 'warning' | 'danger' | 'info';
+

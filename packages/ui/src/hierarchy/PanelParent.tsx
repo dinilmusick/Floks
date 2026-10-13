@@ -149,3 +149,32 @@ export const PanelParent: React.FC<PanelParentProps> = ({
     </div>
   );
 };
+
+// ── Panel Models & Specialized Panel Archetypes ──
+import { UIElementBase, UIVariant, UISize } from './UIElementBase';
+
+export class PanelModel extends UIElementBase {
+  constructor(id: string, name: string, variant: UIVariant = 'primary', size: UISize = 'md') {
+    super(id, name, 'panel', variant, size);
+  }
+}
+
+export type PanelVariant = 'modal' | 'inspector' | 'card' | 'toolbar' | 'default';
+export type PanelProps = PanelParentProps;
+
+export const ModalPanel: React.FC<PanelParentProps> = (props) => (
+  <PanelParent zIndex={100} {...props} />
+);
+
+export const InspectorPanel: React.FC<PanelParentProps> = (props) => (
+  <PanelParent {...props} />
+);
+
+export const CardPanel: React.FC<PanelParentProps> = (props) => (
+  <PanelParent {...props} />
+);
+
+export const ToolbarPanel: React.FC<PanelParentProps> = (props) => (
+  <PanelParent {...props} />
+);
+

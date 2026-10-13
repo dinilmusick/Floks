@@ -162,3 +162,37 @@ export const ButtonParent: React.FC<ButtonParentProps> = ({
     </button>
   );
 };
+
+// ── Button Models & Specialized Button Archetypes ──
+import { UIElementBase } from './UIElementBase';
+
+export class ButtonModel extends UIElementBase {
+  constructor(id: string, name: string, variant: UIVariant = 'primary', size: UISize = 'md') {
+    super(id, name, 'button', variant, size);
+  }
+}
+
+export type ButtonVariant = UIVariant;
+export type ButtonSize = UISize;
+export type ButtonProps = ButtonParentProps;
+
+export const ActionButton: React.FC<ButtonParentProps> = (props) => (
+  <ButtonParent variant="accent" {...props} />
+);
+
+export const IconButton: React.FC<ButtonParentProps> = (props) => (
+  <ButtonParent variant="secondary" {...props} />
+);
+
+export const ToggleButton: React.FC<ButtonParentProps> = (props) => (
+  <ButtonParent variant="dock" {...props} />
+);
+
+export const DangerButton: React.FC<ButtonParentProps> = (props) => (
+  <ButtonParent variant="danger" {...props} />
+);
+
+export const GhostButton: React.FC<ButtonParentProps> = (props) => (
+  <ButtonParent variant="ghost" {...props} />
+);
+

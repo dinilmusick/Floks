@@ -1,6 +1,7 @@
 // ══════════════════════════════════════════════════════════════════════════════════════════
 // UIParent: Compatibility & Intermediate Layer connecting to UIElementBase
 // ══════════════════════════════════════════════════════════════════════════════════════════
+import React from 'react';
 import {
   UIElementBase,
   UIVariant,
@@ -25,3 +26,17 @@ export abstract class UIModel extends UIElementBase {
     super(id, name, 'panel', variant, size);
   }
 }
+
+export interface UIParentProps extends UIBaseProps {
+  as?: React.ElementType;
+}
+
+export const UIParent: React.FC<UIParentProps> = ({
+  as: Component = 'div',
+  children,
+  className = '',
+  ...props
+}) => {
+  return React.createElement(Component, { className, ...props }, children);
+};
+

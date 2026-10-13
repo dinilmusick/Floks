@@ -3,7 +3,7 @@ import { SpaceNode, NodeConnection } from '@kloks/state-graph';
 import { PredictiveGhostNode } from '@kloks/state-graph';
 import { computePredictiveGraph } from '@kloks/state-graph';
 
-interface UseViewer2DPredictiveProps {
+export interface UsePredictiveGraph2DProps {
   nodes: SpaceNode[];
   connections: NodeConnection[];
   selectedNodeId: string | null;
@@ -11,13 +11,16 @@ interface UseViewer2DPredictiveProps {
   onSolidifyPredictiveNodes?: (ghosts: PredictiveGhostNode[]) => void;
 }
 
+export type UseViewer2DPredictiveProps = UsePredictiveGraph2DProps;
+
 export function usePredictiveGraph2D({
   nodes,
   connections,
   selectedNodeId,
   selectedNodeIds = [],
   onSolidifyPredictiveNodes,
-}: UseViewer2DPredictiveProps) {
+}: UsePredictiveGraph2DProps) {
+
   const [isActive, setIsActive] = useState<boolean>(false);
   const [scenarioIndex, setScenarioIndex] = useState<number>(0);
 

@@ -125,3 +125,31 @@ export const TileParent: React.FC<TileParentProps> = ({
     </div>
   );
 };
+
+// ── Tile Models & Specialized Tile Archetypes ──
+import { UIElementBase, UIVariant, UISize } from './UIElementBase';
+
+export class TileModel extends UIElementBase {
+  constructor(id: string, name: string, variant: UIVariant = 'primary', size: UISize = 'md') {
+    super(id, name, 'tile', variant, size);
+  }
+}
+
+export type TileVariant = 'default' | 'clip' | 'category' | 'strip';
+
+export const SpawnOptionTile: React.FC<TileParentProps> = (props) => (
+  <TileParent {...props} />
+);
+
+export const CategoryCardTile: React.FC<TileParentProps> = (props) => (
+  <TileParent {...props} />
+);
+
+export const ClipCardTile: React.FC<TileParentProps> = (props) => (
+  <TileParent {...props} />
+);
+
+export const ChannelStripTile: React.FC<TileParentProps> = (props) => (
+  <TileParent {...props} />
+);
+

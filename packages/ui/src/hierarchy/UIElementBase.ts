@@ -7,6 +7,29 @@ import { GraphEntityParent } from '@kloks/state-graph';
 
 export type GraphEntityMetadata = Record<string, any>;
 
+export interface UIInteractionState {
+  isHovered?: boolean;
+  isActive?: boolean;
+  isFocused?: boolean;
+  isDisabled?: boolean;
+  isSelected?: boolean;
+}
+
+export interface UIStyleTokens {
+  bgPrimary?: string;
+  bgSecondary?: string;
+  bgSurface?: string;
+  bgElevated?: string;
+  textPrimary?: string;
+  textSecondary?: string;
+  textMuted?: string;
+  accentPrimary?: string;
+  accentSecondary?: string;
+  borderSubtle?: string;
+  borderMedium?: string;
+  [key: string]: any;
+}
+
 export type ColorPalette = Record<string, any>;
 let activePaletteResolver: () => ColorPalette = () => ({});
 export function registerPaletteResolver(fn: () => ColorPalette): void {
@@ -15,6 +38,7 @@ export function registerPaletteResolver(fn: () => ColorPalette): void {
 function getActivePalette(): ColorPalette {
   return activePaletteResolver();
 }
+
 
 export type UIRole = 'panel' | 'button' | 'input' | 'tile' | 'badge';
 export type UIVariant =

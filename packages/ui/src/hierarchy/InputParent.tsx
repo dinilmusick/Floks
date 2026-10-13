@@ -181,3 +181,13 @@ export const ToggleInput: React.FC<ToggleInputProps> = ({
     </label>
   );
 };
+
+// ── Input Model ──
+import { UIElementBase, UIVariant, UISize } from './UIElementBase';
+
+export class InputModel extends UIElementBase {
+  constructor(id: string, name: string, variant: UIVariant = 'primary', size: UISize = 'md') {
+    super(id, name, 'input', variant, size);
+  }
+}
+
