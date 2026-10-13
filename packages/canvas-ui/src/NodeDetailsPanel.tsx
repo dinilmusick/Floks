@@ -1,6 +1,6 @@
 'use client';
 import { FloatingDetailsPanel, BaseInput, BaseBadge } from '@floks/ui';
-import type { GraphNode, Socket } from './types.js';
+import type { GraphNode, Socket } from '@kloks/state-graph';
 
 export interface NodeDetailsPanelProps {
   node: GraphNode | null;

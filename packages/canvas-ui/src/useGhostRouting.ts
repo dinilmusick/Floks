@@ -1,13 +1,20 @@
 'use client';
 import { useEffect, useState, useCallback, useRef } from 'react';
-import type { GraphNode, GraphEdge, NodeGraphConfig } from './types.js';
-import type { NodeDefinition } from './domain/BaseNode.js';
-import { ConnectionRuleStore } from './rules/ConnectionRuleStore.js';
-import { GhostStore } from './store/GhostStore.js';
-import { GhostInferenceEngine } from '@kloks/state-graph';
-import { GhostLayoutResolver } from '@kloks/state-graph';
-import { GhostTracePathBuilder } from '@kloks/state-graph';
-import type { GhostNodeRecord, GhostTraceRecord } from '@kloks/state-graph';
+import type {
+  GraphNode,
+  GraphEdge,
+  NodeGraphConfig,
+  NodeDefinition,
+  GhostNodeRecord,
+  GhostTraceRecord,
+} from '@kloks/state-graph';
+import {
+  ConnectionRuleStore,
+  GhostStore,
+  GhostInferenceEngine,
+  GhostLayoutResolver,
+  GhostTracePathBuilder,
+} from '@kloks/state-graph';
 
 export interface UseGhostRoutingParams {
   nodes: GraphNode[];

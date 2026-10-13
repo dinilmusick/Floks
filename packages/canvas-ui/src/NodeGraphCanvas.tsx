@@ -1,16 +1,13 @@
 'use client';
 import type React from 'react';
 import { useRef, useState, useEffect, useCallback } from 'react';
-import type { GraphNode, GraphEdge, NodeGraphConfig, ViewportState, Socket } from './types.js';
-import type { NodeDefinition } from './domain/BaseNode.js';
+import type { GraphNode, GraphEdge, NodeGraphConfig, ViewportState, Socket, NodeDefinition } from '@kloks/state-graph';
 import { NodeCard } from './NodeCard.js';
 import { WireRenderer } from './WireRenderer.js';
-import { canvasToScreen, isNodeInCenterDeadZone, getCenterPanForNode } from './Viewport.js';
-import { getNodesInSelection } from './BoxSelection.js';
-import { CompatibleNodePicker } from './ui/widgets/CompatibleNodePicker.js';
-import { NodeSearchPalette } from './ui/widgets/NodeSearchPalette.js';
-import { CanvasContextMenu } from './ui/widgets/CanvasContextMenu.js';
-import { ConnectionRuleStore } from './rules/ConnectionRuleStore.js';
+import { canvasToScreen, isNodeInCenterDeadZone, getCenterPanForNode, getNodesInSelection, ConnectionRuleStore } from '@kloks/state-graph';
+import { CompatibleNodePicker } from './node-graph-ui/widgets/CompatibleNodePicker.js';
+import { NodeSearchPalette } from './node-graph-ui/widgets/NodeSearchPalette.js';
+import { CanvasContextMenu } from './node-graph-ui/widgets/CanvasContextMenu.js';
 
 export interface NodeGraphCanvasProps {
   nodes: GraphNode[];

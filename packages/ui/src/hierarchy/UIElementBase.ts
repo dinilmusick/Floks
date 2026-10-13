@@ -4,8 +4,8 @@
 // @role skeleton
 import React from 'react';
 import { GraphEntityParent } from '@kloks/state-graph';
-
-export type GraphEntityMetadata = Record<string, any>;
+import type { GraphEntityMetadata } from '@kloks/state-graph';
+export type { GraphEntityMetadata };
 
 export interface UIInteractionState {
   isHovered?: boolean;

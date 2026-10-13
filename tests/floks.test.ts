@@ -4,8 +4,8 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import * as FloksUI from '../packages/ui/src/index.js';
-import * as FloksCanvasUI from '../packages/canvas-ui/src/index.js';
+import * as FloksUI from '../packages/ui/dist/index.js';
+import * as FloksCanvasUI from '../packages/canvas-ui/dist/index.js';
 
 describe('Floks Public Frontend & UI Package Library (@floks/*)', () => {
   it('exports @floks/ui base primitives, containers, composite, layout, hierarchy, and theme engine', () => {

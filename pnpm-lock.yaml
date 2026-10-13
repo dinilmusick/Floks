@@ -4,6 +4,9 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+overrides:
+  '@ultrst-armada/kloks': file:../Kloks
+
 importers:
 
   .:
@@ -22,8 +25,8 @@ importers:
         specifier: ^19.0.0
         version: 19.3.0(@types/react@19.3.0)
       '@ultrst-armada/kloks':
-        specifier: ^1.0.1
-        version: 1.0.1(@types/react@19.3.0)(react@19.3.0)
+        specifier: file:../Kloks
+        version: file:../Kloks(@types/react@19.3.0)(react@19.3.0)
       lucide-react:
         specifier: ^1.55.0
         version: 1.55.0(@types/react@19.3.0)(react@19.3.0)
@@ -66,6 +69,12 @@ importers:
       react-dom:
         specifier: ^18.0.0 || ^19.0.0
         version: 19.3.0(react@19.3.0)
+
+  packages/contracts:
+    dependencies:
+      zod:
+        specifier: ^3.24.1
+        version: 3.25.76
 
   packages/ui:
     dependencies:
@@ -612,8 +621,8 @@ packages:
   '@types/react@19.3.0':
     resolution: {integrity: sha512-N0rFCuH9YoxG9/m61l9MfpJKfmLOVU0em7ipIz6TRgSSkvReLB9vL85GB+yr8Bs5leqpvg96JSwF4ZS1s4viQg==}
 
-  '@ultrst-armada/kloks@1.0.1':
-    resolution: {integrity: sha512-zGxaDtwgIJYH24eyh5/75W5sakXUetxFf0wAbhxnx/eJUNkuUmYIghKh24p0fq/RGb04kpjG7OWT9WXcxq1sUg==}
+  '@ultrst-armada/kloks@file:../Kloks':
+    resolution: {directory: ../Kloks, type: directory}
 
   '@vitest/expect@3.2.7':
     resolution: {integrity: sha512-E8eBXaKibuvH2pSZErOjdVb5vF4PbKYcrnluBTYxEk1l/VhhwZg1kZQsdtjq+CsF5CFydf2Rdkz7jDHKSisi3w==}
@@ -1420,7 +1429,7 @@ snapshots:
     dependencies:
       csstype: 3.2.3
 
-  '@ultrst-armada/kloks@1.0.1(@types/react@19.3.0)(react@19.3.0)':
+  '@ultrst-armada/kloks@file:../Kloks(@types/react@19.3.0)(react@19.3.0)':
     dependencies:
       bullmq: 6.3.13
       zod: 3.25.76

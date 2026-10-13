@@ -1,5 +1,5 @@
 'use client';
-import type { GraphEdge, NodeGraphConfig } from './types.js';
+import type { GraphEdge, NodeGraphConfig } from '@kloks/state-graph';
 
 interface WireRendererProps {
   edges: GraphEdge[];

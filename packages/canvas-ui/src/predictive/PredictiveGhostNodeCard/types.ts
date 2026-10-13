@@ -1,5 +1,4 @@
-// ════ PREDICTIVEGHOSTNODECARD EXTRACTED TYPES ═════════════════════════════════════
-import { PredictiveGhostNode } from '@kloks/state-graph';
+import type { PredictiveGhostNode } from '@kloks/state-graph';
 
 export interface PredictiveGhostNodeCardProps {
   ghost: PredictiveGhostNode;

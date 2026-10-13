@@ -1,7 +1,7 @@
 'use client';
 import type React from 'react';
 import { useState, useRef } from 'react';
-import type { Socket } from './types.js';
+import type { Socket } from '@kloks/state-graph';
 import { getBeamPoints } from '@kloks/state-graph';
 
 export interface MovableSocketViewProps {
