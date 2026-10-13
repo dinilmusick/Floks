@@ -11,7 +11,7 @@
  *   ^ theme.assetTypes ⊆ component.acceptedAssetTypes
  */
 
-import { ComponentThemeContract, ThemePack } from './schemas.js';
+import { ComponentThemeContract, ThemePack, ThemePackSchema } from './schemas.js';
 import { FLOKS_COMPONENT_REGISTRY } from './registry.js';
 
 export interface ThemeValidationResult {
@@ -98,4 +98,13 @@ export function validateThemePackAgainstContract(
     warnings,
     targetComponentId: targetCompId,
   };
+}
+
+export function loadThemePack(raw: unknown): ThemePack {
+  const parsed = ThemePackSchema.parse(raw);
+  const result = validateThemePackAgainstContract(parsed);
+  if (!result.valid) {
+    throw new Error(`Invalid Floks ThemePack: ${result.errors.join('; ')}`);
+  }
+  return parsed;
 }
