@@ -16,7 +16,10 @@ export interface BottomStripContextValue {
   inspectionText: string | null;
   inspectionDescription: string | null;
   isDKeyPressed: boolean;
-  setInspectionText: (text: string | null, description?: string | null) => void;
+  setInspectionText: (
+    text: string | { label?: string | null; description?: string | null } | null,
+    description?: string | null
+  ) => void;
   autoSave: {
     enabled: boolean;
     status: AutoSaveStatus;
@@ -124,10 +127,21 @@ export function BottomStripProvider({
     };
   }, []);
 
-  const setInspectionText = useCallback((text: string | null, description?: string | null) => {
-    setInspectionTextState(text);
-    setInspectionDescription(description || null);
-  }, []);
+  const setInspectionText = useCallback(
+    (
+      text: string | { label?: string | null; description?: string | null } | null,
+      description?: string | null
+    ) => {
+      if (text && typeof text === 'object') {
+        setInspectionTextState(text.label || null);
+        setInspectionDescription(text.description || null);
+      } else {
+        setInspectionTextState(typeof text === 'string' ? text : null);
+        setInspectionDescription(description || null);
+      }
+    },
+    []
+  );
 
   const autoSave = useAutoSaveController(initialAutoSave);
   const apiActivity = useApiActivityController();

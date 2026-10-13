@@ -2,7 +2,24 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "outDir": "./dist",
-    "rootDir": "./src"
+    "rootDir": "./src",
+    "strict": false,
+    "noImplicitAny": false,
+    "baseUrl": ".",
+    "paths": {
+      "@floks/ui": [
+        "../ui/dist/index.d.ts"
+      ],
+      "@kloks/state-graph": [
+        "../../node_modules/@ultrst-armada/kloks/packages/state-graph/dist/index.d.ts"
+      ],
+      "@kloks/audio-midi": [
+        "../../node_modules/@ultrst-armada/kloks/packages/audio-midi/dist/index.d.ts"
+      ]
+    }
   },
-  "include": ["src"]
+  "include": [
+    "src"
+  ]
 }
+

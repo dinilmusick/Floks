@@ -5,7 +5,8 @@
   "type": "module",
   "private": false,
   "publishConfig": {
-    "access": "public"
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
   },
   "skipoManifest": "./floks.manifest.json",
   "main": "./dist/index.js",
@@ -14,48 +15,69 @@
   "exports": {
     ".": {
       "import": "./dist/index.js",
-      "types": "./dist/index.d.ts"
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
     },
     "./theme": {
       "import": "./dist/theme/index.js",
-      "types": "./dist/theme/index.d.ts"
+      "types": "./dist/theme/index.d.ts",
+      "default": "./dist/theme/index.js"
     },
     "./theme/tokens.css": "./src/theme/tokens.css",
+    "./styles/*": "./src/styles/*",
     "./base": {
       "import": "./dist/components/base/index.js",
-      "types": "./dist/components/base/index.d.ts"
+      "types": "./dist/components/base/index.d.ts",
+      "default": "./dist/components/base/index.js"
     },
     "./containers": {
       "import": "./dist/components/containers/index.js",
-      "types": "./dist/components/containers/index.d.ts"
+      "types": "./dist/components/containers/index.d.ts",
+      "default": "./dist/components/containers/index.js"
     },
     "./composite": {
       "import": "./dist/components/composite/index.js",
-      "types": "./dist/components/composite/index.d.ts"
+      "types": "./dist/components/composite/index.d.ts",
+      "default": "./dist/components/composite/index.js"
     },
     "./layout": {
       "import": "./dist/components/layout/index.js",
-      "types": "./dist/components/layout/index.d.ts"
+      "types": "./dist/components/layout/index.d.ts",
+      "default": "./dist/components/layout/index.js"
     },
     "./bottom-strip": {
       "import": "./dist/components/bottom-strip/index.js",
-      "types": "./dist/components/bottom-strip/index.d.ts"
+      "types": "./dist/components/bottom-strip/index.d.ts",
+      "default": "./dist/components/bottom-strip/index.js"
     },
     "./settings": {
       "import": "./dist/components/settings/index.js",
-      "types": "./dist/components/settings/index.d.ts"
+      "types": "./dist/components/settings/index.d.ts",
+      "default": "./dist/components/settings/index.js"
     },
     "./auth": {
       "import": "./dist/components/auth/index.js",
-      "types": "./dist/components/auth/index.d.ts"
+      "types": "./dist/components/auth/index.d.ts",
+      "default": "./dist/components/auth/index.js"
     },
     "./workspace": {
       "import": "./dist/components/workspace/index.js",
-      "types": "./dist/components/workspace/index.d.ts"
+      "types": "./dist/components/workspace/index.d.ts",
+      "default": "./dist/components/workspace/index.js"
+    },
+    "./palette": {
+      "import": "./dist/palette/index.js",
+      "types": "./dist/palette/index.d.ts",
+      "default": "./dist/palette/index.js"
+    },
+    "./hierarchy": {
+      "import": "./dist/hierarchy/index.js",
+      "types": "./dist/hierarchy/index.d.ts",
+      "default": "./dist/hierarchy/index.js"
     }
   },
   "scripts": {
-    "build": "tsup src/index.ts src/theme/index.ts src/components/base/index.ts src/components/containers/index.ts src/components/composite/index.ts src/components/layout/index.ts src/components/bottom-strip/index.ts src/components/settings/index.ts src/components/auth/index.ts src/components/workspace/index.ts --format esm --dts --clean --external react --external react-dom --external lucide-react",
+    "build": "tsup src/index.ts src/theme/index.ts src/palette/index.ts src/hierarchy/index.ts src/components/base/index.ts src/components/containers/index.ts src/components/composite/index.ts src/components/layout/index.ts src/components/bottom-strip/index.ts src/components/settings/index.ts src/components/auth/index.ts src/components/workspace/index.ts --format esm --dts --clean --external react --external react-dom --external lucide-react --external @kloks/state-graph",
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist"
   },
