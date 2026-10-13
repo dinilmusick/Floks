@@ -1,0 +1,8 @@
+/**
+ * @file index.ts
+ * @description Floks Component Theme Contracts package entry point.
+ */
+
+export * from './schemas.js';
+export * from './registry.js';
+export * from './validator.js';

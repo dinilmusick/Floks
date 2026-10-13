@@ -4,6 +4,7 @@
   "version": "1.0.0",
   "packages": [
     "@floks/ui",
-    "@floks/canvas-ui"
+    "@floks/canvas-ui",
+    "@floks/contracts"
   ]
 }
