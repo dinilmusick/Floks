@@ -25,6 +25,9 @@ import {
   ThemeTargetSchema,
   ThemePackSchema,
   type ThemePack,
+  createFloksSnapshot,
+  diffContractSnapshots,
+  FLOKS_CANONICAL_CONTRACT,
 } from '@floks/contracts';
 
 describe('Floks 04 — Component Contracts & Theta Compatibility Suite', () => {
@@ -148,4 +151,59 @@ describe('Floks 04 — Component Contracts & Theta Compatibility Suite', () => {
     expect(res.errors.some((e) => e.includes('non-existent-state'))).toBe(true);
     expect(res.errors.some((e) => e.includes('3d-mesh'))).toBe(true);
   });
+
+  // ── F10: Contract Snapshot & Semantic Diff Engine ──
+  it('F10: generates deterministic contract snapshot and detects changes via semantic diff', () => {
+    const snap1 = createFloksSnapshot('1.1.1');
+    expect(snap1.package).toBe('@ultrst-armada/floks');
+    expect(snap1.version).toBe('1.1.1');
+    expect(snap1.publicSymbols.length).toBeGreaterThanOrEqual(20);
+    expect(snap1.checksum).toMatch(/^sha256-/);
+    expect(Object.keys(snap1.components).length).toBeGreaterThanOrEqual(7);
+
+    // Identical snapshot => PATCH
+    const diffIdentical = diffContractSnapshots(snap1, snap1);
+    expect(diffIdentical.isIdentical).toBe(true);
+    expect(diffIdentical.hasBreakingChanges).toBe(false);
+    expect(diffIdentical.versionRecommendation).toBe('PATCH');
+
+    // Additive snapshot => MINOR
+    const snapAdditive = {
+      ...snap1,
+      publicSymbols: [...snap1.publicSymbols, 'NewThemeUtility'],
+      components: {
+        ...snap1.components,
+        'floks.modal': {
+          componentId: 'floks.modal',
+          componentVersion: '1.0.0',
+          slots: ['backdrop', 'dialog'],
+          states: ['open', 'closing'],
+          parameters: ['opacity'],
+          assets: ['svg'],
+        },
+      },
+    };
+    const diffAdditive = diffContractSnapshots(snap1, snapAdditive);
+    expect(diffAdditive.hasAdditiveChanges).toBe(true);
+    expect(diffAdditive.hasBreakingChanges).toBe(false);
+    expect(diffAdditive.versionRecommendation).toBe('MINOR');
+    expect(diffAdditive.addedSymbols).toContain('NewThemeUtility');
+    expect(diffAdditive.addedComponents).toContain('floks.modal');
+
+    // Breaking snapshot (removed symbol or slot) => MAJOR
+    const snapBreaking = {
+      ...snap1,
+      publicSymbols: snap1.publicSymbols.filter((s) => s !== 'BaseButton'),
+    };
+    const diffBreaking = diffContractSnapshots(snap1, snapBreaking);
+    expect(diffBreaking.hasBreakingChanges).toBe(true);
+    expect(diffBreaking.versionRecommendation).toBe('MAJOR');
+    expect(diffBreaking.removedSymbols).toContain('BaseButton');
+
+    // Canonical contract object
+    expect(FLOKS_CANONICAL_CONTRACT.package).toBe('@ultrst-armada/floks');
+    const runtimeSnap = FLOKS_CANONICAL_CONTRACT.getSnapshot();
+    expect(runtimeSnap.version).toBe('1.1.1');
+  });
 });
+
