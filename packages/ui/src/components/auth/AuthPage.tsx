@@ -1,7 +1,21 @@
 import React, { useState } from 'react';
 import { LogIn, UserPlus, Eye, EyeOff, Shield, ArrowRight, AlertCircle } from 'lucide-react';
 
-export interface AuthResult { success: boolean; error?: string; user?: unknown; token?: string; }
+/**
+ * @public
+ * Canonical Auth Result contract.
+ */
+export interface AuthResult {
+  success: boolean;
+  error?: string;
+  user?: unknown;
+  token?: string;
+}
+
+/**
+ * @public
+ * Canonical AuthPage Props for FLOKS reusable authentication page.
+ */
 export interface AuthPageProps {
   appName?: string;
   appSubtitle?: string;
@@ -12,6 +26,11 @@ export interface AuthPageProps {
   onSwitchToAdmin?: () => void;
 }
 
+/**
+ * @public
+ * Canonical FLOKS AuthPage section/page component.
+ * Single source of truth for login/registration across DEPM, KRUSBL, and SKIPO apps.
+ */
 export const AuthPage: React.FC<AuthPageProps> = ({
   appName = 'SKIPO',
   appSubtitle = 'WORKSPACE',

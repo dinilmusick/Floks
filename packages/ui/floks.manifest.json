@@ -1,8 +1,17 @@
 {
   "$schema": "https://skipo.dev/schemas/floks-manifest.v1.json",
-  "package": "@floks/ui",
+  "package": "@ultrst-armada/floks/ui",
+  "alias": "@floks/ui",
+  "packageType": "frontend",
   "version": "1.0.0",
   "components": [
+    {
+      "id": "AuthPage",
+      "name": "AuthPage",
+      "export": "AuthPage",
+      "subpath": "auth",
+      "targetTypes": ["App.auth", "App.main-content"]
+    },
     {
       "id": "AppShell",
       "name": "AppShell",

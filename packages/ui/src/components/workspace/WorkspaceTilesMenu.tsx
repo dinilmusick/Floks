@@ -3,6 +3,10 @@ import { Search, Plus, Trash2, Edit3, LogOut, ArrowRight, FolderOpen, Cloud, Har
 import { StorageOptionTiles, StorageSelection } from './StorageOptionTiles.js';
 import { WorkspaceStorageReadonlyPanel } from './WorkspaceStorageReadonlyPanel.js';
 
+/**
+ * @public
+ * Canonical Workspace Record contract.
+ */
 export interface WorkspaceRecord {
   id: string;
   name: string;
@@ -15,6 +19,10 @@ export interface WorkspaceRecord {
   secondaryClones?: unknown[];
 }
 
+/**
+ * @public
+ * Canonical WorkspaceTilesMenu Props.
+ */
 export interface WorkspaceTilesMenuProps {
   workspaces: WorkspaceRecord[];
   activeWorkspaceId?: string | null;
@@ -31,6 +39,11 @@ export interface WorkspaceTilesMenuProps {
   onDismissError?: () => void;
 }
 
+/**
+ * @public
+ * Canonical FLOKS WorkspaceTilesMenu section/modal component.
+ * Single source of truth for workspace isolation, selection, and creation across DEPM, KRUSBL, and SKIPO apps.
+ */
 export const WorkspaceTilesMenu: React.FC<WorkspaceTilesMenuProps> = ({
   workspaces,
   activeWorkspaceId = null,
