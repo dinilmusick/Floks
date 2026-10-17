@@ -88,7 +88,8 @@
   },
   "dependencies": {
     "zod": "^3.24.1",
-    "@dinilmusick/frnlts": "^0.1.0"
+    "@dinilmusick/frnlts": "^0.1.0",
+    "zustand": "^5.0.3"
   },
   "peerDependencies": {
     "lucide-react": ">=0.300.0",

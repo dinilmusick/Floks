@@ -1,12 +1,13 @@
 // ══════════════════════════════════════════════════════════════════════════════════════════
 // ButtonParent: Master Core Button Parent Class & Component
-// Traced to: UIElementBase -> GraphEntityParent
+// Floks Concrete UI Vocabulary -> Built on FrnlTS Semantic UI Contracts
+// Simple Button -> UI Primitive
+// Split Button  -> UI Composite
 // ══════════════════════════════════════════════════════════════════════════════════════════
-// @role component
 import React, { useMemo } from 'react';
-import { FrnlPrimitive } from '@dinilmusick/frnlts/react';
-import { floksFrnlStore } from '../frnl/store.js';
-import { UIVariant, UISize, TooltipDirection } from './UIElementBase';
+import { FrnlPrimitive, FrnlComposite, FrnlSlot } from '@dinilmusick/frnlts/react';
+import { useFloksFrnlStore } from '../frnl/store.js';
+import { UIVariant, UISize, TooltipDirection } from './UIElementBase.js';
 import { usePalette } from '../palette/ThemeContext.js';
 import { useBottomStrip } from '../components/bottom-strip/index.js';
 
@@ -50,6 +51,7 @@ export const ButtonParent: React.FC<ButtonParentProps> = ({
 }) => {
   const palette = usePalette();
   const { setInspectionText } = useBottomStrip();
+  const store = useFloksFrnlStore();
 
   const variantStyle = useMemo<React.CSSProperties>(() => {
     switch (variant) {
@@ -141,19 +143,22 @@ export const ButtonParent: React.FC<ButtonParentProps> = ({
     setInspectionText(null);
   };
 
+  const effectiveId = id ?? `floks.button.${label ? label.toLowerCase().replace(/[^a-z0-9]/g, '-') : 'anonymous'}`;
+  const effectiveState = disabled ? 'disabled' : isActive ? 'active' : 'default';
+
   return (
     <FrnlPrimitive
-      id={id ?? `floks.button.${label ?? 'anonymous'}`}
+      id={effectiveId}
       as="button"
-      store={floksFrnlStore}
-      state={disabled ? 'disabled' : isActive ? 'active' : 'default'}
+      store={store}
+      state={effectiveState}
       properties={{ variant, size, disabled, isActive, label }}
       bounds={{ width: 'auto', height: 'auto' }}
       className={`inline-flex items-center justify-center font-mono font-bold uppercase tracking-wider border transition-all duration-150 active:scale-95 select-none disabled:opacity-40 disabled:pointer-events-none ${SIZE_STYLES[size]} ${className}`}
       style={{ ...variantStyle, ...activeDynamicStyle, ...style }}
       hostProps={{
         ...rest,
-        id,
+        id: effectiveId,
         'data-ui-parent': 'ButtonParent',
         type: 'button',
         disabled,
@@ -173,8 +178,116 @@ export const ButtonParent: React.FC<ButtonParentProps> = ({
   );
 };
 
+// ── SplitButton: Concrete UI Composite with Frnl Slots ──
+
+export interface SplitButtonProps {
+  id?: string;
+  label: string;
+  onPrimaryClick?: (e: React.MouseEvent<HTMLButtonElement>) => void;
+  onDropdownClick?: (e: React.MouseEvent<HTMLButtonElement>) => void;
+  variant?: UIVariant;
+  size?: UISize;
+  disabled?: boolean;
+  isOpen?: boolean;
+  dropdownMenu?: React.ReactNode;
+  className?: string;
+  style?: React.CSSProperties;
+}
+
+export const SplitButton: React.FC<SplitButtonProps> = ({
+  id,
+  label,
+  onPrimaryClick,
+  onDropdownClick,
+  variant = 'primary',
+  size = 'md',
+  disabled = false,
+  isOpen = false,
+  dropdownMenu,
+  className = '',
+  style,
+}) => {
+  const store = useFloksFrnlStore();
+  const compositeId = id ?? `floks.splitbutton.${label ? label.toLowerCase().replace(/[^a-z0-9]/g, '-') : 'anonymous'}`;
+
+  return (
+    <FrnlComposite
+      id={compositeId}
+      store={store}
+      state={disabled ? 'disabled' : isOpen ? 'open' : 'default'}
+      properties={{ variant, size, isOpen, label }}
+      className={`inline-flex items-center relative ${className}`}
+      style={style}
+      slots={
+        <>
+          <FrnlSlot
+            id={`${compositeId}.primary`}
+            address={`${compositeId}.primary`}
+            occupantId={`${compositeId}.primaryAction`}
+            occupantKind="primitive"
+            store={store}
+            occupants={{
+              [`${compositeId}.primaryAction`]: (
+                <ButtonParent
+                  id={`${compositeId}.primaryAction`}
+                  variant={variant}
+                  size={size}
+                  disabled={disabled}
+                  onClick={onPrimaryClick}
+                  className="rounded-r-none border-r-0"
+                >
+                  {label}
+                </ButtonParent>
+              ),
+            }}
+          />
+          <FrnlSlot
+            id={`${compositeId}.dropdown`}
+            address={`${compositeId}.dropdown`}
+            occupantId={`${compositeId}.dropdownAction`}
+            occupantKind="primitive"
+            store={store}
+            occupants={{
+              [`${compositeId}.dropdownAction`]: (
+                <ButtonParent
+                  id={`${compositeId}.dropdownAction`}
+                  variant={variant}
+                  size={size}
+                  disabled={disabled}
+                  onClick={onDropdownClick}
+                  className="rounded-l-none px-2"
+                  aria-label="Toggle Menu"
+                  aria-expanded={isOpen}
+                >
+                  ▾
+                </ButtonParent>
+              ),
+            }}
+          />
+          {isOpen && dropdownMenu && (
+            <FrnlSlot
+              id={`${compositeId}.menu`}
+              address={`${compositeId}.menu`}
+              occupantId={`${compositeId}.menuOccupant`}
+              occupantKind="composite"
+              store={store}
+              occupants={{
+                [`${compositeId}.menuOccupant`]: (
+                  <div className="absolute top-full left-0 mt-1 z-50">
+                    {dropdownMenu}
+                  </div>
+                ),
+              }}
+            />
+          )}
+        </>
+      }
+    />
+  );
+};
+
 // ── Button Models & Specialized Button Archetypes ──
-import { UIElementBase } from './UIElementBase';
+import { UIElementBase } from './UIElementBase.js';
 
 export class ButtonModel extends UIElementBase {
   constructor(id: string, name: string, variant: UIVariant = 'primary', size: UISize = 'md') {
@@ -205,4 +318,3 @@ export const DangerButton: React.FC<ButtonParentProps> = (props) => (
 export const GhostButton: React.FC<ButtonParentProps> = (props) => (
   <ButtonParent variant="ghost" {...props} />
 );
-

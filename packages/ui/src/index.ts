@@ -9,6 +9,7 @@ export * from './components/auth/index.js';
 export * from './components/workspace/index.js';
 export * from './palette/index.js';
 export * from './hierarchy/index.js';
+export * from './frnl/store.js';
 export type { ColorPalette } from './palette/index.js';
 export { BUILTIN_PALETTES, DEFAULT_PALETTE_ID } from './palette/index.js';
 
@@ -27,6 +28,8 @@ export {
   type UIProps,
   ButtonParent,
   type ButtonParentProps,
+  SplitButton,
+  type SplitButtonProps,
   ButtonModel,
   type ButtonVariant,
   type ButtonSize,
@@ -72,4 +75,10 @@ export {
   type BadgeTone,
 } from './hierarchy/index.js';
 
-\nexport { floksFrnlStore } from './frnl/store.js';\n
+export {
+  floksFrnlStore,
+  getFloksFrnlStore,
+  setFloksFrnlStore,
+  FrnlStoreProvider,
+  useFloksFrnlStore,
+} from './frnl/store.js';
