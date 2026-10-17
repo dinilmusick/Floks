@@ -72,3 +72,4 @@ export {
   type BadgeTone,
 } from './hierarchy/index.js';
 
+\nexport { floksFrnlStore } from './frnl/store.js';\n
