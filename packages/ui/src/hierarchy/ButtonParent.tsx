@@ -143,7 +143,8 @@ export const ButtonParent: React.FC<ButtonParentProps> = ({
     setInspectionText(null);
   };
 
-  const effectiveId = id ?? `floks.button.${label ? label.toLowerCase().replace(/[^a-z0-9]/g, '-') : 'anonymous'}`;
+  const autoId = React.useId().replace(/[:/]/g, '');
+  const effectiveId = id ?? (label ? `floks.button.${label.toLowerCase().replace(/[^a-z0-9]/g, '-')}.${autoId}` : `floks.button.${autoId}`);
   const effectiveState = disabled ? 'disabled' : isActive ? 'active' : 'default';
 
   return (
@@ -190,6 +191,7 @@ export interface SplitButtonProps {
   disabled?: boolean;
   isOpen?: boolean;
   dropdownMenu?: React.ReactNode;
+  menuOccupants?: Record<string, React.ReactNode>;
   className?: string;
   style?: React.CSSProperties;
 }
@@ -204,11 +206,13 @@ export const SplitButton: React.FC<SplitButtonProps> = ({
   disabled = false,
   isOpen = false,
   dropdownMenu,
+  menuOccupants,
   className = '',
   style,
 }) => {
   const store = useFloksFrnlStore();
-  const compositeId = id ?? `floks.splitbutton.${label ? label.toLowerCase().replace(/[^a-z0-9]/g, '-') : 'anonymous'}`;
+  const autoId = React.useId().replace(/[:/]/g, '');
+  const compositeId = id ?? (label ? `floks.splitbutton.${label.toLowerCase().replace(/[^a-z0-9]/g, '-')}.${autoId}` : `floks.splitbutton.${autoId}`);
 
   return (
     <FrnlComposite
@@ -264,7 +268,7 @@ export const SplitButton: React.FC<SplitButtonProps> = ({
               ),
             }}
           />
-          {isOpen && dropdownMenu && (
+          {isOpen && (dropdownMenu || menuOccupants) && (
             <FrnlSlot
               id={`${compositeId}.menu`}
               address={`${compositeId}.menu`}
@@ -272,11 +276,16 @@ export const SplitButton: React.FC<SplitButtonProps> = ({
               occupantKind="composite"
               store={store}
               occupants={{
-                [`${compositeId}.menuOccupant`]: (
-                  <div className="absolute top-full left-0 mt-1 z-50">
-                    {dropdownMenu}
-                  </div>
-                ),
+                ...(dropdownMenu
+                  ? {
+                      [`${compositeId}.menuOccupant`]: (
+                        <div className="absolute top-full left-0 mt-1 z-50">
+                          {dropdownMenu}
+                        </div>
+                      ),
+                    }
+                  : {}),
+                ...(menuOccupants ?? {}),
               }}
             />
           )}
@@ -289,6 +298,10 @@ export const SplitButton: React.FC<SplitButtonProps> = ({
 // ── Button Models & Specialized Button Archetypes ──
 import { UIElementBase } from './UIElementBase.js';
 
+/**
+ * @deprecated Legacy compatibility wrapper.
+ * FrnlTS (@dinilmusick/frnlts) is the authoritative semantic layer for all Floks UI components and entities.
+ */
 export class ButtonModel extends UIElementBase {
   constructor(id: string, name: string, variant: UIVariant = 'primary', size: UISize = 'md') {
     super(id, name, 'button', variant, size);

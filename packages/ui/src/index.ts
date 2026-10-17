@@ -78,7 +78,6 @@ export {
 export {
   floksFrnlStore,
   getFloksFrnlStore,
-  setFloksFrnlStore,
   FrnlStoreProvider,
   useFloksFrnlStore,
 } from './frnl/store.js';

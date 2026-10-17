@@ -70,7 +70,9 @@ export interface UIBaseProps {
 
 /**
  * UIElementBase: Universal Base Class tracing to GraphEntityParent
- * Every UI Model in the application derives from this root template class.
+ * @deprecated Legacy compatibility wrapper.
+ * FrnlTS (@dinilmusick/frnlts) is the authoritative semantic layer for all Floks UI components and entities.
+ * Concrete Floks UI components now inherit contracts from FrnlPrimitive and FrnlComposite.
  */
 export abstract class UIElementBase extends GraphEntityParent {
   public readonly themeRole: UIRole;

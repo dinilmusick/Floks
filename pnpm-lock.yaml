@@ -16,8 +16,8 @@ importers:
         version: 3.25.76
     devDependencies:
       '@dinilmusick/frnlts':
-        specifier: ^0.1.0
-        version: 0.1.0(@types/react@19.3.0)(react@19.3.0)
+        specifier: ^0.1.1
+        version: 0.1.1(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@testing-library/jest-dom':
         specifier: ^7.0.1
         version: 7.0.1(@testing-library/dom@10.4.2)(vitest@3.2.7(@types/node@22.20.5)(happy-dom@21.0.3))
@@ -94,8 +94,8 @@ importers:
   packages/ui:
     dependencies:
       '@dinilmusick/frnlts':
-        specifier: ^0.1.0
-        version: 0.1.0(@types/react@19.3.0)(react@19.3.0)
+        specifier: ^0.1.1
+        version: 0.1.1(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       lucide-react:
         specifier: '>=0.300.0'
         version: 1.55.0(@types/react@19.3.0)(react@19.3.0)
@@ -201,11 +201,12 @@ packages:
     resolution: {integrity: sha512-NpugTzbKgGrNe45Ui32cN8vCFFMxVtP/9rtfwv0nP5FRDAjvYBxJcLVpYA9mr1jxP6cnIT7x9LUzuDTbWYYNRA==}
     engines: {node: '>=6.9.0'}
 
-  '@dinilmusick/frnlts@0.1.0':
-    resolution: {integrity: sha512-5lczkBaxGsCXScg2E0uqxqKU8pbbhdjA7OZ4fuNeN2at/RlqA7WdM2VzvZSRKznyHa4ZMrrMULrBXHXKj6EGXw==, tarball: https://npm.pkg.github.com/download/@dinilmusick/frnlts/0.1.0/76998fa4424ccff2ef273fb31de8266853466fee}
+  '@dinilmusick/frnlts@0.1.1':
+    resolution: {integrity: sha512-M2kU2zkyWAbSBjxbuhICAG68FepMXWyOyqZocf54HcK8V/ugqYuBzyguXC0B/UKQnEP8bFyclbsGJ96iE/lE+w==, tarball: https://npm.pkg.github.com/download/@dinilmusick/frnlts/0.1.1/5c68a41fbe771f07f6427b198f68bbdbfc07164d}
     engines: {node: '>=20.0.0'}
     peerDependencies:
       react: ^18.0.0 || ^19.0.0
+      react-dom: ^18.0.0 || ^19.0.0
 
   '@dnd-kit/accessibility@3.1.1':
     resolution: {integrity: sha512-2P+YgaXF+gRsIihwwY1gCsQSYnu9Zyj2py8kY5fFvUM1qm2WA2u639R6YNVfU4GWr+ZM5mqEsfHZZLoRONbemw==}
@@ -1572,9 +1573,10 @@ snapshots:
 
   '@babel/runtime@7.29.10': {}
 
-  '@dinilmusick/frnlts@0.1.0(@types/react@19.3.0)(react@19.3.0)':
+  '@dinilmusick/frnlts@0.1.1(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)':
     dependencies:
       react: 19.3.0
+      react-dom: 19.3.0(react@19.3.0)
       zod: 3.25.76
       zustand: 5.0.15(@types/react@19.3.0)(react@19.3.0)
     transitivePeerDependencies:

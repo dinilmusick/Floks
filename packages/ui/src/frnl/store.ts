@@ -3,23 +3,17 @@ import { createFrnlStore, type FrnlStore } from '@dinilmusick/frnlts';
 
 export type { FrnlStore };
 
-/** Canonical shared FrnlTS semantic store for Floks UI assets. */
-let activeFrnlStore: FrnlStore = createFrnlStore();
-
-export const floksFrnlStore: FrnlStore = activeFrnlStore;
+/**
+ * Default canonical shared FrnlTS semantic store for Floks UI assets.
+ * For application-level custom store isolation, prefer using `FrnlStoreProvider`.
+ */
+export const floksFrnlStore: FrnlStore = createFrnlStore();
 
 /**
- * Returns the currently active canonical Frnl store.
+ * Returns the currently active global Frnl store (defaults to `floksFrnlStore`).
  */
 export function getFloksFrnlStore(): FrnlStore {
-  return activeFrnlStore;
-}
-
-/**
- * Injects a custom Frnl store as the canonical store across Floks assets.
- */
-export function setFloksFrnlStore(store: FrnlStore): void {
-  activeFrnlStore = store;
+  return floksFrnlStore;
 }
 
 const FrnlStoreContext = createContext<FrnlStore | null>(null);
@@ -31,17 +25,17 @@ export interface FrnlStoreProviderProps {
 
 /**
  * Context provider allowing applications to inject an isolated or shared Frnl store
- * down a specific component subtree.
+ * down a specific component subtree. This is the preferred mechanism for custom store injection.
  */
 export const FrnlStoreProvider: React.FC<FrnlStoreProviderProps> = ({ store, children }) => {
   return React.createElement(FrnlStoreContext.Provider, { value: store }, children);
 };
 
 /**
- * Hook to access the active Frnl store: prefers React Context if provided,
- * falling back to the canonical shared floksFrnlStore.
+ * Hook to access the active Frnl store: prefers React Context if provided via FrnlStoreProvider,
+ * falling back to the canonical default floksFrnlStore.
  */
 export function useFloksFrnlStore(): FrnlStore {
   const contextStore = useContext(FrnlStoreContext);
-  return contextStore ?? activeFrnlStore;
+  return contextStore ?? floksFrnlStore;
 }

@@ -125,19 +125,24 @@ describe('Floks FrnlTS Semantic Integration Suite', () => {
     expect(dropdownSlot.occupantKind).toBe('primitive');
   });
 
-  it('6. Live Slot replacement works for complex control', () => {
+  it('6. Live Slot replacement updates both store and rendered DOM in complex control', () => {
     render(
       <SplitButton
         id="live-split"
         label="Save"
         isOpen={true}
         dropdownMenu={<div data-testid="default-menu">Default Menu</div>}
+        menuOccupants={{
+          'custom-menu': <div data-testid="custom-menu">Custom Replaced Menu</div>,
+        }}
       />
     );
 
+    // Initial occupant rendered in DOM
     expect(screen.getByTestId('default-menu')).toBeInTheDocument();
+    expect(screen.queryByTestId('custom-menu')).not.toBeInTheDocument();
 
-    // Replace slot occupant
+    // Replace slot occupant with custom-menu
     act(() => {
       floksFrnlStore.getState().replaceSlotOccupant('live-split.menu', {
         id: 'custom-menu',
@@ -149,6 +154,18 @@ describe('Floks FrnlTS Semantic Integration Suite', () => {
     expect(menuSlot.occupantId).toBe('custom-menu');
     expect(menuSlot.id).toBe('live-split.menu');
     expect(menuSlot.address).toBe('live-split.menu');
+
+    // DOM reflects the swapped occupant
+    expect(screen.queryByTestId('default-menu')).not.toBeInTheDocument();
+    expect(screen.getByTestId('custom-menu')).toBeInTheDocument();
+
+    // Now replace occupant with null (empty slot)
+    act(() => {
+      floksFrnlStore.getState().replaceSlotOccupant('live-split.menu', null);
+    });
+
+    expect(floksFrnlStore.getState().slots['live-split.menu'].occupantId).toBeNull();
+    expect(screen.queryByTestId('custom-menu')).not.toBeInTheDocument();
   });
 
   it('7. Floks enforces exact two semantic entity categories (Primitive and Composite)', () => {
@@ -174,5 +191,45 @@ describe('Floks FrnlTS Semantic Integration Suite', () => {
     // Entity registered in customStore, NOT in default global store
     expect(customStore.getState().entities['isolated-btn']?.kind).toBe('primitive');
     expect(floksFrnlStore.getState().entities['isolated-btn']).toBeUndefined();
+  });
+
+  it('9. Anonymous ButtonParent instances receive collision-free unique IDs', () => {
+    render(
+      <>
+        <ButtonParent>Save</ButtonParent>
+        <ButtonParent>Save</ButtonParent>
+        <ButtonParent>Submit</ButtonParent>
+      </>
+    );
+
+    const buttons = screen.getAllByRole('button');
+    expect(buttons.length).toBeGreaterThanOrEqual(3);
+
+    const ids = buttons.map((b) => b.getAttribute('data-frnl-id')).filter(Boolean) as string[];
+    // All rendered button IDs must be unique
+    const uniqueIds = new Set(ids);
+    expect(uniqueIds.size).toBe(ids.length);
+
+    // Ensure entities are separately registered in the store
+    for (const id of ids) {
+      expect(floksFrnlStore.getState().entities[id]).toBeDefined();
+    }
+  });
+
+  it('10. Anonymous SplitButton instances receive collision-free unique IDs', () => {
+    render(
+      <>
+        <SplitButton label="Export" />
+        <SplitButton label="Export" />
+      </>
+    );
+
+    const allEntities = floksFrnlStore.getState().entities;
+    const splitButtonCompositeIds = Object.keys(allEntities).filter((k) =>
+      k.startsWith('floks.splitbutton.export')
+    );
+
+    // Must have registered at least two distinct composite entities
+    expect(splitButtonCompositeIds.length).toBeGreaterThanOrEqual(2);
   });
 });
