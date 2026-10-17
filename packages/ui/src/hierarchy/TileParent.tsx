@@ -1,6 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════════════════════
-// TileParent: Master Grid Tile & Sortable Card Parent Class & Component
-// Traced to: UIElementBase -> GraphEntityParent
+// TileParent: Master Grid Tile & Sortable Card Component
 // ══════════════════════════════════════════════════════════════════════════════════════════
 // @role component
 import React, { useState, useRef, useEffect } from 'react';
@@ -126,15 +125,7 @@ export const TileParent: React.FC<TileParentProps> = ({
   );
 };
 
-// ── Tile Models & Specialized Tile Archetypes ──
-import { UIElementBase, UIVariant, UISize } from './UIElementBase';
-
-export class TileModel extends UIElementBase {
-  constructor(id: string, name: string, variant: UIVariant = 'primary', size: UISize = 'md') {
-    super(id, name, 'tile', variant, size);
-  }
-}
-
+// ── Specialized Tile Archetypes ──
 export type TileVariant = 'default' | 'clip' | 'category' | 'strip';
 
 export const SpawnOptionTile: React.FC<TileParentProps> = (props) => (

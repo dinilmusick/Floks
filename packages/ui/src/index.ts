@@ -13,7 +13,7 @@ export * from './frnl/store.js';
 export type { ColorPalette } from './palette/index.js';
 export { BUILTIN_PALETTES, DEFAULT_PALETTE_ID } from './palette/index.js';
 
-// Explicit UI Primitive Archetypes, Tokens, Models & Components
+// Explicit UI Primitive Archetypes, Tokens & Components
 export {
   type UIInteractionState,
   type UIStyleTokens,
@@ -21,8 +21,6 @@ export {
   type UIVariant,
   type UISize,
   type TooltipDirection,
-  UIElementBase,
-  UIModel,
   UIParent,
   type UIParentProps,
   type UIProps,
@@ -30,7 +28,6 @@ export {
   type ButtonParentProps,
   SplitButton,
   type SplitButtonProps,
-  ButtonModel,
   type ButtonVariant,
   type ButtonSize,
   type ButtonProps,
@@ -41,14 +38,12 @@ export {
   GhostButton,
   PanelParent,
   type PanelParentProps,
-  PanelModel,
   type PanelVariant,
   type PanelProps,
   ModalPanel,
   InspectorPanel,
   CardPanel,
   ToolbarPanel,
-  InputModel,
   SliderInput,
   type SliderInputProps,
   TextInput,
@@ -59,7 +54,6 @@ export {
   type ToggleInputProps,
   TileParent,
   type TileParentProps,
-  TileModel,
   type TileVariant,
   SpawnOptionTile,
   CategoryCardTile,
@@ -71,7 +65,6 @@ export {
   type TelemetryPillProps,
   StatusDot,
   type StatusDotProps,
-  BadgeModel,
   type BadgeTone,
 } from './hierarchy/index.js';
 

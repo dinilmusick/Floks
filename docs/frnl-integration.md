@@ -24,7 +24,7 @@ FrnlTS (`@dinilmusick/frnlts`) is the **authoritative semantic frontend runtime 
 └────────────────────────────────────────────────────────┘
 ```
 
-Floks **does not define its own parallel semantic entity system**. The legacy classes (such as `UIElementBase` and `ButtonModel`) are marked as `@deprecated` legacy compatibility wrappers. FrnlTS contracts (`FrnlPrimitive`, `FrnlComposite`, `FrnlSlot`, and `createFrnlStore`) are the single source of truth for all semantic state, entity identification, slot occupancy, and lifecycle boundaries.
+Floks **does not define its own parallel semantic entity system**. The historical legacy classes (`UIElementBase` and model subclasses) have been completely purged with zero backward compatibility shims. FrnlTS contracts (`FrnlPrimitive`, `FrnlComposite`, `FrnlSlot`, and `createFrnlStore`) are the single source of truth for all semantic state, entity identification, slot occupancy, and lifecycle boundaries.
 
 ---
 
@@ -92,6 +92,6 @@ Floks provides three levels of access to the Frnl semantic runtime:
 
 ---
 
-## 6. Deprecation of Parallel Semantic Architectures
+## 6. Complete Purge of Legacy Parallel Semantic Architectures
 
-The historical `UIElementBase` class tracing to `@kloks/state-graph`'s `GraphEntityParent` is retained strictly for backward compatibility. It must not be extended for new components. All new and refactored components must directly consume FrnlTS primitives (`FrnlPrimitive`, `FrnlComposite`, `FrnlSlot`).
+The historical `UIElementBase` class and its derived `*Model` classes (`ButtonModel`, `PanelModel`, `TileModel`, `InputModel`, `BadgeModel`, `UIModel`), which previously traced to `@kloks/state-graph`'s `GraphEntityParent`, have been completely purged from the codebase. Zero backward compatibility shims are retained. Floks relies exclusively on FrnlTS (`@dinilmusick/frnlts`) primitives (`FrnlPrimitive`, `FrnlComposite`, `FrnlSlot`) as its sole authoritative semantic contract.

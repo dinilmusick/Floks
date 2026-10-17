@@ -1,6 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════════════════════
-// PanelParent: Master Window / Modal / Floating Deck Parent Class & Component
-// Traced to: UIElementBase -> GraphEntityParent
+// PanelParent: Master Window / Modal / Floating Deck Component
 // ══════════════════════════════════════════════════════════════════════════════════════════
 // @role skeleton
 import React, { useMemo } from 'react';
@@ -150,15 +149,7 @@ export const PanelParent: React.FC<PanelParentProps> = ({
   );
 };
 
-// ── Panel Models & Specialized Panel Archetypes ──
-import { UIElementBase, UIVariant, UISize } from './UIElementBase';
-
-export class PanelModel extends UIElementBase {
-  constructor(id: string, name: string, variant: UIVariant = 'primary', size: UISize = 'md') {
-    super(id, name, 'panel', variant, size);
-  }
-}
-
+// ── Specialized Panel Archetypes ──
 export type PanelVariant = 'modal' | 'inspector' | 'card' | 'toolbar' | 'default';
 export type PanelProps = PanelParentProps;
 

@@ -24,7 +24,7 @@ export const FLOKS_PUBLIC_SYMBOLS = [
   'SettingsTab',
   'WorkspaceTilesMenu',
   'UIParent',
-  'PanelModel',
+  'floksFrnlStore',
   'PanelProps',
   // UI Base Primitives & Forms
   'BaseButton',
@@ -33,7 +33,7 @@ export const FLOKS_PUBLIC_SYMBOLS = [
   'BaseSelect',
   'BaseToggle',
   'BaseBadge',
-  'ButtonModel',
+  'FrnlStoreProvider',
   'ButtonProps',
   'CredentialField',
   'LoginModal',

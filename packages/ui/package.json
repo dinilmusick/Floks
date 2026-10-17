@@ -82,7 +82,7 @@
     }
   },
   "scripts": {
-    "build": "tsup src/index.ts src/theme/index.ts src/palette/index.ts src/hierarchy/index.ts src/frnl/store.ts src/components/base/index.ts src/components/containers/index.ts src/components/composite/index.ts src/components/layout/index.ts src/components/bottom-strip/index.ts src/components/settings/index.ts src/components/auth/index.ts src/components/workspace/index.ts --format esm --dts --clean --external react --external react-dom --external lucide-react --external @kloks/state-graph",
+    "build": "tsup src/index.ts src/theme/index.ts src/palette/index.ts src/hierarchy/index.ts src/frnl/store.ts src/components/base/index.ts src/components/containers/index.ts src/components/composite/index.ts src/components/layout/index.ts src/components/bottom-strip/index.ts src/components/settings/index.ts src/components/auth/index.ts src/components/workspace/index.ts --format esm --dts --clean --external react --external react-dom --external lucide-react",
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist"
   },

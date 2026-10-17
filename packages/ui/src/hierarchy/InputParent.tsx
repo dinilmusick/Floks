@@ -1,6 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════════════════════
-// InputParent: Master Form Controls & Inputs Parent Class & Components
-// Traced to: UIElementBase -> GraphEntityParent
+// InputParent: Master Form Controls & Inputs Components
 // ══════════════════════════════════════════════════════════════════════════════════════════
 // @role skeleton
 import React from 'react';
@@ -182,12 +181,5 @@ export const ToggleInput: React.FC<ToggleInputProps> = ({
   );
 };
 
-// ── Input Model ──
-import { UIElementBase, UIVariant, UISize } from './UIElementBase';
 
-export class InputModel extends UIElementBase {
-  constructor(id: string, name: string, variant: UIVariant = 'primary', size: UISize = 'md') {
-    super(id, name, 'input', variant, size);
-  }
-}
 

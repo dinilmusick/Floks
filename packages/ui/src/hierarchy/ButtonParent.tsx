@@ -295,19 +295,7 @@ export const SplitButton: React.FC<SplitButtonProps> = ({
   );
 };
 
-// ── Button Models & Specialized Button Archetypes ──
-import { UIElementBase } from './UIElementBase.js';
-
-/**
- * @deprecated Legacy compatibility wrapper.
- * FrnlTS (@dinilmusick/frnlts) is the authoritative semantic layer for all Floks UI components and entities.
- */
-export class ButtonModel extends UIElementBase {
-  constructor(id: string, name: string, variant: UIVariant = 'primary', size: UISize = 'md') {
-    super(id, name, 'button', variant, size);
-  }
-}
-
+// ── Specialized Button Archetypes ──
 export type ButtonVariant = UIVariant;
 export type ButtonSize = UISize;
 export type ButtonProps = ButtonParentProps;

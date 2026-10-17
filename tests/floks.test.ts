@@ -21,9 +21,10 @@ describe('Floks Public Frontend & UI Package Library (@floks/*)', () => {
     expect(FloksUI.TopToolbar).toBeDefined();
     expect(FloksUI.BottomStrip).toBeDefined();
     expect(FloksUI.WorkspaceTilesMenu).toBeDefined();
-    // Generalized UI Hierarchy & Palette Engine
-    expect(FloksUI.UIElementBase).toBeDefined();
-    expect(FloksUI.UIModel).toBeDefined();
+    // Generalized UI Hierarchy, FrnlTS Integration & Palette Engine
+    expect(FloksUI.floksFrnlStore).toBeDefined();
+    expect(FloksUI.FrnlStoreProvider).toBeDefined();
+    expect(FloksUI.useFloksFrnlStore).toBeDefined();
     expect(FloksUI.ButtonParent).toBeDefined();
     expect(FloksUI.PanelParent).toBeDefined();
     expect(FloksUI.SliderInput).toBeDefined();
