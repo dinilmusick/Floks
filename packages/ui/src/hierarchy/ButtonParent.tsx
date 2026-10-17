@@ -4,6 +4,8 @@
 // ══════════════════════════════════════════════════════════════════════════════════════════
 // @role component
 import React, { useMemo } from 'react';
+import { FrnlPrimitive } from '@dinilmusick/frnlts/react';
+import { floksFrnlStore } from '../frnl/store.js';
 import { UIVariant, UISize, TooltipDirection } from './UIElementBase';
 import { usePalette } from '../palette/ThemeContext.js';
 import { useBottomStrip } from '../components/bottom-strip/index.js';
@@ -140,26 +142,34 @@ export const ButtonParent: React.FC<ButtonParentProps> = ({
   };
 
   return (
-    <button
-      id={id}
-      data-ui-parent="ButtonParent"
-      type="button"
-      disabled={disabled}
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
-      onFocus={handleMouseEnter}
-      onBlur={handleMouseLeave}
-      onClick={(e) => {
-        if (disabled) return;
-        onClick?.(e);
-      }}
-      style={{ ...variantStyle, ...activeDynamicStyle, ...style }}
+    <FrnlPrimitive
+      id={id ?? `floks.button.${label ?? 'anonymous'}`}
+      as="button"
+      store={floksFrnlStore}
+      state={disabled ? 'disabled' : isActive ? 'active' : 'default'}
+      properties={{ variant, size, disabled, isActive, label }}
+      bounds={{ width: 'auto', height: 'auto' }}
       className={`inline-flex items-center justify-center font-mono font-bold uppercase tracking-wider border transition-all duration-150 active:scale-95 select-none disabled:opacity-40 disabled:pointer-events-none ${SIZE_STYLES[size]} ${className}`}
-      {...rest}
+      style={{ ...variantStyle, ...activeDynamicStyle, ...style }}
+      hostProps={{
+        ...rest,
+        id,
+        'data-ui-parent': 'ButtonParent',
+        type: 'button',
+        disabled,
+        onMouseEnter: handleMouseEnter,
+        onMouseLeave: handleMouseLeave,
+        onFocus: handleMouseEnter,
+        onBlur: handleMouseLeave,
+        onClick: (e: React.MouseEvent<HTMLButtonElement>) => {
+          if (disabled) return;
+          onClick?.(e);
+        },
+      }}
     >
       {icon && <span className="shrink-0">{icon}</span>}
       {children && <span>{children}</span>}
-    </button>
+    </FrnlPrimitive>
   );
 };
 
