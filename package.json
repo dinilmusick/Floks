@@ -67,6 +67,7 @@
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "@ultrst-armada/kloks": "^1.4.0",
+    "@dinilmusick/frnlts": "^0.1.0",
     "happy-dom": "^21.0.3",
     "lucide-react": "^1.55.0",
     "react": "^19.0.1",
@@ -78,8 +79,7 @@
   },
   "pnpm": {
     "overrides": {
-      "@ultrst-armada/kloks": "file:../Kloks",
-      "@dinilmusick/frnlts": "file:../FrnlTS"
+      "@ultrst-armada/kloks": "file:../Kloks"
     }
   },
   "packageManager": "pnpm@9.15.0"

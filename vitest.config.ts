@@ -16,8 +16,6 @@ export default defineConfig({
       '@ultrst-armada/floks': path.resolve(__dirname, 'packages/ui/src/index.ts'),
       '@kloks/state-graph': '@ultrst-armada/kloks/state-graph',
       '@kloks/audio-midi': '@ultrst-armada/kloks/audio-midi',
-      '@dinilmusick/frnlts/react': path.resolve(__dirname, '../FrnlTS/src/react/index.ts'),
-      '@dinilmusick/frnlts': path.resolve(__dirname, '../FrnlTS/src/index.ts'),
     },
   },
   test: {
