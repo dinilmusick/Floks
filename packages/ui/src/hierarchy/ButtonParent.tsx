@@ -5,7 +5,6 @@
 // Split Button  -> UI Composite
 // ══════════════════════════════════════════════════════════════════════════════════════════
 import React, { useMemo } from 'react';
-import { FrnlPrimitive, FrnlComposite, FrnlSlot } from '../frnl/compat.js';
 import { useFloksFrnlStore } from '../frnl/store.js';
 import { UIVariant, UISize, TooltipDirection } from './UIElementBase.js';
 import { usePalette } from '../palette/ThemeContext.js';
@@ -51,7 +50,6 @@ export const ButtonParent: React.FC<ButtonParentProps> = ({
 }) => {
   const palette = usePalette();
   const { setInspectionText } = useBottomStrip();
-  const store = useFloksFrnlStore();
 
   const variantStyle = useMemo<React.CSSProperties>(() => {
     switch (variant) {
@@ -132,10 +130,7 @@ export const ButtonParent: React.FC<ButtonParentProps> = ({
     const effectiveLabel = label || tooltip || (typeof children === 'string' ? children : undefined);
     const effectiveDesc = description || (shortcutHint ? `[${shortcutHint}]` : undefined);
     if (effectiveLabel || effectiveDesc) {
-      setInspectionText({
-        label: effectiveLabel,
-        description: effectiveDesc,
-      });
+      setInspectionText(effectiveLabel || null, effectiveDesc || null);
     }
   };
 
@@ -143,43 +138,66 @@ export const ButtonParent: React.FC<ButtonParentProps> = ({
     setInspectionText(null);
   };
 
+  const store = useFloksFrnlStore();
   const autoId = React.useId().replace(/[:/]/g, '');
   const effectiveId = id ?? (label ? `floks.button.${label.toLowerCase().replace(/[^a-z0-9]/g, '-')}.${autoId}` : `floks.button.${autoId}`);
   const effectiveState = disabled ? 'disabled' : isActive ? 'active' : 'default';
 
+  React.useEffect(() => {
+    store.getState().registerEntity(effectiveId, {
+      state: effectiveState,
+      properties: { variant, size, disabled, isActive, label, kind: 'primitive' },
+    });
+    return () => {
+      store.getState().unregisterEntity(effectiveId);
+    };
+  }, [effectiveId, store]);
+
+  React.useEffect(() => {
+    const entity = store.getState().entities[effectiveId];
+    if (entity) {
+      if (entity.state !== effectiveState) {
+        store.getState().setEntityState(effectiveId, effectiveState);
+      }
+      store.getState().setEntityProperties(effectiveId, {
+        variant,
+        size,
+        disabled,
+        isActive,
+        label,
+        kind: 'primitive',
+      });
+    }
+  }, [effectiveId, effectiveState, variant, size, disabled, isActive, label, store]);
+
   return (
-    <FrnlPrimitive
+    <button
+      {...rest}
       id={effectiveId}
-      as="button"
-      store={store}
-      state={effectiveState}
-      properties={{ variant, size, disabled, isActive, label }}
-      bounds={{ width: 'auto', height: 'auto' }}
+      data-ui-parent="ButtonParent"
+      data-frnl-id={effectiveId}
+      data-frnl-kind="ui-primitive"
+      data-frnl-state={effectiveState}
+      type="button"
+      disabled={disabled}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+      onFocus={handleMouseEnter}
+      onBlur={handleMouseLeave}
+      onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+        if (disabled) return;
+        onClick?.(e);
+      }}
       className={`inline-flex items-center justify-center font-mono font-bold uppercase tracking-wider border transition-all duration-150 active:scale-95 select-none disabled:opacity-40 disabled:pointer-events-none ${SIZE_STYLES[size]} ${className}`}
       style={{ ...variantStyle, ...activeDynamicStyle, ...style }}
-      hostProps={{
-        ...rest,
-        id: effectiveId,
-        'data-ui-parent': 'ButtonParent',
-        type: 'button',
-        disabled,
-        onMouseEnter: handleMouseEnter,
-        onMouseLeave: handleMouseLeave,
-        onFocus: handleMouseEnter,
-        onBlur: handleMouseLeave,
-        onClick: (e: React.MouseEvent<HTMLButtonElement>) => {
-          if (disabled) return;
-          onClick?.(e);
-        },
-      }}
     >
       {icon && <span className="shrink-0">{icon}</span>}
       {children && <span>{children}</span>}
-    </FrnlPrimitive>
+    </button>
   );
 };
 
-// ── SplitButton: Concrete UI Composite with Frnl Slots ──
+// ── SplitButton: Concrete UI Composite ──
 
 export interface SplitButtonProps {
   id?: string;
@@ -213,85 +231,71 @@ export const SplitButton: React.FC<SplitButtonProps> = ({
   const store = useFloksFrnlStore();
   const autoId = React.useId().replace(/[:/]/g, '');
   const compositeId = id ?? (label ? `floks.splitbutton.${label.toLowerCase().replace(/[^a-z0-9]/g, '-')}.${autoId}` : `floks.splitbutton.${autoId}`);
+  const effectiveState = disabled ? 'disabled' : isOpen ? 'open' : 'default';
+
+  React.useEffect(() => {
+    store.getState().registerEntity(compositeId, {
+      state: effectiveState,
+      properties: { variant, size, isOpen, label, kind: 'composite' },
+    });
+    return () => {
+      store.getState().unregisterEntity(compositeId);
+    };
+  }, [compositeId, store]);
+
+  React.useEffect(() => {
+    const entity = store.getState().entities[compositeId];
+    if (entity) {
+      if (entity.state !== effectiveState) {
+        store.getState().setEntityState(compositeId, effectiveState);
+      }
+      store.getState().setEntityProperties(compositeId, {
+        variant,
+        size,
+        isOpen,
+        label,
+        kind: 'composite',
+      });
+    }
+  }, [compositeId, effectiveState, variant, size, isOpen, label, store]);
 
   return (
-    <FrnlComposite
+    <div
       id={compositeId}
-      store={store}
-      state={disabled ? 'disabled' : isOpen ? 'open' : 'default'}
-      properties={{ variant, size, isOpen, label }}
+      data-frnl-id={compositeId}
+      data-frnl-kind="ui-composite"
+      data-frnl-state={effectiveState}
       className={`inline-flex items-center relative ${className}`}
       style={style}
-      slots={
-        <>
-          <FrnlSlot
-            id={`${compositeId}.primary`}
-            address={`${compositeId}.primary`}
-            occupantId={`${compositeId}.primaryAction`}
-            occupantKind="primitive"
-            store={store}
-            occupants={{
-              [`${compositeId}.primaryAction`]: (
-                <ButtonParent
-                  id={`${compositeId}.primaryAction`}
-                  variant={variant}
-                  size={size}
-                  disabled={disabled}
-                  onClick={onPrimaryClick}
-                  className="rounded-r-none border-r-0"
-                >
-                  {label}
-                </ButtonParent>
-              ),
-            }}
-          />
-          <FrnlSlot
-            id={`${compositeId}.dropdown`}
-            address={`${compositeId}.dropdown`}
-            occupantId={`${compositeId}.dropdownAction`}
-            occupantKind="primitive"
-            store={store}
-            occupants={{
-              [`${compositeId}.dropdownAction`]: (
-                <ButtonParent
-                  id={`${compositeId}.dropdownAction`}
-                  variant={variant}
-                  size={size}
-                  disabled={disabled}
-                  onClick={onDropdownClick}
-                  className="rounded-l-none px-2"
-                  aria-label="Toggle Menu"
-                  aria-expanded={isOpen}
-                >
-                  ▾
-                </ButtonParent>
-              ),
-            }}
-          />
-          {isOpen && (dropdownMenu || menuOccupants) && (
-            <FrnlSlot
-              id={`${compositeId}.menu`}
-              address={`${compositeId}.menu`}
-              occupantId={`${compositeId}.menuOccupant`}
-              occupantKind="composite"
-              store={store}
-              occupants={{
-                ...(dropdownMenu
-                  ? {
-                      [`${compositeId}.menuOccupant`]: (
-                        <div className="absolute top-full left-0 mt-1 z-50">
-                          {dropdownMenu}
-                        </div>
-                      ),
-                    }
-                  : {}),
-                ...(menuOccupants ?? {}),
-              }}
-            />
-          )}
-        </>
-      }
-    />
+    >
+      <ButtonParent
+        id={`${compositeId}.primaryAction`}
+        variant={variant}
+        size={size}
+        disabled={disabled}
+        onClick={onPrimaryClick}
+        className="rounded-r-none border-r-0"
+      >
+        {label}
+      </ButtonParent>
+      <ButtonParent
+        id={`${compositeId}.dropdownAction`}
+        variant={variant}
+        size={size}
+        disabled={disabled}
+        onClick={onDropdownClick}
+        className="rounded-l-none px-2"
+        aria-label="Toggle Menu"
+        aria-expanded={isOpen}
+      >
+        ▾
+      </ButtonParent>
+      {isOpen && (dropdownMenu || menuOccupants) && (
+        <div className="absolute top-full left-0 mt-1 z-50">
+          {dropdownMenu || (menuOccupants && Object.values(menuOccupants)[0])}
+        </div>
+      )}
+    </div>
   );
 };
 
