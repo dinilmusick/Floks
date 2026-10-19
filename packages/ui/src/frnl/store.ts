@@ -1,5 +1,5 @@
 import React, { createContext, useContext, type ReactNode } from 'react';
-import { createFrnlStore, type FrnlStore } from '@dinilmusick/frnlts';
+import { createFrnlStore, type FrnlStore } from '@ultrst-armada/frnlts';
 
 export type { FrnlStore };
 

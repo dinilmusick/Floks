@@ -5,7 +5,7 @@
 // Split Button  -> UI Composite
 // ══════════════════════════════════════════════════════════════════════════════════════════
 import React, { useMemo } from 'react';
-import { FrnlPrimitive, FrnlComposite, FrnlSlot } from '@dinilmusick/frnlts/react';
+import { FrnlPrimitive, FrnlComposite, FrnlSlot } from '../frnl/compat.js';
 import { useFloksFrnlStore } from '../frnl/store.js';
 import { UIVariant, UISize, TooltipDirection } from './UIElementBase.js';
 import { usePalette } from '../palette/ThemeContext.js';

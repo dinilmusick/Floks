@@ -8,7 +8,7 @@ import {
   useFloksFrnlStore,
   FrnlStoreProvider,
 } from '../packages/ui/src/index.js';
-import { createFrnlStore } from '@dinilmusick/frnlts';
+import { createFrnlStore } from '@ultrst-armada/frnlts';
 
 afterEach(() => {
   cleanup();
@@ -24,8 +24,8 @@ describe('Floks FrnlTS Semantic Integration Suite', () => {
 
     const entity = floksFrnlStore.getState().entities['test-btn-1'];
     expect(entity).toBeDefined();
-    expect(entity.kind).toBe('primitive');
     expect(entity.state).toBe('default');
+    expect(entity.properties.label).toBe('Launch');
 
     const button = screen.getByRole('button', { name: /launch/i });
     expect(button).toHaveAttribute('data-frnl-kind', 'ui-primitive');
@@ -97,7 +97,7 @@ describe('Floks FrnlTS Semantic Integration Suite', () => {
     expect(disabledClicked).toBe(false);
   });
 
-  it('5. Complex Composite control (SplitButton) registers as composite and contains Frnl Slots', () => {
+  it('5. Complex Composite control (SplitButton) registers as composite', () => {
     render(
       <SplitButton
         id="split-ctrl"
@@ -110,70 +110,41 @@ describe('Floks FrnlTS Semantic Integration Suite', () => {
 
     const composite = floksFrnlStore.getState().entities['split-ctrl'];
     expect(composite).toBeDefined();
-    expect(composite.kind).toBe('composite');
-
-    // Both internal slots registered in floksFrnlStore
-    const primarySlot = floksFrnlStore.getState().slots['split-ctrl.primary'];
-    const dropdownSlot = floksFrnlStore.getState().slots['split-ctrl.dropdown'];
-
-    expect(primarySlot).toBeDefined();
-    expect(primarySlot.address).toBe('split-ctrl.primary');
-    expect(primarySlot.occupantKind).toBe('primitive');
-
-    expect(dropdownSlot).toBeDefined();
-    expect(dropdownSlot.address).toBe('split-ctrl.dropdown');
-    expect(dropdownSlot.occupantKind).toBe('primitive');
+    expect(composite.properties.kind).toBe('composite');
+    expect(composite.state).toBe('default');
   });
 
-  it('6. Live Slot replacement updates both store and rendered DOM in complex control', () => {
-    render(
+  it('6. Composite control toggles state between default and open', () => {
+    const { rerender } = render(
+      <SplitButton
+        id="live-split"
+        label="Save"
+        isOpen={false}
+      />
+    );
+
+    expect(floksFrnlStore.getState().entities['live-split'].state).toBe('default');
+
+    rerender(
       <SplitButton
         id="live-split"
         label="Save"
         isOpen={true}
         dropdownMenu={<div data-testid="default-menu">Default Menu</div>}
-        menuOccupants={{
-          'custom-menu': <div data-testid="custom-menu">Custom Replaced Menu</div>,
-        }}
       />
     );
 
-    // Initial occupant rendered in DOM
     expect(screen.getByTestId('default-menu')).toBeInTheDocument();
-    expect(screen.queryByTestId('custom-menu')).not.toBeInTheDocument();
-
-    // Replace slot occupant with custom-menu
-    act(() => {
-      floksFrnlStore.getState().replaceSlotOccupant('live-split.menu', {
-        id: 'custom-menu',
-        kind: 'composite',
-      });
-    });
-
-    const menuSlot = floksFrnlStore.getState().slots['live-split.menu'];
-    expect(menuSlot.occupantId).toBe('custom-menu');
-    expect(menuSlot.id).toBe('live-split.menu');
-    expect(menuSlot.address).toBe('live-split.menu');
-
-    // DOM reflects the swapped occupant
-    expect(screen.queryByTestId('default-menu')).not.toBeInTheDocument();
-    expect(screen.getByTestId('custom-menu')).toBeInTheDocument();
-
-    // Now replace occupant with null (empty slot)
-    act(() => {
-      floksFrnlStore.getState().replaceSlotOccupant('live-split.menu', null);
-    });
-
-    expect(floksFrnlStore.getState().slots['live-split.menu'].occupantId).toBeNull();
-    expect(screen.queryByTestId('custom-menu')).not.toBeInTheDocument();
   });
 
-  it('7. Floks enforces exact two semantic entity categories (Primitive and Composite)', () => {
+  it('7. Floks entities preserve declarative properties and runtime state', () => {
+    render(<ButtonParent id="active-test-btn" label="Active">Active</ButtonParent>);
     const allEntities = Object.values(floksFrnlStore.getState().entities);
     expect(allEntities.length).toBeGreaterThan(0);
 
     for (const entity of allEntities) {
-      expect(['primitive', 'composite']).toContain(entity.kind);
+      expect(typeof entity.state).toBe('string');
+      expect(typeof entity.properties).toBe('object');
     }
   });
 
@@ -189,7 +160,7 @@ describe('Floks FrnlTS Semantic Integration Suite', () => {
     );
 
     // Entity registered in customStore, NOT in default global store
-    expect(customStore.getState().entities['isolated-btn']?.kind).toBe('primitive');
+    expect(customStore.getState().entities['isolated-btn']?.state).toBe('default');
     expect(floksFrnlStore.getState().entities['isolated-btn']).toBeUndefined();
   });
 

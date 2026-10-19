@@ -74,3 +74,6 @@ export {
   FrnlStoreProvider,
   useFloksFrnlStore,
 } from './frnl/store.js';
+
+// Canonical FrnlTS-backed Components (frnl* prefix standard)
+export * from './frnl/index.js';
