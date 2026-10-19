@@ -1,97 +1,50 @@
 # Floks & FrnlTS Semantic Integration Architecture
 
-## 1. Executive Summary & Architectural Role
+## 1. Architectural roles
 
-Floks is the **concrete visual vocabulary** and component library for the Ultrst ecosystem.  
-FrnlTS (`@dinilmusick/frnlts`) is the **authoritative semantic frontend runtime and contract framework**.
+Floks is the concrete visual/component library. FrnlTS is the canonical semantic frontend runtime and contract layer. Skipo owns application page composition and page-scoped orchestration.
 
-```
-┌────────────────────────────────────────────────────────┐
-│                        Skipo                           │
-│           (Application & Orchestration Layer)          │
-└───────────────────────────┬────────────────────────────┘
-                            │
-                            ▼
-┌────────────────────────────────────────────────────────┐
-│                        Floks                           │
-│     (Concrete Visual Vocabulary, Themes & Styling)      │
-└───────────────────────────┬────────────────────────────┘
-                            │ (implements semantic contracts)
-                            ▼
-┌────────────────────────────────────────────────────────┐
-│                       FrnlTS                           │
-│   (Authoritative Semantic Runtime, Store & Contracts)  │
-└────────────────────────────────────────────────────────┘
-```
+Floks must not introduce a second semantic entity model, orchestration facade, slot system, or duplicated business-logic layer.
 
-Floks **does not define its own parallel semantic entity system**. The historical legacy classes (`UIElementBase` and model subclasses) have been completely purged with zero backward compatibility shims. FrnlTS contracts (`FrnlPrimitive`, `FrnlComposite`, `FrnlSlot`, and `createFrnlStore`) are the single source of truth for all semantic state, entity identification, slot occupancy, and lifecycle boundaries.
+## 2. Frnl component contract
 
----
+Every canonical interactive Floks component registers a Frnl component definition with:
 
-## 2. The Semantic Boundary
+- states
+- state-local callable events
+- event function IDs and handlers
+- properties
+- visual parameters
+- component scope
 
-FrnlTS defines two and only two primary semantic entity categories:
-1. **UI Primitive**: Owns bounds, visual assets, properties, states, and events. Directly renders concrete host elements (e.g., `<button>`, `<div>`).
-2. **UI Composite**: Owns named slots, properties, states, and coordination flows. It contains **no visual assets directly**; all visual content is projected through its child **Slots**.
+React event handlers are adapters into the Frnl event boundary. The same callable component events can therefore be invoked by application code and page orchestration.
 
-### Mapping to Concrete Floks Elements
+## 3. Page orchestration
 
-| Semantic Entity | Floks Implementation | Concrete Representation | Semantic Contract |
-| :--- | :--- | :--- | :--- |
-| **UI Primitive** | `ButtonParent` | Native HTML `<button>` | `data-frnl-kind="ui-primitive"`, registered in `FrnlStore.entities` |
-| **UI Composite** | `SplitButton` | Composite container `<div role="group">` | `data-frnl-kind="ui-composite"`, registered in `FrnlStore.entities` |
-| **Slot** | Named Slots (`.primary`, `.dropdown`, `.menu`) | Slot mounting node `<div data-frnl-kind="slot">` | Lives in Composite, holds single Primitive/Composite occupant |
+The canonical Frnl page component accepts Frnl orchestration definitions and mounts them against the active Frnl store for the lifetime of the page.
 
-```
-Frnl Primitive
-      │
-      ▼
-Simple Concrete Floks Element (ButtonParent)
-      │
-      ▼
-Native Host `<button>` with Tailwind styles & token palette
+A page orchestration wires existing component capabilities:
 
+component A event -> page orchestration -> component B event
+component A event -> page orchestration -> legitimate library/service capability
 
-Frnl Composite
-      │
-      ▼
-Complex Concrete Floks Element (SplitButton)
-      │
-      ├── Slot: primary action   ──▶ contains ButtonParent (Primitive)
-      ├── Slot: dropdown action  ──▶ contains ButtonParent (Primitive)
-      └── Slot: contextual menu  ──▶ contains Menu / Dialog (Composite)
-```
+Orchestration is sequencing and wiring, not reusable business logic. Reusable behavior belongs in libraries/functions. Page-level events remain appropriate for genuine page events.
 
----
+## 4. Store architecture
 
-## 3. Semantic Identity & Anonymous Collision Prevention
+Floks exposes:
 
-To guarantee semantic integrity across multi-instance rendering:
-- Reusable elements accept an explicit `id?: string` prop.
-- When `id` is omitted, Floks automatically derives a deterministic, unique identity using `React.useId()`.
-- Two anonymous buttons side by side (e.g. `<ButtonParent>Save</ButtonParent> <ButtonParent>Save</ButtonParent>`) receive distinct unique runtime IDs (e.g. `floks.button.save.r0` and `floks.button.save.r1`), preventing store collisions and state contamination.
+1. floksFrnlStore — canonical default store.
+2. getFloksFrnlStore() — default-store getter.
+3. FrnlStoreProvider — application/subtree store injection.
+4. useFloksFrnlStore() — active-store hook.
 
----
+The canonical page and Frnl components resolve the active store through this boundary.
 
-## 4. Event Boundary: Native React Handlers as Adapters
+## 5. Legacy architecture
 
-In the current React rendering layer:
-- Concrete DOM events (e.g., `onClick`, `onMouseEnter`, `onFocus`) execute on host elements.
-- Native React handlers serve as the **React-side adapter** bridging native DOM interactions to the Frnl semantic boundary.
-- For semantic-level state transitions (e.g., toggling `active`, `disabled`, or switching slot occupants), updates are dispatched directly to the active `FrnlStore`, triggering Zod-validated `entity.stateChanged`, `entity.propertyChanged`, or `slot.occupantChanged` events into `store.events`.
+The old slot/occupant/bounds/visual-asset compatibility model is not part of the current FRNL page architecture. The obsolete compatibility implementation has been removed rather than retained as an alternate API.
 
----
+## 6. Export boundary
 
-## 5. Store Architecture & Context Injection
-
-Floks provides three levels of access to the Frnl semantic runtime:
-1. `floksFrnlStore`: The default canonical singleton store instance.
-2. `getFloksFrnlStore()`: The global getter returning the canonical store.
-3. `FrnlStoreProvider`: The context provider for application-level isolation (recommended for testing, multi-tenant sub-trees, or micro-frontends).
-4. `useFloksFrnlStore()`: Hook used by all Floks components that transparently prefers the nearest `FrnlStoreProvider` context and gracefully falls back to `floksFrnlStore`.
-
----
-
-## 6. Complete Purge of Legacy Parallel Semantic Architectures
-
-The historical `UIElementBase` class and its derived `*Model` classes (`ButtonModel`, `PanelModel`, `TileModel`, `InputModel`, `BadgeModel`, `UIModel`), which previously traced to `@kloks/state-graph`'s `GraphEntityParent`, have been completely purged from the codebase. Zero backward compatibility shims are retained. Floks relies exclusively on FrnlTS (`@dinilmusick/frnlts`) primitives (`FrnlPrimitive`, `FrnlComposite`, `FrnlSlot`) as its sole authoritative semantic contract.
+Public Floks Frnl components are exported from packages/ui/src/frnl/index.ts and the package UI facade. Skipo pages consume them through their local components/components.ts facade rather than importing Floks directly.
