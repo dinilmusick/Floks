@@ -14,51 +14,69 @@ import {
   frnlPage,
   floksFrnlStore,
 } from '../packages/ui/src/index.js';
+import {
+  createFrnlStore,
+  defineFrnlComponent,
+  registerFrnlComponent,
+  invokeFrnlEvent,
+  type FrnlOrchestrationContext,
+} from '@ultrst-armada/frnlts';
 
 afterEach(() => {
   cleanup();
+});
 
-  it('8. frnlPage mounts supplied page orchestrations and cleans them up', async () => {
-    const { createFrnlStore, defineFrnlComponent, registerFrnlComponent, invokeFrnlEvent } = await import('@ultrst-armada/frnlts');
-    const store = createFrnlStore({ entities: { source: { state: 'idle', properties: {} }, target: { state: 'idle', properties: {} } } });
-    const definition = defineFrnlComponent({
-      name: 'Source',
-      states: {
-        idle: {
-          name: 'idle',
-          events: { trigger: { functionId: 'Source.idle.trigger' } },
-          visualParameters: {},
-          phases: { sustainPhase: { visualDefinition: { parameters: {} } } },
-        },
+it('8. frnlPage mounts supplied page orchestrations and cleans them up', async () => {
+  const store = createFrnlStore({
+    entities: {
+      source: { state: 'idle', properties: {} },
+      target: { state: 'idle', properties: {} },
+    },
+  });
+  const definition = defineFrnlComponent({
+    name: 'Source',
+    states: {
+      idle: {
+        name: 'idle',
+        events: { trigger: { functionId: 'Source.idle.trigger' } },
+        visualParameters: {},
+        phases: { sustainPhase: { visualDefinition: { parameters: {} } } },
       },
-    });
-    registerFrnlComponent(store, 'source', definition);
-    registerFrnlComponent(store, 'target', definition);
-    const calls: string[] = [];
-    store.getState().registerEventHandlers('source', { 'Source.idle.trigger': () => 'payload' });
-    store.getState().registerEventHandlers('target', { 'Source.idle.trigger': (payload) => { calls.push(String(payload)); } });
+    },
+  });
+  registerFrnlComponent(store, 'source', definition);
+  registerFrnlComponent(store, 'target', definition);
+  const calls: string[] = [];
+  store.getState().registerEventHandlers('source', {
+    'Source.idle.trigger': () => 'payload',
+  });
+  store.getState().registerEventHandlers('target', {
+    'Source.idle.trigger': (payload) => {
+      calls.push(String(payload));
+    },
+  });
 
-    const orchestration = {
-      id: 'home.SourceToTarget',
-      name: 'SourceToTarget',
-      setup: ({ onEvent, event }: import('@ultrst-armada/frnlts').FrnlOrchestrationContext) =>
-        onEvent('source', 'trigger', ({ result }) => event('target', 'trigger')(result)),
-    };
+  const orchestration = {
+    id: 'home.SourceToTarget',
+    name: 'SourceToTarget',
+    setup: ({ onEvent, event }: FrnlOrchestrationContext) =>
+      onEvent('source', 'trigger', ({ result }) => event('target', 'trigger')(result)),
+  };
 
-    render(React.createElement(
+  render(
+    React.createElement(
       (await import('../packages/ui/src/frnl/store.js')).FrnlStoreProvider,
       { store },
       React.createElement(frnlPage, { orchestrations: [orchestration] }, <div>Page</div>),
-    ));
+    ),
+  );
 
-    await act(async () => {
-      await invokeFrnlEvent(store, 'source', 'trigger', undefined);
-    });
-    expect(calls).toEqual(['payload']);
+  await act(async () => {
+    await invokeFrnlEvent(store, 'source', 'trigger', undefined);
   });
-
+  expect(calls).toEqual(['payload']);
 });
-
+ 
 describe('Floks Canonical frnl* Component Suite', () => {
   // ── 1. frnlButton ──
   it('1. frnlButton registers in Frnl store, reacts to click, and handles hover inspection', () => {
