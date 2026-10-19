@@ -6,6 +6,7 @@
 // ══════════════════════════════════════════════════════════════════════════════
 import React, { useEffect, useState } from 'react';
 import { mountFrnlOrchestration, type FrnlOrchestrationDefinition } from '@ultrst-armada/frnlts';
+import { useFloksFrnlStore } from './store.js';
 import {
   BottomStripProvider,
   useBottomStrip,
@@ -129,6 +130,7 @@ function FrnlPageInner({
   onSave,
   isSaving = false,
   recentApiRequests = [],
+  orchestrations = [],
   className = '',
   children,
 }: FrnlPageProps) {
