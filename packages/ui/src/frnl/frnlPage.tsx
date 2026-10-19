@@ -5,6 +5,7 @@
 // global dynamic hover inspection listener, tab manager, and responsive shell.
 // ══════════════════════════════════════════════════════════════════════════════
 import React, { useEffect, useState } from 'react';
+import { mountFrnlOrchestration, type FrnlOrchestrationDefinition } from '@ultrst-armada/frnlts';
 import {
   BottomStripProvider,
   useBottomStrip,
@@ -43,6 +44,7 @@ export interface FrnlPageProps {
   isSaving?: boolean;
   autoSaveEnabled?: boolean;
   recentApiRequests?: FrnlApiRequestLog[];
+  orchestrations?: readonly FrnlOrchestrationDefinition[];
   className?: string;
   children?: React.ReactNode;
 }
@@ -130,8 +132,18 @@ function FrnlPageInner({
   className = '',
   children,
 }: FrnlPageProps) {
+  const store = useFloksFrnlStore();
   const [internalActiveTab, setInternalActiveTab] = useState(tabs[0]?.id);
   const activeTab = activeTabId ?? internalActiveTab;
+
+  useEffect(() => {
+    const cleanups = orchestrations.map((orchestration) =>
+      mountFrnlOrchestration(store, orchestration),
+    );
+    return () => {
+      for (const cleanup of cleanups.reverse()) cleanup();
+    };
+  }, [orchestrations, store]);
 
   const handleTabChange = (tabId: string) => {
     if (onTabChange) onTabChange(tabId);
