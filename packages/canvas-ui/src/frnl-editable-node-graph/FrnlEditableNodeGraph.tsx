@@ -246,31 +246,31 @@ export const FrnlEditableNodeGraph: React.FC<FrnlEditableNodeGraphProps> = ({
       )}
 
       {predictive.isActive && predictive.ghostNodes.length > 0 && (
-        <div style={{ position: 'absolute', top: 10, right: 10, zIndex: 60, display: 'flex', gap: 4, pointerEvents: 'auto' }}>
-          <button type="button" onClick={predictive.prevScenario}>←</button>
-          <span style={{ padding: '3px 6px', fontSize: 11 }}>Scenario {predictive.scenarioIndex + 1}</span>
-          <button type="button" onClick={predictive.nextScenario}>→</button>
-          <button type="button" onClick={predictive.solidifyAll}>Solidify all</button>
-        </div>
-        <div aria-label="Predictive nodes" style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 45 }}>
-
-        <div aria-label="Predictive nodes" style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 45 }}>
-          {predictive.ghostNodes.map((ghost: any) => {
-            const position = ghost.worldPosition ?? [ghost.prototypeNode?.position?.x ?? 0, 0, ghost.prototypeNode?.position?.y ?? 0];
-            const x = Number(position[0]) * viewport.zoom + viewport.panX;
-            const y = Number(position[2] ?? position[1] ?? 0) * viewport.zoom + viewport.panY;
-            return (
-              <button
-                key={ghost.id}
-                type="button"
-                style={{ position: 'absolute', left: x, top: y, transform: 'translate(-50%, -50%)', pointerEvents: 'auto', opacity: 0.72, border: '1px dashed var(--skipo-accent, #61afef)', background: 'var(--skipo-surface, #20242b)', color: 'var(--skipo-text, #fff)', padding: '6px 10px', borderRadius: 6 }}
-                onClick={() => onPredictiveSolidify?.(ghost.id)}
-              >
-                {ghost.prototypeNode?.label ?? ghost.label ?? ghost.id}
-              </button>
-            );
-          })}
-        </div>
+        <>
+          <div style={{ position: 'absolute', top: 10, right: 10, zIndex: 60, display: 'flex', gap: 4, pointerEvents: 'auto' }}>
+            <button type="button" onClick={predictive.prevScenario}>←</button>
+            <span style={{ padding: '3px 6px', fontSize: 11 }}>Scenario {predictive.scenarioIndex + 1}</span>
+            <button type="button" onClick={predictive.nextScenario}>→</button>
+            <button type="button" onClick={() => { predictive.solidifyAll(); onPredictiveSolidifyAll?.(); }}>Solidify all</button>
+          </div>
+          <div aria-label="Predictive nodes" style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 45 }}>
+            {predictive.ghostNodes.map((ghost: any) => {
+              const position = ghost.worldPosition ?? [ghost.prototypeNode?.position?.x ?? 0, 0, ghost.prototypeNode?.position?.y ?? 0];
+              const x = Number(position[0]) * viewport.zoom + viewport.panX;
+              const y = Number(position[2] ?? position[1] ?? 0) * viewport.zoom + viewport.panY;
+              return (
+                <button
+                  key={ghost.id}
+                  type="button"
+                  style={{ position: 'absolute', left: x, top: y, transform: 'translate(-50%, -50%)', pointerEvents: 'auto', opacity: 0.72, border: '1px dashed var(--skipo-accent, #61afef)', background: 'var(--skipo-surface, #20242b)', color: 'var(--skipo-text, #fff)', padding: '6px 10px', borderRadius: 6 }}
+                  onClick={() => onPredictiveSolidify?.(ghost.id)}
+                >
+                  {ghost.prototypeNode?.label ?? ghost.label ?? ghost.id}
+                </button>
+              );
+            })}
+          </div>
+        </>
       )}
       {predictive.isActive && predictive.selectedNodesWithGhosts.size > 0 && (
         <div aria-label="Predictive node actions" style={{ position: 'absolute', left: 10, bottom: 10, zIndex: 60, display: 'flex', flexDirection: 'column', gap: 4, pointerEvents: 'auto' }}>
