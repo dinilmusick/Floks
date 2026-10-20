@@ -5,3 +5,4 @@ export * from './widgets/NodeSearchPalette.js';
 export * from './widgets/CanvasContextMenu.js';
 export * from './toolbar/GraphToolbar.js';
 export * from './react-flow/ReactFlowAdapter.js';
+export * from '../frnl-editable-node-graph/index.js';
