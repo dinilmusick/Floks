@@ -1,0 +1,170 @@
+{
+  "$schema": "https://skipo.dev/schemas/floks-manifest.v1.json",
+  "package": "@ultrst-armada/floks",
+  "version": "1.2.5",
+  "packageType": "frontend",
+  "uiPackage": "@ultrst-armada/floks/ui",
+  "architecture": {
+    "model": "react-frnl",
+    "semanticRuntime": "@ultrst-armada/frnlts",
+    "canonicalRule": "React component plus FrnlTS state/events/theme machinery; no Primitive/Composite/Slots runtime hierarchy"
+  },
+  "components": [
+    {
+      "id": "AuthPage",
+      "name": "AuthPage",
+      "export": "AuthPage",
+      "subpath": "auth",
+      "targetTypes": [
+        "App.auth",
+        "App.main-content"
+      ]
+    },
+    {
+      "id": "AppShell",
+      "name": "AppShell",
+      "export": "AppShell",
+      "subpath": "layout",
+      "targetTypes": [
+        "App.root"
+      ]
+    },
+    {
+      "id": "TopToolbar",
+      "name": "TopToolbar",
+      "export": "TopToolbar",
+      "subpath": "layout",
+      "targetTypes": [
+        "App.header"
+      ]
+    },
+    {
+      "id": "BottomStrip",
+      "name": "BottomStrip",
+      "export": "BottomStrip",
+      "subpath": "bottom-strip",
+      "targetTypes": [
+        "App.footer"
+      ]
+    },
+    {
+      "id": "BaseButton",
+      "name": "BaseButton",
+      "export": "BaseButton",
+      "subpath": "base",
+      "targetTypes": [
+        "App.main-content"
+      ]
+    },
+    {
+      "id": "BaseCard",
+      "name": "BaseCard",
+      "export": "BaseCard",
+      "subpath": "base",
+      "targetTypes": [
+        "App.main-content"
+      ]
+    },
+    {
+      "id": "BaseInput",
+      "name": "BaseInput",
+      "export": "BaseInput",
+      "subpath": "base",
+      "targetTypes": [
+        "App.main-content"
+      ]
+    },
+    {
+      "id": "BaseSelect",
+      "name": "BaseSelect",
+      "export": "BaseSelect",
+      "subpath": "base",
+      "targetTypes": [
+        "App.main-content"
+      ]
+    },
+    {
+      "id": "BaseToggle",
+      "name": "BaseToggle",
+      "export": "BaseToggle",
+      "subpath": "base",
+      "targetTypes": [
+        "App.main-content"
+      ]
+    },
+    {
+      "id": "BaseBadge",
+      "name": "BaseBadge",
+      "export": "BaseBadge",
+      "subpath": "base",
+      "targetTypes": [
+        "App.main-content"
+      ]
+    },
+    {
+      "id": "LoginModal",
+      "name": "LoginModal",
+      "export": "LoginModal",
+      "subpath": "auth",
+      "targetTypes": [
+        "App.main-content",
+        "App.modals"
+      ]
+    },
+    {
+      "id": "CredentialField",
+      "name": "CredentialField",
+      "export": "CredentialField",
+      "subpath": "base",
+      "targetTypes": [
+        "App.main-content"
+      ]
+    },
+    {
+      "id": "WorkspaceTilesMenu",
+      "name": "WorkspaceTilesMenu",
+      "export": "WorkspaceTilesMenu",
+      "subpath": "workspace",
+      "targetTypes": [
+        "App.main-content"
+      ]
+    },
+    {
+      "id": "StatusIndicator",
+      "name": "StatusIndicator",
+      "export": "StatusIndicator",
+      "subpath": "composite",
+      "targetTypes": [
+        "App.footer",
+        "App.header"
+      ]
+    },
+    {
+      "id": "ConfirmDialog",
+      "name": "ConfirmDialog",
+      "export": "ConfirmDialog",
+      "subpath": "composite",
+      "targetTypes": [
+        "App.modals"
+      ]
+    },
+    {
+      "id": "FloatingDetailsPanel",
+      "name": "FloatingDetailsPanel",
+      "export": "FloatingDetailsPanel",
+      "subpath": "containers",
+      "targetTypes": [
+        "App.main-content"
+      ]
+    },
+    {
+      "id": "SettingsTab",
+      "name": "SettingsTab",
+      "export": "SettingsTab",
+      "subpath": "settings",
+      "targetTypes": [
+        "App.main-content"
+      ]
+    }
+  ]
+}
