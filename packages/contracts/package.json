@@ -1,7 +1,7 @@
 {
   "name": "@floks/contracts",
-  "version": "1.0.0",
-  "description": "Floks Canonical Component Theme Contracts, Visual Slots, States, Parameters, and Compatibility Validation for Theta Engine",
+  "version": "1.2.5",
+  "description": "Floks canonical theme contracts and FrnlTS-compatible visual state definitions",
   "type": "module",
   "private": false,
   "publishConfig": {
