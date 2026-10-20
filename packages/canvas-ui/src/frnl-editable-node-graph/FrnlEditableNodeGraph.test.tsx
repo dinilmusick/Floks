@@ -30,7 +30,8 @@ describe('FRNL Editable Node Graph', () => {
       outputs: [],
     } as GraphNode;
 
-    const traces = new MagneticGraphManager(320).computeTraces([source, target]);
+    const mgr = new MagneticGraphManager(320);
+    const traces = mgr.computeTraces([source, target]);
     expect(traces.some(
       (trace) =>
         trace.sourceNodeId === 'source' &&

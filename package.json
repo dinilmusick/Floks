@@ -1,6 +1,6 @@
 {
   "name": "@ultrst-armada/floks",
-  "version": "1.2.5",
+  "version": "1.2.6",
   "private": false,
   "publishConfig": {
     "access": "public",
@@ -66,8 +66,8 @@
     "@types/node": "^22.0.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
-    "@ultrst-armada/kloks": "^1.4.0",
-    "@ultrst-armada/frnlts": "^0.2.2",
+    "@ultrst-armada/kloks": "^1.4.4",
+    "@ultrst-armada/frnlts": "^0.2.4",
     "happy-dom": "^21.0.3",
     "lucide-react": "^1.55.0",
     "react": "^19.0.1",

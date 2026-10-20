@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
-import type { GraphEdge, GraphNode, NodeDefinition, Trace, ViewportState } from '@kloks/state-graph';
+import type { GraphEdge, GraphNode, NodeDefinition, Trace, ViewportState, SolidConnection, SpaceNode, NodeConnection } from '@kloks/state-graph';
 import { ConnectionRuleStore, MagneticGraphManager } from '@kloks/state-graph';
 import { defineFrnlComponent } from '@ultrst-armada/frnlts';
 import { useFrnlComponent } from '@ultrst-armada/frnlts/react';
@@ -30,7 +30,7 @@ export interface FrnlEditableNodeGraphProps {
   onSelectionChange?: (selectedIds: Set<string>) => void;
   onNodeDoubleClick?: (nodeId: string) => void;
   onMagneticTracesChange?: (traces: Trace[]) => void;
-  onMagneticTraceSolidify?: (trace: Trace) => void;
+  onMagneticTraceSolidify?: (trace: Trace | SolidConnection) => void;
   onPredictiveSolidify?: (ghostId: string) => void;
   onPredictiveSolidifyAllForNode?: (nodeId: string) => void;
   onPredictiveSolidifyAll?: () => void;
@@ -136,7 +136,7 @@ export const FrnlEditableNodeGraph: React.FC<FrnlEditableNodeGraphProps> = ({
     'frnlEditableNodeGraph.idle.edgesChange': (value: unknown) => onEdgesChange?.(value as GraphEdge[]),
     'frnlEditableNodeGraph.idle.selectionChange': (value: unknown) => onSelectionChange?.(value as Set<string>),
     'frnlEditableNodeGraph.idle.viewportChange': (value: unknown) => onViewportChange?.(value as ViewportState),
-    'frnlEditableNodeGraph.idle.magneticTraceSolidify': (value: unknown) => onMagneticTraceSolidify?.(value as Trace),
+    'frnlEditableNodeGraph.idle.magneticTraceSolidify': (value: unknown) => onMagneticTraceSolidify?.(value as Trace | SolidConnection),
     'frnlEditableNodeGraph.idle.predictiveSolidify': (value: unknown) => onPredictiveSolidify?.(String(value)),
     'frnlEditableNodeGraph.idle.predictiveSolidifyAll': () => onPredictiveSolidifyAll?.(),
     'frnlEditableNodeGraph.disabled.nodesChange': () => {},
@@ -151,6 +151,16 @@ export const FrnlEditableNodeGraph: React.FC<FrnlEditableNodeGraphProps> = ({
     onViewportChange, onPredictiveSolidify, onPredictiveSolidifyAll
   ]);
 
+  const frnl = useFrnlComponent({
+    id,
+    parentId,
+    definition: frnlEditableNodeGraphDefinition,
+    store,
+    state: 'idle',
+    properties: { nodeCount: nodes.length, edgeCount: edges.length },
+    handlers,
+  });
+
   useEffect(() => {
     if (!magneticEnabled) {
       setTraces([]);
@@ -158,12 +168,12 @@ export const FrnlEditableNodeGraph: React.FC<FrnlEditableNodeGraphProps> = ({
       return;
     }
 
-    const next = manager.computeTraces(nodes);
+    const next = manager.computeTraces(nodes as unknown as SpaceNode[]);
     setTraces(next);
     onMagneticTracesChange?.(next);
 
     if (autoSolidifyEnabled && next.length > 0) {
-      const resolved = manager.resolveAutoSolidification(nodes, next, edges);
+      const resolved = manager.resolveAutoSolidification(nodes as unknown as SpaceNode[], next, edges as unknown as NodeConnection[]);
       for (const trace of resolved) {
         onMagneticTraceSolidify?.(trace);
       }

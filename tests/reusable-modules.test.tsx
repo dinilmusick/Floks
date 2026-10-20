@@ -69,6 +69,7 @@ describe('reusable application modules', () => {
         onSubmit={async () => {}}
       />,
     );
+    fireEvent.click(screen.getByRole('button', { name: /backblaze b2/i }));
     expect(await screen.findByText('SRKL B2')).toBeInTheDocument();
     fireEvent.change(screen.getByLabelText('Backblaze account'), { target: { value: 'acct-1' } });
     expect(await screen.findByText('workspace-bucket')).toBeInTheDocument();

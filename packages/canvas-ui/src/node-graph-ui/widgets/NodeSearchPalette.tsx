@@ -15,6 +15,7 @@ export interface NodeSearchPaletteProps {
 type MenuNode = NodeDefinition & {
   category?: string;
   hidden?: boolean;
+  menu?: { visible?: boolean };
 };
 
 export function menuCategory(node: MenuNode): string {
