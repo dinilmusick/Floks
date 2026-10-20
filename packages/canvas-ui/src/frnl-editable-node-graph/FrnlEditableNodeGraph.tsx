@@ -7,6 +7,7 @@ import { defineFrnlComponent } from '@ultrst-armada/frnlts';
 import { useFrnlComponent } from '@ultrst-armada/frnlts/react';
 import { useFloksFrnlStore } from '@floks/ui';
 import { NodeGraphCanvas } from '../NodeGraphCanvas.js';
+import { usePredictiveGraph2D } from '../predictive/usePredictiveGraph2D.js';
 
 export interface FrnlEditableNodeGraphProps {
   id?: string;
@@ -100,6 +101,15 @@ export const FrnlEditableNodeGraph: React.FC<FrnlEditableNodeGraphProps> = ({
   const store = useFloksFrnlStore();
   const [traces, setTraces] = useState<Trace[]>([]);
   const manager = useMemo(() => new MagneticGraphManager(magneticCutoff), [magneticCutoff]);
+  const predictive = usePredictiveGraph2D({
+    nodes: nodes as any,
+    connections: edges as any,
+    selectedNodeId: selectedNodeIds.size === 1 ? Array.from(selectedNodeIds)[0] : null,
+    selectedNodeIds: Array.from(selectedNodeIds),
+    onSolidifyPredictiveNodes: (ghosts) => {
+      for (const ghost of ghosts) onPredictiveSolidify?.(ghost.id);
+    },
+  });
 
   useEffect(() => {
     if (!ConnectionRuleStore.isInitialized()) ConnectionRuleStore.initializeDefaults();
@@ -121,6 +131,10 @@ export const FrnlEditableNodeGraph: React.FC<FrnlEditableNodeGraphProps> = ({
     'frnlEditableNodeGraph.disabled.predictiveSolidify': () => {},
     'frnlEditableNodeGraph.disabled.predictiveSolidifyAll': () => {},
   }), [onEdgesChange, onMagneticTraceSolidify, onNodesChange, onSelectionChange, onViewportChange, onPredictiveSolidify, onPredictiveSolidifyAll]);
+
+  const effectivePredictiveMode = predictiveMode || predictive.isActive;
+  const effectiveGhostNodes = predictiveGhostNodes.length > 0 ? predictiveGhostNodes : predictive.ghostNodes as any;
+  const effectivePredictiveTraces = predictiveTraces.length > 0 ? predictiveTraces : predictive.traces as any;
 
   const frnl = useFrnlComponent({
     id,
