@@ -57,3 +57,25 @@ describe('FRNL Editable Node Graph signal visualization contract', () => {
     expect(frnlEditableNodeGraphDefinition.states.idle.events.predictiveSolidifyAll).toBeDefined();
   });
 });
+
+
+describe('FRNL Editable Node Graph node menu contract', () => {
+  it('derives node categories and menu visibility from node metadata', async () => {
+    const { menuCategory, menuHidden } = await import('../node-graph-ui/widgets/NodeSearchPalette.js');
+    const node = {
+      type: 'oscillator',
+      label: 'Oscillator',
+      metadata: { category: 'Generators', menuHidden: false },
+    } as any;
+    expect(menuCategory(node)).toBe('Generators');
+    expect(menuHidden(node)).toBe(false);
+    expect(menuHidden({ ...node, metadata: { category: 'Generators', menuHidden: true } })).toBe(true);
+  });
+
+  it('uses the canonical compatibility store for compatible node discovery', () => {
+    ConnectionRuleStore.initializeDefaults();
+    const source = { dataType: 'AUDIO_STEREO', direction: 'OUTPUT', handleCategory: 'DATA' } as const;
+    const compatible = ConnectionRuleStore.getCompatibleNodeTypes(source);
+    expect(Array.isArray(compatible)).toBe(true);
+  });
+});
