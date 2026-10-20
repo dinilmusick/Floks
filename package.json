@@ -18,7 +18,8 @@
     "packages/*/src/theme/tokens.css",
     "packages/*/src/styles/**",
     "packages/*/package.json",
-    "packages/*/floks.manifest.json"
+    "packages/*/floks.manifest.json",
+    "floks.manifest.json"
   ],
   "exports": {
     ".": {
