@@ -22,6 +22,23 @@ export interface WorkspaceStorageService {
   listBackblazeBuckets: (accountId: string) => Promise<BackblazeBucket[]>;
 }
 
+export interface KloksServiceInvoker {
+  invoke: (serviceId: string, operation: string, input: Record<string, unknown>) => Promise<unknown>;
+}
+
+export function createKloksWorkspaceStorageService(invoker: KloksServiceInvoker): WorkspaceStorageService {
+  return {
+    listBackblazeAccounts: async (userId) => {
+      const result = await invoker.invoke('srkl', 'getAccounts', { userId, service: 'backblaze' });
+      return Array.isArray((result as any)?.accounts) ? (result as any).accounts : [];
+    },
+    listBackblazeBuckets: async (accountId) => {
+      const result = await invoker.invoke('srkl', 'listBackblazeBuckets', { accountId });
+      return Array.isArray((result as any)?.buckets) ? (result as any).buckets : [];
+    },
+  };
+}
+
 export interface WorkspaceCreateInput {
   name: string;
   description?: string;
