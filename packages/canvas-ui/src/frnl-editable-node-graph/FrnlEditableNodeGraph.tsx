@@ -111,12 +111,16 @@ export const FrnlEditableNodeGraph: React.FC<FrnlEditableNodeGraphProps> = ({
     'frnlEditableNodeGraph.idle.selectionChange': (value: unknown) => onSelectionChange?.(value as Set<string>),
     'frnlEditableNodeGraph.idle.viewportChange': (value: unknown) => onViewportChange?.(value as ViewportState),
     'frnlEditableNodeGraph.idle.magneticTraceSolidify': (value: unknown) => onMagneticTraceSolidify?.(value as Trace),
+    'frnlEditableNodeGraph.idle.predictiveSolidify': (value: unknown) => onPredictiveSolidify?.(String(value)),
+    'frnlEditableNodeGraph.idle.predictiveSolidifyAll': () => onPredictiveSolidifyAll?.(),
     'frnlEditableNodeGraph.disabled.nodesChange': () => {},
     'frnlEditableNodeGraph.disabled.edgesChange': () => {},
     'frnlEditableNodeGraph.disabled.selectionChange': () => {},
     'frnlEditableNodeGraph.disabled.viewportChange': () => {},
     'frnlEditableNodeGraph.disabled.magneticTraceSolidify': () => {},
-  }), [onEdgesChange, onMagneticTraceSolidify, onNodesChange, onSelectionChange, onViewportChange]);
+    'frnlEditableNodeGraph.disabled.predictiveSolidify': () => {},
+    'frnlEditableNodeGraph.disabled.predictiveSolidifyAll': () => {},
+  }), [onEdgesChange, onMagneticTraceSolidify, onNodesChange, onSelectionChange, onViewportChange, onPredictiveSolidify, onPredictiveSolidifyAll]);
 
   const frnl = useFrnlComponent({
     id,
@@ -167,6 +171,7 @@ export const FrnlEditableNodeGraph: React.FC<FrnlEditableNodeGraphProps> = ({
         onViewportChange={(next) => frnl.events.viewportChange(next)}
         onSelectionChange={(next) => frnl.events.selectionChange(next)}
         onNodeDoubleClick={onNodeDoubleClick}
+        getSocketTelemetry={signalTelemetryEnabled && getSocketTelemetry ? (node, socketId, isOutput) => getSocketTelemetry(node, socketId, isOutput) : undefined}
       />
       {traces.length > 0 && (
         <svg
