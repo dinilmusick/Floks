@@ -14,7 +14,6 @@ import {
   type OnSelectionChangeParams,
   type Viewport,
 } from '@xyflow/react';
-import '@xyflow/react/dist/style.css';
 import { defineFrnlComponent } from '@ultrst-armada/frnlts';
 import { useFrnlComponent } from '@ultrst-armada/frnlts/react';
 import { useFloksFrnlStore } from './store.js';
