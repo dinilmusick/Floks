@@ -12,6 +12,16 @@ export interface NodeCardProps {
   onSocketMouseDown?: (e: React.MouseEvent, nodeId: string, socketId: string, type: 'input' | 'output') => void;
   onSocketMouseUp?: (e: React.MouseEvent, nodeId: string, socketId: string, type: 'input' | 'output') => void;
   onSocketNudgeChange?: (nodeId: string, socketId: string, nudge: { x: number; y: number }) => void;
+  getSocketTelemetry?: (nodeId: string, socketId: string, isOutput: boolean) => MovableSocketTelemetry | undefined;
+}
+
+export interface MovableSocketTelemetry {
+  audioMonoLevel?: number;
+  audioStereoLevels?: { left: number; right: number };
+  midi?: { active: boolean; velocity: number; note: number };
+  trigger?: { active: boolean; intensity: number };
+  osc?: { active: boolean; value: number; phase: number };
+  gain?: { db: number; formatted: string; color: string };
 }
 
 function renderNodeEmblem(type: string) {
@@ -56,7 +66,8 @@ export function NodeCard({
   onDoubleClick,
   onSocketMouseDown,
   onSocketMouseUp,
-  onSocketNudgeChange
+  onSocketNudgeChange,
+  getSocketTelemetry
 }: NodeCardProps) {
   const width = node.width ?? 130;
   const height = node.height ?? 130;
@@ -174,6 +185,7 @@ export function NodeCard({
             onMouseDown={onSocketMouseDown}
             onMouseUp={onSocketMouseUp}
             onSocketNudgeChange={onSocketNudgeChange}
+            telemetry={getSocketTelemetry?.(node.id, socket.id, false)}
           />
         );
       })}
@@ -192,6 +204,7 @@ export function NodeCard({
             onMouseDown={onSocketMouseDown}
             onMouseUp={onSocketMouseUp}
             onSocketNudgeChange={onSocketNudgeChange}
+            telemetry={getSocketTelemetry?.(node.id, socket.id, true)}
           />
         );
       })}
