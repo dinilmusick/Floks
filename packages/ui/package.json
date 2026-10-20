@@ -1,7 +1,7 @@
 {
   "name": "@floks/ui",
-  "version": "1.0.0",
-  "description": "Floks UI — Reusable React Component Library with Theme Engine, Base Primitives, Containers, Composite & Layout",
+  "version": "1.2.5",
+  "description": "Floks UI — canonical reusable React components built on FrnlTS",
   "type": "module",
   "private": false,
   "publishConfig": {
@@ -70,11 +70,6 @@
       "types": "./dist/palette/index.d.ts",
       "default": "./dist/palette/index.js"
     },
-    "./hierarchy": {
-      "import": "./dist/hierarchy/index.js",
-      "types": "./dist/hierarchy/index.d.ts",
-      "default": "./dist/hierarchy/index.js"
-    },
     "./frnl": {
       "import": "./dist/frnl/index.js",
       "types": "./dist/frnl/index.d.ts",
@@ -82,7 +77,7 @@
     }
   },
   "scripts": {
-    "build": "tsup src/index.ts src/theme/index.ts src/palette/index.ts src/hierarchy/index.ts src/frnl/index.ts src/frnl/store.ts src/components/base/index.ts src/components/containers/index.ts src/components/composite/index.ts src/components/layout/index.ts src/components/bottom-strip/index.ts src/components/settings/index.ts src/components/auth/index.ts src/components/workspace/index.ts --format esm --dts --clean --external react --external react-dom --external lucide-react",
+    "build": "tsup src/index.ts src/theme/index.ts src/palette/index.ts src/frnl/index.ts src/frnl/store.ts src/components/base/index.ts src/components/containers/index.ts src/components/composite/index.ts src/components/layout/index.ts src/components/bottom-strip/index.ts src/components/settings/index.ts src/components/auth/index.ts src/components/workspace/index.ts --format esm --dts --clean --external react --external react-dom --external lucide-react",
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist"
   },
