@@ -7,3 +7,4 @@ export * from './schemas.js';
 export * from './registry.js';
 export * from './validator.js';
 export * from './snapshot.js';
+export * from './frnlThemeAdapter.js';
