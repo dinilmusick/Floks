@@ -6,6 +6,8 @@ export * from './components/layout/index.js';
 export * from './components/bottom-strip/index.js';
 export * from './components/settings/index.js';
 export * from './components/auth/index.js';
+export * from './components/tiles/index.js';
+export * from './components/graph/index.js';
 export * from './components/workspace/index.js';
 export * from './palette/index.js';
 export * from './hierarchy/index.js';
