@@ -6,6 +6,8 @@ import { useFloksFrnlStore } from '../../frnl/store.js';
 import { TilesMenu } from '../tiles/TilesMenu.js';
 import { WorkspaceCreateDialog, type WorkspaceCreateInput, type WorkspaceStorageService } from './WorkspaceCreateDialog.js';
 
+export const WORKSPACE_TILES_MENU_REQUIRED_SERVICES = ['auth', 'workspace', 'storage', 'srkl'] as const;
+
 export interface WorkspaceRecord {
   id: string;
   title: string;
