@@ -89,7 +89,7 @@ export function WorkspaceTilesMenu({
         error={error}
         createLabel="NEW WORKSPACE"
         onSelect={(ws) => frnl.events.select(ws)}
-        onCreate={() => frnl.events.create()}
+        onCreate={() => frnl.events.create(undefined)}
         renderTile={(ws, selected) => (
           <>
             <div className="flex items-center gap-2 text-xs font-black uppercase">{ws.storageProvider === 'backblaze_b2' ? <Cloud size={14} /> : <HardDrive size={14} />}{ws.title}</div>
