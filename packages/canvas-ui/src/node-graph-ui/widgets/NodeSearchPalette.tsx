@@ -17,11 +17,11 @@ type MenuNode = NodeDefinition & {
   hidden?: boolean;
 };
 
-function menuCategory(node: MenuNode): string {
+export function menuCategory(node: MenuNode): string {
   return node.category || String(node.metadata?.category ?? 'Other');
 }
 
-function menuHidden(node: MenuNode): boolean {
+export function menuHidden(node: MenuNode): boolean {
   return node.hidden === true || node.metadata?.menuHidden === true;
 }
 
