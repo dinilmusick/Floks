@@ -6,6 +6,8 @@ import { useFloksFrnlStore } from '../../frnl/store.js';
 import { frnlButton } from '../../frnl/frnlButton.js';
 import { frnlTextInput } from '../../frnl/frnlTextInput.js';
 
+export const AUTH_PAGE_REQUIRED_SERVICES = ['auth'] as const;
+
 export interface AuthResult { success: boolean; error?: string; user?: unknown; token?: string; }
 export interface AuthPageProps {
   appName?: string;
