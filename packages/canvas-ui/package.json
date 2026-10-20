@@ -36,7 +36,7 @@
     "./editor": {
       "import": "./dist/editor/index.js",
       "types": "./dist/editor/index.d.ts",
-      "default": "./dist/editor/index.d.ts"
+      "default": "./dist/editor/index.js"
     },
     "./graph-2d": {
       "import": "./dist/graph-2d/index.js",
@@ -67,8 +67,7 @@
     "@dnd-kit/sortable": "^8.0.0 || ^9.0.0",
     "@dnd-kit/utilities": "^3.0.0",
     "monaco-editor": "^0.50.0",
-    "react": "^18.0.0 || ^19.0.0",
-    "react-dom": "^18.0.0 || ^19.0.0"
+    "react": "^18.0.0 || ^19.0.0"
   },
   "peerDependenciesMeta": {
     "@dnd-kit/core": {
