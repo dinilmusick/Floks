@@ -1,7 +1,7 @@
 'use client';
 import { useState, useCallback } from 'react';
-import type { GraphNode, GraphEdge, ViewportState, NodeGraphConfig } from '@kloks/state-graph';
-import { zoomAtPoint } from '@kloks/state-graph';
+import type { GraphNode, GraphEdge, ViewportState, NodeGraphConfig } from '@ultrst-armada/kloks/state-graph';
+import { zoomAtPoint } from '@ultrst-armada/kloks/state-graph';
 
 export function useNodeGraph(initialNodes: GraphNode[] = [], initialEdges: GraphEdge[] = []) {
   const [nodes, setNodes] = useState<GraphNode[]>(initialNodes);
