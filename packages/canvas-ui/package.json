@@ -1,7 +1,7 @@
 {
   "name": "@floks/canvas-ui",
   "version": "1.0.0",
-  "description": "Floks Canvas UI — Reusable React Visual Components for Infinite Canvas, Dock, Tile Menus, Code Editor, and Node Cards",
+  "description": "Floks Canvas UI — Reusable React Visual Components for Infinite Canvas, Dock, Tile Menus, Code Editor, and Node Graphs",
   "type": "module",
   "private": false,
   "publishConfig": {
@@ -36,7 +36,7 @@
     "./editor": {
       "import": "./dist/editor/index.js",
       "types": "./dist/editor/index.d.ts",
-      "default": "./dist/editor/index.js"
+      "default": "./dist/editor/index.d.ts"
     },
     "./graph-2d": {
       "import": "./dist/graph-2d/index.js",
@@ -47,15 +47,20 @@
       "import": "./dist/predictive/index.js",
       "types": "./dist/predictive/index.d.ts",
       "default": "./dist/predictive/index.js"
+    },
+    "./frnl-editable-node-graph": {
+      "import": "./dist/frnl-editable-node-graph/index.js",
+      "types": "./dist/frnl-editable-node-graph/index.d.ts",
+      "default": "./dist/frnl-editable-node-graph/index.js"
     }
   },
   "scripts": {
-    "build": "tsup src/index.ts src/canvas/index.ts src/dock/index.ts src/tile-menu/index.ts src/editor/index.ts src/graph-2d/index.ts src/predictive/index.ts --format esm --dts --clean --external react --external react-dom --external lucide-react --external @floks/ui --external @kloks/state-graph --external @kloks/audio-midi --external monaco-editor --external @dnd-kit/core --external @dnd-kit/sortable --external @dnd-kit/utilities",
-    "typecheck": "tsc --noEmit",
-    "clean": "rm -rf dist"
+    "build": "tsup src/index.ts src/canvas/index.ts src/dock/index.ts src/tile-menu/index.ts src/editor/index.ts src/graph-2d/index.ts src/predictive/index.ts src/frnl-editable-node-graph/index.ts --format esm --dts --clean --external react --external react-dom --external lucide-react --external @floks/ui --external @ultrst-armada/frnlts --external @kloks/state-graph --external @kloks/audio-midi --external monaco-editor --external @dnd-kit/core --external @dnd-kit/sortable --external @dnd-kit/utilities"
   },
   "dependencies": {
-    "@floks/ui": "workspace:*"
+    "@floks/ui": "workspace:*",
+    "@ultrst-armada/frnlts": "^0.2.2",
+    "@kloks/state-graph": "workspace:*"
   },
   "peerDependencies": {
     "@dnd-kit/core": "^6.0.0",
