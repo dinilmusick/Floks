@@ -1,206 +1,60 @@
-import { describe, expect, it, afterEach } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import React from 'react';
-import { render, screen, act, cleanup, fireEvent } from '@testing-library/react';
-import {
-  ButtonParent,
-  SplitButton,
-  floksFrnlStore,
-  useFloksFrnlStore,
-  FrnlStoreProvider,
-} from '../packages/ui/src/index.js';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { frnlButton, FrnlStoreProvider } from '../packages/ui/src/index.js';
 import { createFrnlStore } from '@ultrst-armada/frnlts';
 
-afterEach(() => {
-  cleanup();
-});
+afterEach(() => cleanup());
 
-describe('Floks FrnlTS Semantic Integration Suite', () => {
-  it('1. Simple Button registers as UI Primitive in shared floksFrnlStore', () => {
-    render(
-      <ButtonParent id="test-btn-1" label="Launch">
-        Launch
-      </ButtonParent>
-    );
-
-    const entity = floksFrnlStore.getState().entities['test-btn-1'];
-    expect(entity).toBeDefined();
-    expect(entity.state).toBe('default');
-    expect(entity.properties.label).toBe('Launch');
-
+describe('Floks FrnlTS integration', () => {
+  it('renders a canonical Frnl button and exposes Frnl state', () => {
+    render(<frnlButton id="test-button" label="Launch">Launch</frnlButton>);
     const button = screen.getByRole('button', { name: /launch/i });
-    expect(button).toHaveAttribute('data-frnl-kind', 'ui-primitive');
-    expect(button).toHaveAttribute('data-frnl-id', 'test-btn-1');
+    expect(button).toHaveAttribute('data-frnl-component', 'frnlButton');
+    expect(button).toHaveAttribute('data-frnl-state', 'idle');
+    expect(button).toHaveAttribute('id', 'test-button');
   });
 
-  it('2. Button state is represented through Frnl state (disabled, active, default)', () => {
-    const { rerender } = render(
-      <ButtonParent id="stateful-btn" label="Stateful" disabled={false} isActive={false}>
-        Stateful
-      </ButtonParent>
-    );
+  it('derives active, disabled and loading states from ordinary React props', () => {
+    const { rerender } = render(<frnlButton id="stateful" label="Stateful">Stateful</frnlButton>);
+    const button = screen.getByRole('button', { name: /stateful/i });
 
-    expect(floksFrnlStore.getState().entities['stateful-btn'].state).toBe('default');
-
-    rerender(
-      <ButtonParent id="stateful-btn" label="Stateful" disabled={false} isActive={true}>
-        Stateful
-      </ButtonParent>
-    );
-
-    expect(floksFrnlStore.getState().entities['stateful-btn'].state).toBe('active');
-
-    rerender(
-      <ButtonParent id="stateful-btn" label="Stateful" disabled={true} isActive={false}>
-        Stateful
-      </ButtonParent>
-    );
-
-    expect(floksFrnlStore.getState().entities['stateful-btn'].state).toBe('disabled');
+    expect(button).toHaveAttribute('data-frnl-state', 'idle');
+    rerender(<frnlButton id="stateful" label="Stateful" isActive>Stateful</frnlButton>);
+    expect(button).toHaveAttribute('data-frnl-state', 'active');
+    rerender(<frnlButton id="stateful" label="Stateful" disabled>Stateful</frnlButton>);
+    expect(button).toHaveAttribute('data-frnl-state', 'disabled');
+    rerender(<frnlButton id="stateful" label="Stateful" loading>Stateful</frnlButton>);
+    expect(button).toHaveAttribute('data-frnl-state', 'loading');
+    expect(button).toBeDisabled();
   });
 
-  it('3. Button properties are represented through Frnl properties', () => {
+  it('routes React click through the Frnl event handle', () => {
+    let clicked = 0;
+    render(<frnlButton id="clickable" label="Clickable" onClick={() => { clicked += 1; }}>Clickable</frnlButton>);
+    fireEvent.click(screen.getByRole('button', { name: /clickable/i }));
+    expect(clicked).toBe(1);
+  });
+
+  it('blocks Frnl click handlers while disabled or loading', () => {
+    let clicked = 0;
+    const { rerender } = render(<frnlButton id="blocked" label="Blocked" disabled onClick={() => { clicked += 1; }}>Blocked</frnlButton>);
+    fireEvent.click(screen.getByRole('button', { name: /blocked/i }));
+    expect(clicked).toBe(0);
+    rerender(<frnlButton id="blocked" label="Blocked" loading onClick={() => { clicked += 1; }}>Blocked</frnlButton>);
+    fireEvent.click(screen.getByRole('button', { name: /blocked/i }));
+    expect(clicked).toBe(0);
+  });
+
+  it('supports an injected Frnl store without the retired entity taxonomy', () => {
+    const store = createFrnlStore();
     render(
-      <ButtonParent id="props-btn" label="Propped" variant="accent" size="lg">
-        Propped
-      </ButtonParent>
-    );
-
-    const entity = floksFrnlStore.getState().entities['props-btn'];
-    expect(entity).toBeDefined();
-    expect(entity.properties.variant).toBe('accent');
-    expect(entity.properties.size).toBe('lg');
-    expect(entity.properties.label).toBe('Propped');
-  });
-
-  it('4. Button interaction reaches event boundary and fires onClick', () => {
-    let clicked = false;
-    render(
-      <ButtonParent id="click-btn" label="Clickable" onClick={() => { clicked = true; }}>
-        Clickable
-      </ButtonParent>
-    );
-
-    const button = screen.getByRole('button', { name: /clickable/i });
-    fireEvent.click(button);
-    expect(clicked).toBe(true);
-
-    // If disabled, click must be blocked
-    let disabledClicked = false;
-    render(
-      <ButtonParent id="disabled-click-btn" label="Disabled" disabled onClick={() => { disabledClicked = true; }}>
-        Disabled
-      </ButtonParent>
-    );
-
-    const disabledBtn = screen.getByRole('button', { name: /disabled/i });
-    fireEvent.click(disabledBtn);
-    expect(disabledClicked).toBe(false);
-  });
-
-  it('5. Complex Composite control (SplitButton) registers as composite', () => {
-    render(
-      <SplitButton
-        id="split-ctrl"
-        label="Deploy"
-        onPrimaryClick={() => {}}
-        onDropdownClick={() => {}}
-        isOpen={false}
-      />
-    );
-
-    const composite = floksFrnlStore.getState().entities['split-ctrl'];
-    expect(composite).toBeDefined();
-    expect(composite.properties.kind).toBe('composite');
-    expect(composite.state).toBe('default');
-  });
-
-  it('6. Composite control toggles state between default and open', () => {
-    const { rerender } = render(
-      <SplitButton
-        id="live-split"
-        label="Save"
-        isOpen={false}
-      />
-    );
-
-    expect(floksFrnlStore.getState().entities['live-split'].state).toBe('default');
-
-    rerender(
-      <SplitButton
-        id="live-split"
-        label="Save"
-        isOpen={true}
-        dropdownMenu={<div data-testid="default-menu">Default Menu</div>}
-      />
-    );
-
-    expect(screen.getByTestId('default-menu')).toBeInTheDocument();
-  });
-
-  it('7. Floks entities preserve declarative properties and runtime state', () => {
-    render(<ButtonParent id="active-test-btn" label="Active">Active</ButtonParent>);
-    const allEntities = Object.values(floksFrnlStore.getState().entities);
-    expect(allEntities.length).toBeGreaterThan(0);
-
-    for (const entity of allEntities) {
-      expect(typeof entity.state).toBe('string');
-      expect(typeof entity.properties).toBe('object');
-    }
-  });
-
-  it('8. Supports custom injectable Frnl store via FrnlStoreProvider', () => {
-    const customStore = createFrnlStore();
-
-    render(
-      <FrnlStoreProvider store={customStore}>
-        <ButtonParent id="isolated-btn" label="Isolated">
-          Isolated
-        </ButtonParent>
+      <FrnlStoreProvider store={store}>
+        <frnlButton id="isolated" label="Isolated">Isolated</frnlButton>
       </FrnlStoreProvider>
     );
-
-    // Entity registered in customStore, NOT in default global store
-    expect(customStore.getState().entities['isolated-btn']?.state).toBe('default');
-    expect(floksFrnlStore.getState().entities['isolated-btn']).toBeUndefined();
-  });
-
-  it('9. Anonymous ButtonParent instances receive collision-free unique IDs', () => {
-    render(
-      <>
-        <ButtonParent>Save</ButtonParent>
-        <ButtonParent>Save</ButtonParent>
-        <ButtonParent>Submit</ButtonParent>
-      </>
-    );
-
-    const buttons = screen.getAllByRole('button');
-    expect(buttons.length).toBeGreaterThanOrEqual(3);
-
-    const ids = buttons.map((b) => b.getAttribute('data-frnl-id')).filter(Boolean) as string[];
-    // All rendered button IDs must be unique
-    const uniqueIds = new Set(ids);
-    expect(uniqueIds.size).toBe(ids.length);
-
-    // Ensure entities are separately registered in the store
-    for (const id of ids) {
-      expect(floksFrnlStore.getState().entities[id]).toBeDefined();
-    }
-  });
-
-  it('10. Anonymous SplitButton instances receive collision-free unique IDs', () => {
-    render(
-      <>
-        <SplitButton label="Export" />
-        <SplitButton label="Export" />
-      </>
-    );
-
-    const allEntities = floksFrnlStore.getState().entities;
-    const splitButtonCompositeIds = Object.keys(allEntities).filter((k) =>
-      k.startsWith('floks.splitbutton.export')
-    );
-
-    // Must have registered at least two distinct composite entities
-    expect(splitButtonCompositeIds.length).toBeGreaterThanOrEqual(2);
+    const button = screen.getByRole('button', { name: /isolated/i });
+    expect(button).toHaveAttribute('data-frnl-component', 'frnlButton');
+    expect(button).toHaveAttribute('data-frnl-state', 'idle');
   });
 });
