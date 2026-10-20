@@ -19,7 +19,7 @@ export interface BackblazeAccount {
 
 export interface WorkspaceStorageService {
   listBackblazeAccounts: (userId: string) => Promise<BackblazeAccount[]>;
-  listBackblazeBuckets: (accountId: string) => Promise<BackblazeBucket[]>;
+  listBackblazeBuckets: (accountId: string, userId: string) => Promise<BackblazeBucket[]>;
 }
 
 export interface KloksServiceInvoker {
@@ -32,8 +32,8 @@ export function createKloksWorkspaceStorageService(invoker: KloksServiceInvoker)
       const result = await invoker.invoke('srkl', 'getAccounts', { userId, service: 'backblaze' });
       return Array.isArray((result as any)?.accounts) ? (result as any).accounts : [];
     },
-    listBackblazeBuckets: async (accountId) => {
-      const result = await invoker.invoke('srkl', 'listBackblazeBuckets', { accountId });
+    listBackblazeBuckets: async (accountId, userId) => {
+      const result = await invoker.invoke('srkl', 'listBackblazeBuckets', { accountId, userId });
       return Array.isArray((result as any)?.buckets) ? (result as any).buckets : [];
     },
   };
@@ -79,7 +79,7 @@ export function WorkspaceCreateDialog({ open, userId, storageService, onClose, o
   useEffect(() => {
     if (provider !== 'backblaze_b2' || !accountId) return;
     setLoadingBuckets(true);
-    storageService.listBackblazeBuckets(accountId).then((items) => {
+    storageService.listBackblazeBuckets(accountId, userId).then((items) => {
       setBuckets(items);
       setBucketName('');
     }).catch((e) => setError(e instanceof Error ? e.message : 'Failed to load Backblaze buckets.')).finally(() => setLoadingBuckets(false));
