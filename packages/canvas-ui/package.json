@@ -60,7 +60,7 @@
   "dependencies": {
     "@floks/ui": "workspace:*",
     "@ultrst-armada/frnlts": "^0.2.2",
-    "@kloks/state-graph": "workspace:*"
+    "@ultrst-armada/kloks": "^1.4.4"
   },
   "peerDependencies": {
     "@dnd-kit/core": "^6.0.0",
