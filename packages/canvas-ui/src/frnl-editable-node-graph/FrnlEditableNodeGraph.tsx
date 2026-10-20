@@ -225,7 +225,35 @@ export const FrnlEditableNodeGraph: React.FC<FrnlEditableNodeGraphProps> = ({
         </svg>
       )}
 
+      {predictive.isActive && predictive.traces.length > 0 && (
+        <svg aria-label="Predictive connection traces" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 44 }}>
+          {predictive.traces.map((trace: any) => {
+            const ghost = predictive.ghostNodes.find((candidate: any) => candidate.id === trace.ghostNodeId) as any;
+            if (!ghost) return null;
+            const parentId = trace.isFromGhostToParent ? trace.targetNodeId : trace.sourceNodeId;
+            const parent = nodeMap.get(parentId);
+            if (!parent) return null;
+            const ghostNode = ghost.prototypeNode as GraphNode;
+            const a = trace.isFromGhostToParent
+              ? socketPoint(ghostNode, trace.sourceHandleId, true, viewport)
+              : socketPoint(parent, trace.sourceHandleId, true, viewport);
+            const b = trace.isFromGhostToParent
+              ? socketPoint(parent, trace.targetHandleId, false, viewport)
+              : socketPoint(ghostNode, trace.targetHandleId, false, viewport);
+            return <line key={trace.id} x1={a.x} y1={a.y} x2={b.x} y2={b.y} stroke={trace.color ?? 'var(--skipo-accent, #61afef)'} strokeWidth={2} strokeDasharray="4 4" opacity={0.65} />;
+          })}
+        </svg>
+      )}
+
       {predictive.isActive && predictive.ghostNodes.length > 0 && (
+        <div style={{ position: 'absolute', top: 10, right: 10, zIndex: 60, display: 'flex', gap: 4, pointerEvents: 'auto' }}>
+          <button type="button" onClick={predictive.prevScenario}>←</button>
+          <span style={{ padding: '3px 6px', fontSize: 11 }}>Scenario {predictive.scenarioIndex + 1}</span>
+          <button type="button" onClick={predictive.nextScenario}>→</button>
+          <button type="button" onClick={predictive.solidifyAll}>Solidify all</button>
+        </div>
+        <div aria-label="Predictive nodes" style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 45 }}>
+
         <div aria-label="Predictive nodes" style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 45 }}>
           {predictive.ghostNodes.map((ghost: any) => {
             const position = ghost.worldPosition ?? [ghost.prototypeNode?.position?.x ?? 0, 0, ghost.prototypeNode?.position?.y ?? 0];
@@ -242,6 +270,15 @@ export const FrnlEditableNodeGraph: React.FC<FrnlEditableNodeGraphProps> = ({
               </button>
             );
           })}
+        </div>
+      )}
+      {predictive.isActive && predictive.selectedNodesWithGhosts.size > 0 && (
+        <div aria-label="Predictive node actions" style={{ position: 'absolute', left: 10, bottom: 10, zIndex: 60, display: 'flex', flexDirection: 'column', gap: 4, pointerEvents: 'auto' }}>
+          {Array.from(predictive.selectedNodesWithGhosts.entries()).map(([nodeId, ghosts]) => (
+            <button key={nodeId} type="button" onClick={() => { predictive.solidifyAllForNode(nodeId); onPredictiveSolidifyAllForNode?.(nodeId); }}>
+              Solidify all for {nodeId} ({ghosts.length})
+            </button>
+          ))}
         </div>
       )}
     </div>
