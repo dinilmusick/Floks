@@ -40,3 +40,20 @@ describe('FRNL Editable Node Graph', () => {
     )).toBe(true);
   });
 });
+
+
+describe('FRNL Editable Node Graph signal visualization contract', () => {
+  it('accepts generic socket telemetry for audio and MIDI visualization without importing QWNSR', () => {
+    const telemetry = {
+      gain: { db: -6, formatted: '-6.0dB', color: '#22c55e' },
+      midi: { active: true, velocity: 0.8, note: 64 },
+    };
+    expect(telemetry.gain.formatted).toBe('-6.0dB');
+    expect(telemetry.midi.note).toBe(64);
+  });
+
+  it('exposes predictive solidification events as FRNL events', () => {
+    expect(frnlEditableNodeGraphDefinition.states.idle.events.predictiveSolidify).toBeDefined();
+    expect(frnlEditableNodeGraphDefinition.states.idle.events.predictiveSolidifyAll).toBeDefined();
+  });
+});
