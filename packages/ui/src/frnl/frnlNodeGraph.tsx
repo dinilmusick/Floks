@@ -19,7 +19,7 @@ import { defineFrnlComponent } from '@ultrst-armada/frnlts';
 import { useFrnlComponent } from '@ultrst-armada/frnlts/react';
 import { useFloksFrnlStore } from './store.js';
 
-export type FrnlNodeGraphNode<T = Record<string, unknown>> = Node<T>;
+export type FrnlNodeGraphNode<T extends Record<string, unknown> = Record<string, unknown>> = Node<T>;
 export type FrnlNodeGraphEdge = Edge;
 
 export interface FrnlNodeGraphProps {
@@ -106,9 +106,13 @@ export const frnlNodeGraph: React.FC<FrnlNodeGraphProps> = ({
   const store = useFloksFrnlStore();
   const handlers = useMemo(() => {
     const forward = <T,>(fn?: (value: T) => void) => (value: T) => fn?.(value);
+    const forwardNode = (fn?: NodeMouseHandler) => (value: unknown) => {
+      const payload = value as { event: Parameters<NodeMouseHandler>[0]; node: Parameters<NodeMouseHandler>[1] };
+      fn?.(payload.event, payload.node);
+    };
     return {
-      'frnlNodeGraph.idle.nodeClick': forward(onNodeClick),
-      'frnlNodeGraph.idle.nodeDrag': forward(onNodeDragStop),
+      'frnlNodeGraph.idle.nodeClick': forwardNode(onNodeClick),
+      'frnlNodeGraph.idle.nodeDrag': forwardNode(onNodeDragStop),
       'frnlNodeGraph.idle.connect': forward(onConnect),
       'frnlNodeGraph.idle.nodesChange': forward(onNodesChange),
       'frnlNodeGraph.idle.edgesChange': forward(onEdgesChange),
