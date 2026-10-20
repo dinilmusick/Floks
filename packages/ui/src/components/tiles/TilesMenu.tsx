@@ -87,7 +87,7 @@ export function TilesMenu<T extends FrnlTileRecord>({
             <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[var(--skipo-text-muted)]" />
             <input value={query} onChange={(e) => { setQuery(e.target.value); frnl.events.search(e.target.value); }} placeholder={searchPlaceholder} className="h-8 w-48 bg-[var(--skipo-bg)] border border-[var(--skipo-border-color)] pl-8 pr-2 text-xs outline-none" />
           </label>
-          {onCreate && <button type="button" onClick={() => frnl.events.create()} className="h-8 px-3 bg-[var(--skipo-accent)] text-black text-[10px] font-black uppercase flex items-center gap-1.5"><Plus size={13} />{createLabel}</button>}
+          {onCreate && <button type="button" onClick={() => frnl.events.create(undefined)} className="h-8 px-3 bg-[var(--skipo-accent)] text-black text-[10px] font-black uppercase flex items-center gap-1.5"><Plus size={13} />{createLabel}</button>}
         </div>
       </header>
       {error && <div className="mb-3 border border-red-500/70 bg-red-500/10 p-3 text-xs text-red-300">{error}</div>}
