@@ -127,7 +127,10 @@
         "App.main-content"
       ],
       "requiredServices": [
-        "workspace"
+        "auth",
+        "workspace",
+        "storage",
+        "srkl"
       ]
     },
     {
@@ -165,6 +168,42 @@
       "subpath": "settings",
       "targetTypes": [
         "App.main-content"
+      ]
+    },
+    {
+      "id": "TilesMenu",
+      "name": "TilesMenu",
+      "export": "TilesMenu",
+      "subpath": "tiles",
+      "targetTypes": [
+        "App.main-content"
+      ],
+      "requiredServices": []
+    },
+    {
+      "id": "WorkspaceCreateDialog",
+      "name": "WorkspaceCreateDialog",
+      "export": "WorkspaceCreateDialog",
+      "subpath": "workspace",
+      "targetTypes": [
+        "App.modals"
+      ],
+      "requiredServices": [
+        "workspace",
+        "storage",
+        "srkl"
+      ]
+    },
+    {
+      "id": "GraphsMenu",
+      "name": "GraphsMenu",
+      "export": "GraphsMenu",
+      "subpath": "graphs",
+      "targetTypes": [
+        "App.main-content"
+      ],
+      "requiredServices": [
+        "workspace"
       ]
     }
   ]
