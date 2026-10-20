@@ -20,6 +20,8 @@ export interface FrnlEditableNodeGraphProps {
   magneticEnabled?: boolean;
   autoSolidifyEnabled?: boolean;
   magneticCutoff?: number;
+  signalTelemetryEnabled?: boolean;
+  getSocketTelemetry?: (node: GraphNode, socketId: string, isOutput: boolean) => unknown;
   className?: string;
   style?: React.CSSProperties;
   onNodesChange?: (nodes: GraphNode[]) => void;
@@ -29,6 +31,9 @@ export interface FrnlEditableNodeGraphProps {
   onNodeDoubleClick?: (nodeId: string) => void;
   onMagneticTracesChange?: (traces: Trace[]) => void;
   onMagneticTraceSolidify?: (trace: Trace) => void;
+  onPredictiveSolidify?: (ghostId: string) => void;
+  onPredictiveSolidifyAllForNode?: (nodeId: string) => void;
+  onPredictiveSolidifyAll?: () => void;
 }
 
 export const frnlEditableNodeGraphDefinition = defineFrnlComponent({
@@ -42,6 +47,8 @@ export const frnlEditableNodeGraphDefinition = defineFrnlComponent({
         selectionChange: { functionId: 'frnlEditableNodeGraph.idle.selectionChange' },
         viewportChange: { functionId: 'frnlEditableNodeGraph.idle.viewportChange' },
         magneticTraceSolidify: { functionId: 'frnlEditableNodeGraph.idle.magneticTraceSolidify' },
+        predictiveSolidify: { functionId: 'frnlEditableNodeGraph.idle.predictiveSolidify' },
+        predictiveSolidifyAll: { functionId: 'frnlEditableNodeGraph.idle.predictiveSolidifyAll' },
       },
       visualParameters: {
         canvasBackground: 'var(--frnl-editable-node-graph-background, var(--skipo-surface-dark, #181a1f))',
@@ -57,6 +64,8 @@ export const frnlEditableNodeGraphDefinition = defineFrnlComponent({
         selectionChange: { functionId: 'frnlEditableNodeGraph.disabled.selectionChange' },
         viewportChange: { functionId: 'frnlEditableNodeGraph.disabled.viewportChange' },
         magneticTraceSolidify: { functionId: 'frnlEditableNodeGraph.disabled.magneticTraceSolidify' },
+        predictiveSolidify: { functionId: 'frnlEditableNodeGraph.disabled.predictiveSolidify' },
+        predictiveSolidifyAll: { functionId: 'frnlEditableNodeGraph.disabled.predictiveSolidifyAll' },
       },
       visualParameters: { opacity: 0.6 },
       phases: { sustainPhase: { visualDefinition: { parameters: {} } } },
@@ -66,7 +75,8 @@ export const frnlEditableNodeGraphDefinition = defineFrnlComponent({
 
 function socketPoint(node: GraphNode, socketId: string, output: boolean, viewport: ViewportState) {
   const sockets = output ? node.outputs ?? [] : node.inputs ?? [];
-  const index = Math.max(0, sockets.findIndex((socket) => socket.id === socketId));
+  const foundIndex = sockets.findIndex((socket) => socket.id === socketId);
+  const index = foundIndex >= 0 ? foundIndex : 0;
   const width = node.width ?? 150;
   const height = node.height ?? 100;
   const y = height / 2 + (index - Math.max(0, sockets.length - 1) / 2) * 28;
@@ -88,6 +98,8 @@ export const FrnlEditableNodeGraph: React.FC<FrnlEditableNodeGraphProps> = ({
   magneticEnabled = true,
   autoSolidifyEnabled = false,
   magneticCutoff = 320,
+  signalTelemetryEnabled = false,
+  getSocketTelemetry,
   className,
   style,
   onNodesChange,
@@ -97,10 +109,14 @@ export const FrnlEditableNodeGraph: React.FC<FrnlEditableNodeGraphProps> = ({
   onNodeDoubleClick,
   onMagneticTracesChange,
   onMagneticTraceSolidify,
+  onPredictiveSolidify,
+  onPredictiveSolidifyAllForNode,
+  onPredictiveSolidifyAll,
 }) => {
   const store = useFloksFrnlStore();
   const [traces, setTraces] = useState<Trace[]>([]);
   const manager = useMemo(() => new MagneticGraphManager(magneticCutoff), [magneticCutoff]);
+
   const predictive = usePredictiveGraph2D({
     nodes: nodes as any,
     connections: edges as any,
@@ -130,21 +146,10 @@ export const FrnlEditableNodeGraph: React.FC<FrnlEditableNodeGraphProps> = ({
     'frnlEditableNodeGraph.disabled.magneticTraceSolidify': () => {},
     'frnlEditableNodeGraph.disabled.predictiveSolidify': () => {},
     'frnlEditableNodeGraph.disabled.predictiveSolidifyAll': () => {},
-  }), [onEdgesChange, onMagneticTraceSolidify, onNodesChange, onSelectionChange, onViewportChange, onPredictiveSolidify, onPredictiveSolidifyAll]);
-
-  const effectivePredictiveMode = predictiveMode || predictive.isActive;
-  const effectiveGhostNodes = predictiveGhostNodes.length > 0 ? predictiveGhostNodes : predictive.ghostNodes as any;
-  const effectivePredictiveTraces = predictiveTraces.length > 0 ? predictiveTraces : predictive.traces as any;
-
-  const frnl = useFrnlComponent({
-    id,
-    parentId,
-    definition: frnlEditableNodeGraphDefinition,
-    store,
-    state: 'idle',
-    properties: { nodeCount: nodes.length, edgeCount: edges.length, magneticEnabled, autoSolidifyEnabled },
-    handlers,
-  });
+  }), [
+    onEdgesChange, onMagneticTraceSolidify, onNodesChange, onSelectionChange,
+    onViewportChange, onPredictiveSolidify, onPredictiveSolidifyAll
+  ]);
 
   useEffect(() => {
     if (!magneticEnabled) {
@@ -152,6 +157,7 @@ export const FrnlEditableNodeGraph: React.FC<FrnlEditableNodeGraphProps> = ({
       onMagneticTracesChange?.([]);
       return;
     }
+
     const next = manager.computeTraces(nodes);
     setTraces(next);
     onMagneticTracesChange?.(next);
@@ -159,10 +165,10 @@ export const FrnlEditableNodeGraph: React.FC<FrnlEditableNodeGraphProps> = ({
     if (autoSolidifyEnabled && next.length > 0) {
       const resolved = manager.resolveAutoSolidification(nodes, next, edges);
       for (const trace of resolved) {
-        frnl.events.magneticTraceSolidify(trace);
+        onMagneticTraceSolidify?.(trace);
       }
     }
-  }, [autoSolidifyEnabled, edges, magneticEnabled, manager, nodes, onMagneticTracesChange]);
+  }, [autoSolidifyEnabled, edges, magneticEnabled, manager, nodes, onMagneticTracesChange, onMagneticTraceSolidify]);
 
   const nodeMap = useMemo(() => new Map(nodes.map((node) => [node.id, node])), [nodes]);
 
@@ -172,7 +178,14 @@ export const FrnlEditableNodeGraph: React.FC<FrnlEditableNodeGraphProps> = ({
       data-frnl-component="frnlEditableNodeGraph"
       data-frnl-state={frnl.state}
       className={className}
-      style={{ position: 'relative', width: '100%', height: '100%', background: frnl.visualParameters.canvasBackground as string, ...style }}
+      style={{
+        position: 'relative',
+        width: '100%',
+        height: '100%',
+        background: frnl.visualParameters.canvasBackground as string,
+        opacity: frnl.visualParameters.opacity as number | undefined,
+        ...style
+      }}
     >
       <NodeGraphCanvas
         nodes={nodes}
@@ -185,13 +198,13 @@ export const FrnlEditableNodeGraph: React.FC<FrnlEditableNodeGraphProps> = ({
         onViewportChange={(next) => frnl.events.viewportChange(next)}
         onSelectionChange={(next) => frnl.events.selectionChange(next)}
         onNodeDoubleClick={onNodeDoubleClick}
-        getSocketTelemetry={signalTelemetryEnabled && getSocketTelemetry ? (node, socketId, isOutput) => getSocketTelemetry(node, socketId, isOutput) : undefined}
+        getSocketTelemetry={signalTelemetryEnabled && getSocketTelemetry
+          ? (node, socketId, isOutput) => getSocketTelemetry(node, socketId, isOutput)
+          : undefined}
       />
+
       {traces.length > 0 && (
-        <svg
-          aria-hidden="true"
-          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 40 }}
-        >
+        <svg aria-hidden="true" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 40 }}>
           {traces.map((trace) => {
             const source = nodeMap.get(trace.sourceNodeId);
             const target = nodeMap.get(trace.targetNodeId);
@@ -201,10 +214,7 @@ export const FrnlEditableNodeGraph: React.FC<FrnlEditableNodeGraphProps> = ({
             return (
               <line
                 key={trace.id}
-                x1={a.x}
-                y1={a.y}
-                x2={b.x}
-                y2={b.y}
+                x1={a.x} y1={a.y} x2={b.x} y2={b.y}
                 stroke={String(frnl.visualParameters.magneticColor ?? '#38bdf8')}
                 strokeWidth={2}
                 strokeDasharray="6 4"
@@ -213,6 +223,26 @@ export const FrnlEditableNodeGraph: React.FC<FrnlEditableNodeGraphProps> = ({
             );
           })}
         </svg>
+      )}
+
+      {predictive.isActive && predictive.ghostNodes.length > 0 && (
+        <div aria-label="Predictive nodes" style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 45 }}>
+          {predictive.ghostNodes.map((ghost: any) => {
+            const position = ghost.worldPosition ?? [ghost.prototypeNode?.position?.x ?? 0, 0, ghost.prototypeNode?.position?.y ?? 0];
+            const x = Number(position[0]) * viewport.zoom + viewport.panX;
+            const y = Number(position[2] ?? position[1] ?? 0) * viewport.zoom + viewport.panY;
+            return (
+              <button
+                key={ghost.id}
+                type="button"
+                style={{ position: 'absolute', left: x, top: y, transform: 'translate(-50%, -50%)', pointerEvents: 'auto', opacity: 0.72, border: '1px dashed var(--skipo-accent, #61afef)', background: 'var(--skipo-surface, #20242b)', color: 'var(--skipo-text, #fff)', padding: '6px 10px', borderRadius: 6 }}
+                onClick={() => onPredictiveSolidify?.(ghost.id)}
+              >
+                {ghost.prototypeNode?.label ?? ghost.label ?? ghost.id}
+              </button>
+            );
+          })}
+        </div>
       )}
     </div>
   );
