@@ -21,6 +21,7 @@ export interface NodeGraphCanvasProps {
   onNodeDoubleClick?: (nodeId: string) => void;
   onViewportChange?: (viewport: ViewportState) => void;
   onSelectionChange?: (selectedIds: Set<string>) => void;
+  getSocketTelemetry?: (node: GraphNode, socketId: string, isOutput: boolean) => any;
 }
 
 export function NodeGraphCanvas({
@@ -34,7 +35,8 @@ export function NodeGraphCanvas({
   onEdgesChange,
   onNodeDoubleClick,
   onViewportChange,
-  onSelectionChange
+  onSelectionChange,
+  getSocketTelemetry
 }: NodeGraphCanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [isPanning, setIsPanning] = useState(false);
@@ -385,6 +387,7 @@ export function NodeGraphCanvas({
             onSocketMouseDown={handleSocketMouseDown}
             onSocketMouseUp={handleSocketMouseUp}
             onSocketNudgeChange={handleSocketNudgeChange}
+            getSocketTelemetry={getSocketTelemetry ? (nodeId, socketId, isOutput) => getSocketTelemetry(nodes.find(n => n.id === nodeId)!, socketId, isOutput) : undefined}
           />
         ))}
       </div>
