@@ -22,7 +22,7 @@ export function menuCategory(node: MenuNode): string {
 }
 
 export function menuHidden(node: MenuNode): boolean {
-  return node.hidden === true || node.metadata?.menuHidden === true;
+  return node.hidden === true || node.menu?.visible === false || node.metadata?.menuHidden === true;
 }
 
 export function NodeSearchPalette({
