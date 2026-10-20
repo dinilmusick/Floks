@@ -20,6 +20,8 @@ export interface GraphsMenuProps {
 }
 
 export function GraphsMenu({ graphs, onSelectGraph, onCreateGraph, loading, error }: GraphsMenuProps) {
+  const ForceGraph = frnlForceGraph;
+  const NodeGraph = frnlNodeGraph;
   return <TilesMenu
     id="graphsMenu"
     title="Graphs"
@@ -39,8 +41,8 @@ export function GraphsMenu({ graphs, onSelectGraph, onCreateGraph, loading, erro
         <p className="mt-2 text-[11px] text-[var(--skipo-text-muted)]">{graph.description}</p>
         <div className="mt-3 h-28 border border-[var(--skipo-border-color)] overflow-hidden">
           {graph.kind === 'force'
-            ? <frnlForceGraph nodes={(graph.nodes as FrnlForceGraphNode[]) ?? []} links={graph.links ?? []} width={420} height={150} />
-            : <frnlNodeGraph nodes={graph.nodes ?? []} edges={graph.edges ?? []} editable={false} showControls={false} showMiniMap={false} />}
+            ? <ForceGraph nodes={(graph.nodes as FrnlForceGraphNode[]) ?? []} links={graph.links ?? []} width={420} height={150} />
+            : <NodeGraph nodes={graph.nodes ?? []} edges={graph.edges ?? []} editable={false} showControls={false} showMiniMap={false} />}
         </div>
       </>
     )}
