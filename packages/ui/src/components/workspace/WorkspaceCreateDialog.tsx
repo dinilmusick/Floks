@@ -3,6 +3,8 @@ import { Cloud, HardDrive, Loader2 } from 'lucide-react';
 import { frnlButton } from '../../frnl/frnlButton.js';
 import { frnlTextInput } from '../../frnl/frnlTextInput.js';
 
+export const WORKSPACE_CREATE_DIALOG_REQUIRED_SERVICES = ['workspace', 'storage', 'srkl'] as const;
+
 export interface BackblazeBucket {
   id?: string;
   bucketId?: string;
