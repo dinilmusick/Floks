@@ -211,7 +211,7 @@ export const frnlButton: React.FC<FrnlButtonProps> = ({
     <button
       {...rest}
       id={componentId}
-      type="button"
+      type={rest.type ?? 'button'}
       disabled={disabled || loading}
       data-frnl-component="frnlButton"
       data-frnl-state={frnl.state}
