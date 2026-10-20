@@ -13,6 +13,14 @@ export interface MovableSocketViewProps {
   onMouseDown?: (e: React.MouseEvent, nodeId: string, socketId: string, type: 'input' | 'output') => void;
   onMouseUp?: (e: React.MouseEvent, nodeId: string, socketId: string, type: 'input' | 'output') => void;
   onSocketNudgeChange?: (nodeId: string, socketId: string, nudge: { x: number; y: number }) => void;
+  telemetry?: {
+    audioMonoLevel?: number;
+    audioStereoLevels?: { left: number; right: number };
+    midi?: { active: boolean; velocity: number; note: number };
+    trigger?: { active: boolean; intensity: number };
+    osc?: { active: boolean; value: number; phase: number };
+    gain?: { db: number; formatted: string; color: string };
+  };
 }
 
 export function MovableSocketView({
@@ -22,7 +30,8 @@ export function MovableSocketView({
   topOffset = 50,
   onMouseDown,
   onMouseUp,
-  onSocketNudgeChange
+  onSocketNudgeChange,
+  telemetry
 }: MovableSocketViewProps) {
   const [isHovered, setIsHovered] = useState(false);
   const isDraggingGizmo = useRef(false);
@@ -86,6 +95,33 @@ export function MovableSocketView({
           <polygon points={beamPoints} fill={themeColor} opacity={0.5} />
           <polygon points={beamPoints} fill="#ffffff" opacity={0.8} transform="scale(0.5)" />
         </svg>
+      )}
+
+      {telemetry && (
+        <div
+          aria-label={`Live signal on ${socket.label}`}
+          style={{
+            position: 'absolute',
+            left: isRight ? 10 : -10,
+            top: nudge.y,
+            transform: `translateY(-50%) ${isRight ? '' : 'translateX(-100%)'}`,
+            minWidth: 34,
+            padding: '1px 3px',
+            borderRadius: 3,
+            background: 'rgba(0,0,0,0.72)',
+            border: `1px solid ${telemetry.gain?.color ?? (telemetry.midi?.active ? '#ec4899' : themeColor)}`,
+            color: telemetry.gain?.color ?? (telemetry.midi?.active ? '#ec4899' : themeColor),
+            fontSize: 7,
+            fontFamily: 'monospace',
+            pointerEvents: 'none',
+            zIndex: 8
+          }}
+        >
+          {telemetry.midi?.active ? `MIDI ${telemetry.midi.note}` :
+           telemetry.gain?.formatted ?? (telemetry.trigger?.active ? 'TRIGGER' :
+           telemetry.osc?.active ? telemetry.osc.value.toFixed(2) :
+           telemetry.audioStereoLevels ? `${Math.round(Math.max(telemetry.audioStereoLevels.left, telemetry.audioStereoLevels.right) * 100)}%` : '')}
+        </div>
       )}
 
       {/* Socket Handle */}
