@@ -11,3 +11,4 @@ export * from "./node-graph-ui/index.js";
 export * from "./graph-2d/index.js";
 export * from "./predictive/index.js";
 export * from "./Viewer2DNodes.js";
+export * from "./frnl-editable-node-graph/index.js";
