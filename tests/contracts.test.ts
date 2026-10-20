@@ -3,7 +3,7 @@
  * @description Comprehensive Invariant & Semantic Verification Suite for Floks Component Contracts:
  * F1 → component registry
  * F2 → visual contracts
- * F3 → visual slots
+ * F3 → ThemePack visual-slot bindings
  * F4 → visual states
  * F5 → visual parameters
  * F6 → asset types
@@ -46,8 +46,8 @@ describe('Floks 04 — Component Contracts & Theta Compatibility Suite', () => {
     expect(ids.has('floks.node2d')).toBe(true);
   });
 
-  // ── F2 - F6: Visual Slots, States, Parameters & Assets ──
-  it('F2-F6: verifies explicit slots, states, parameters, and asset types on button contract', () => {
+  // ── F2 - F6: ThemePack visual-slot bindings, states, parameters & assets ──
+  it('F2-F6: verifies ThemePack visual bindings, states, parameters, and asset types on button contract', () => {
     const btn = getComponentContract('floks.button');
     expect(btn).toBeDefined();
     if (!btn) return;
