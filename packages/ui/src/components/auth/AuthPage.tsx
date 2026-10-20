@@ -1,21 +1,12 @@
-import React, { useState } from 'react';
+import React, { useId, useMemo, useState } from 'react';
 import { LogIn, UserPlus, Eye, EyeOff, Shield, ArrowRight, AlertCircle } from 'lucide-react';
+import { defineFrnlComponent } from '@ultrst-armada/frnlts';
+import { useFrnlComponent } from '@ultrst-armada/frnlts/react';
+import { useFloksFrnlStore } from '../../frnl/store.js';
+import { frnlButton } from '../../frnl/frnlButton.js';
+import { frnlTextInput } from '../../frnl/frnlTextInput.js';
 
-/**
- * @public
- * Canonical Auth Result contract.
- */
-export interface AuthResult {
-  success: boolean;
-  error?: string;
-  user?: unknown;
-  token?: string;
-}
-
-/**
- * @public
- * Canonical AuthPage Props for FLOKS reusable authentication page.
- */
+export interface AuthResult { success: boolean; error?: string; user?: unknown; token?: string; }
 export interface AuthPageProps {
   appName?: string;
   appSubtitle?: string;
@@ -26,11 +17,15 @@ export interface AuthPageProps {
   onSwitchToAdmin?: () => void;
 }
 
-/**
- * @public
- * Canonical FLOKS AuthPage section/page component.
- * Single source of truth for login/registration across DEPM, KRUSBL, and SKIPO apps.
- */
+export const authPageDefinition = defineFrnlComponent({
+  name: 'AuthPage',
+  states: {
+    idle: { name: 'idle', events: { login: { functionId: 'AuthPage.idle.login' }, register: { functionId: 'AuthPage.idle.register' } }, visualParameters: {}, phases: { sustainPhase: { visualDefinition: { parameters: {} } } } },
+    loading: { name: 'loading', events: {}, visualParameters: { opacity: 0.75 }, phases: { sustainPhase: { visualDefinition: { parameters: {} } } } },
+    error: { name: 'error', events: { retry: { functionId: 'AuthPage.error.retry' } }, visualParameters: {}, phases: { sustainPhase: { visualDefinition: { parameters: {} } } } },
+  },
+});
+
 export const AuthPage: React.FC<AuthPageProps> = ({
   appName = 'SKIPO',
   appSubtitle = 'WORKSPACE',
@@ -40,87 +35,74 @@ export const AuthPage: React.FC<AuthPageProps> = ({
   onSuccess,
   onSwitchToAdmin,
 }) => {
+  const store = useFloksFrnlStore();
+  const generated = useId().replace(/[:/]/g, '');
+  const componentId = `AuthPage.${generated}`;
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const handlers = useMemo(() => ({
+    'AuthPage.idle.login': () => {},
+    'AuthPage.idle.register': () => {},
+    'AuthPage.error.retry': () => setError(null),
+  }), []);
+  const frnl = useFrnlComponent({
+    id: componentId,
+    definition: authPageDefinition,
+    store,
+    state: error ? 'error' : loading ? 'loading' : 'idle',
+    properties: { mode, appName },
+    handlers,
+  });
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
     const cleanEmail = email.trim();
     if (!cleanEmail) return setError('Email address is required.');
     if (!password) return setError('Password is required.');
-    if (mode === 'register' && !name.trim()) return setError('Please enter your full name or display name.');
-    if (mode === 'register' && password.length < 4) return setError('Password must be at least 4 characters long.');
-    setLoading(true);
+    if (mode === 'register' && !name.trim()) return setError('Display name is required.');
+    setLoading(true); setError(null);
     try {
       const result = mode === 'login'
         ? await onLogin(cleanEmail, password)
         : await onRegister({ name: name.trim(), email: cleanEmail, password });
       if (!result.success) throw new Error(result.error || 'Authentication failed.');
       onSuccess?.(result);
-    } catch (err: any) {
-      setError(err?.message || 'An unexpected error occurred.');
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Authentication failed.');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen w-full bg-[var(--skipo-bg)] text-[var(--skipo-text)] font-mono flex flex-col justify-between select-none">
+    <div id={componentId} data-frnl-component="AuthPage" data-frnl-state={frnl.state} className="min-h-screen w-full bg-[var(--skipo-bg)] text-[var(--skipo-text)] font-mono flex flex-col justify-between">
       <header className="border-b-2 border-[var(--skipo-border-color)] bg-[var(--skipo-surface)] px-6 py-3.5 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-[var(--skipo-accent)] text-black font-black flex items-center justify-center border border-[var(--skipo-border-color)]">▲</div>
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-black uppercase tracking-wider">{appName}</span>
-              <span className="text-[10px] text-[var(--skipo-text-muted)] font-bold">{appSubtitle}</span>
-            </div>
-          </div>
-        </div>
-        {onSwitchToAdmin && (
-          <button type="button" onClick={onSwitchToAdmin} className="px-3 py-1.5 text-xs font-black uppercase tracking-wider border-2 border-[#D4AF37] bg-[#D4AF37]/10 text-[#D4AF37] hover:bg-[#D4AF37] hover:text-black flex items-center gap-1.5 shadow-[2px_2px_0px_#D4AF37]">
-            <Shield size={13} /> ADMIN LOGIN <ArrowRight size={13} />
-          </button>
-        )}
+        <div className="flex items-center gap-3"><div className="w-8 h-8 bg-[var(--skipo-accent)] text-black font-black flex items-center justify-center">▲</div><div><span className="text-sm font-black uppercase">{appName}</span><span className="ml-2 text-[10px] text-[var(--skipo-text-muted)]">{appSubtitle}</span></div></div>
+        {onSwitchToAdmin && <button type="button" onClick={onSwitchToAdmin} className="px-3 py-1.5 text-[10px] font-black border-2 border-[var(--skipo-accent)] text-[var(--skipo-accent)] flex items-center gap-1.5"><Shield size={13} /> ADMIN <ArrowRight size={13} /></button>}
       </header>
-
       <main className="flex-1 flex items-center justify-center p-4">
         <div className="w-full max-w-md border-2 border-[var(--skipo-border-color)] bg-[var(--skipo-surface)] shadow-[6px_6px_0px_var(--skipo-border-color)] p-6">
-          <div className="grid grid-cols-2 gap-2 mb-6 border-b border-[var(--skipo-border-color)] pb-3">
-            {(['login', 'register'] as const).map((next) => (
-              <button key={next} type="button" onClick={() => { setMode(next); setError(null); }}
-                className={`py-2 text-xs font-black uppercase tracking-wider flex items-center justify-center gap-1.5 border ${mode === next ? 'bg-[var(--skipo-accent)] text-black border-[var(--skipo-border-color)]' : 'bg-[var(--skipo-bg)] text-[var(--skipo-text-muted)] border-transparent'}`}>
-                {next === 'login' ? <LogIn size={13} /> : <UserPlus size={13} />}
-                {next === 'login' ? 'SIGN IN' : 'CREATE ACCOUNT'}
-              </button>
-            ))}
+          <div className="grid grid-cols-2 gap-2 mb-5">
+            <button type="button" onClick={() => { setMode('login'); setError(null); }} className={`py-2 text-[10px] font-black border ${mode === 'login' ? 'bg-[var(--skipo-accent)] text-black' : 'bg-[var(--skipo-bg)]'}`}><LogIn size={13} className="inline mr-1" /> SIGN IN</button>
+            <button type="button" onClick={() => { setMode('register'); setError(null); }} className={`py-2 text-[10px] font-black border ${mode === 'register' ? 'bg-[var(--skipo-accent)] text-black' : 'bg-[var(--skipo-bg)]'}`}><UserPlus size={13} className="inline mr-1" /> CREATE ACCOUNT</button>
           </div>
-
-          <div className="mb-4">
-            <h2 className="text-sm font-black uppercase tracking-wider">{mode === 'login' ? 'WORKSPACE SIGN IN' : 'NEW DEVELOPER ACCOUNT'}</h2>
-            <p className="text-xs text-[var(--skipo-text-muted)] mt-1">{mode === 'login' ? 'Sign in to access your workspaces and application control plane.' : 'Create an account to manage your workspaces and applications.'}</p>
-          </div>
-
-          {error && <div className="mb-4 p-3 border-2 border-red-500/80 bg-red-950/40 text-red-300 text-xs flex items-start gap-2"><AlertCircle size={15} className="shrink-0 mt-0.5" /><div>{error}</div></div>}
-
-          <form onSubmit={submit} className="space-y-4">
-            {mode === 'register' && <div><label className="block text-[11px] font-bold text-[var(--skipo-text-muted)] uppercase tracking-wider mb-1">Full Name</label><input value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Jane Developer" required className="w-full bg-[var(--skipo-bg)] border border-[var(--skipo-border-color)] focus:border-[var(--skipo-accent)] text-[var(--skipo-text)] text-xs px-3 py-2.5 outline-none font-mono" /></div>}
-            <div><label className="block text-[11px] font-bold text-[var(--skipo-text-muted)] uppercase tracking-wider mb-1">Email Address or Username</label><input value={email} onChange={e => setEmail(e.target.value)} placeholder="e.g. developer@example.com" autoComplete="username" required className="w-full bg-[var(--skipo-bg)] border border-[var(--skipo-border-color)] focus:border-[var(--skipo-accent)] text-[var(--skipo-text)] text-xs px-3 py-2.5 outline-none font-mono" /></div>
-            <div><label className="block text-[11px] font-bold text-[var(--skipo-text-muted)] uppercase tracking-wider mb-1">Password</label><div className="relative"><input type={showPassword ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} autoComplete={mode === 'login' ? 'current-password' : 'new-password'} required className="w-full bg-[var(--skipo-bg)] border border-[var(--skipo-border-color)] focus:border-[var(--skipo-accent)] text-[var(--skipo-text)] text-xs px-3 py-2.5 outline-none font-mono pr-10" /><button type="button" onClick={() => setShowPassword(v => !v)} className="absolute right-3 top-2.5 text-[var(--skipo-text-muted)]">{showPassword ? <EyeOff size={14} /> : <Eye size={14} />}</button></div></div>
-            <button type="submit" disabled={loading} className="w-full py-2.5 bg-[var(--skipo-accent)] hover:opacity-90 text-black font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-[2px_2px_0px_#000] disabled:opacity-50">
-              <LogIn size={14} /> {loading ? 'PROCESSING...' : mode === 'login' ? 'SIGN IN TO WORKSPACE' : 'CREATE ACCOUNT'}
-            </button>
+          {error && <div className="mb-4 p-3 border-2 border-red-500/80 bg-red-950/30 text-red-300 text-xs flex items-center gap-2"><AlertCircle size={14} />{error}</div>}
+          <form onSubmit={submit} className="space-y-3">
+            {mode === 'register' && React.createElement(frnlTextInput, { id: componentId + '.name', label: 'Full Name', value: name, onChange: (e: React.ChangeEvent<HTMLInputElement>) => setName(e.target.value) })}
+            {React.createElement(frnlTextInput, { id: componentId + '.email', label: 'Email Address', value: email, onChange: (e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value), type: 'email', autoComplete: 'username' })}
+            <div>
+              {React.createElement(frnlTextInput, { id: componentId + '.password', label: 'Password', value: password, onChange: (e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value), type: showPassword ? 'text' : 'password', autoComplete: mode === 'login' ? 'current-password' : 'new-password', trailingIcon: <button type="button" aria-label="Toggle password visibility" onClick={() => setShowPassword((v) => !v)}>{showPassword ? <EyeOff size={13} /> : <Eye size={13} />}</button> })}
+            </div>
+            {React.createElement(frnlButton, { type: 'submit', disabled: loading, loading, variant: 'accent', size: 'lg', className: 'w-full', icon: <ArrowRight size={13} /> }, mode === 'login' ? 'SIGN IN TO WORKSPACE' : 'CREATE ACCOUNT')}
           </form>
-
-          {onSwitchToAdmin && <div className="mt-6 pt-4 border-t border-[var(--skipo-border-color)] flex items-center justify-between text-[11px] text-[var(--skipo-text-muted)]"><span>System Administrator?</span><button type="button" onClick={onSwitchToAdmin} className="text-[#D4AF37] hover:underline font-bold flex items-center gap-1">Switch to Admin Portal <ArrowRight size={11} /></button></div>}
+          <p className="mt-5 pt-3 border-t border-[var(--skipo-border-color)] text-center text-[10px] text-[var(--skipo-text-muted)]">{footerText || `${appName} WORKSPACE SYSTEM`}</p>
         </div>
       </main>
-      <footer className="border-t border-[var(--skipo-border-color)] py-2 px-4 text-center text-[10px] text-[var(--skipo-text-muted)]">{footerText || `${appName} WORKSPACE SYSTEM`}</footer>
     </div>
   );
 };
