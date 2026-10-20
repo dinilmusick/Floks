@@ -9,6 +9,7 @@ import {
   WorkspaceTilesMenu,
   workspaceTilesMenuDefinition,
   WorkspaceCreateDialog,
+  createKloksWorkspaceStorageService,
   GraphsMenu,
 } from '../packages/ui/src/index.js';
 import { floksFrnlStore } from '../packages/ui/src/frnl/store.js';
@@ -72,6 +73,21 @@ describe('reusable application modules', () => {
     fireEvent.change(screen.getByLabelText('Backblaze account'), { target: { value: 'acct-1' } });
     expect(await screen.findByText('workspace-bucket')).toBeInTheDocument();
     expect(calls).toEqual(['accounts:user-1', 'buckets:acct-1']);
+  });
+
+  it('adapts the canonical Kloks SRKL service into the workspace storage contract', async () => {
+    const calls: unknown[] = [];
+    const service = createKloksWorkspaceStorageService({
+      invoke: async (...args) => {
+        calls.push(args);
+        return args[1] === 'getAccounts'
+          ? { accounts: [{ id: 'acct-1', name: 'B2' }] }
+          : { buckets: [{ bucketName: 'workspace-bucket' }] };
+      },
+    });
+    expect(await service.listBackblazeAccounts('user-1')).toHaveLength(1);
+    expect(await service.listBackblazeBuckets('acct-1', 'user-1')).toHaveLength(1);
+    expect(calls[1]).toEqual(['srkl', 'listBackblazeBuckets', { accountId: 'acct-1', userId: 'user-1' }]);
   });
 
   it('renders the workspace menu with the reusable creation flow', () => {
