@@ -79,6 +79,16 @@
       "import": "./dist/frnl/index.js",
       "types": "./dist/frnl/index.d.ts",
       "default": "./dist/frnl/index.js"
+    },
+    "./tiles": {
+      "import": "./dist/components/tiles/index.js",
+      "types": "./dist/components/tiles/index.d.ts",
+      "default": "./dist/components/tiles/index.js"
+    },
+    "./graphs": {
+      "import": "./dist/components/graph/index.js",
+      "types": "./dist/components/graph/index.d.ts",
+      "default": "./dist/components/graph/index.js"
     }
   },
   "scripts": {
