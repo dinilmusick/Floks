@@ -78,7 +78,7 @@ export function WorkspaceTilesMenu({
   return (
     <section id={componentId} data-frnl-component="workspaceTilesMenu" data-frnl-state={frnl.state} className="space-y-3">
       <div className="flex justify-end gap-2">
-        {onLogout && <button type="button" onClick={() => frnl.events.logout()} className="h-8 px-3 border border-red-500/60 text-red-300 text-[10px] font-black flex items-center gap-1"><LogOut size={12} /> LOGOUT</button>}
+        {onLogout && <button type="button" onClick={() => frnl.events.logout(undefined)} className="h-8 px-3 border border-red-500/60 text-red-300 text-[10px] font-black flex items-center gap-1"><LogOut size={12} /> LOGOUT</button>}
       </div>
       <TilesMenu
         id={componentId + '.tiles'}
