@@ -8,35 +8,27 @@ import * as FloksUI from '../packages/ui/dist/index.js';
 import * as FloksCanvasUI from '../packages/canvas-ui/dist/index.js';
 
 describe('Floks Public Frontend & UI Package Library (@floks/*)', () => {
-  it('exports @floks/ui base primitives, containers, composite, layout, hierarchy, and theme engine', () => {
+  it('exports canonical React components plus FrnlTS runtime integration', () => {
     expect(FloksUI.BaseButton).toBeDefined();
     expect(FloksUI.BaseInput).toBeDefined();
-    expect(FloksUI.BaseSelect).toBeDefined();
     expect(FloksUI.ModalContainer).toBeDefined();
-    expect(FloksUI.DrawerContainer).toBeDefined();
-    expect(FloksUI.FloatingDetailsPanel).toBeDefined();
-    expect(FloksUI.ConfirmDialog).toBeDefined();
-    expect(FloksUI.EmptyState).toBeDefined();
-    expect(FloksUI.AppShell).toBeDefined();
-    expect(FloksUI.TopToolbar).toBeDefined();
-    expect(FloksUI.BottomStrip).toBeDefined();
     expect(FloksUI.WorkspaceTilesMenu).toBeDefined();
-    // Generalized UI Hierarchy, FrnlTS Integration & Palette Engine
     expect(FloksUI.floksFrnlStore).toBeDefined();
     expect(FloksUI.FrnlStoreProvider).toBeDefined();
     expect(FloksUI.useFloksFrnlStore).toBeDefined();
-    expect(FloksUI.ButtonParent).toBeDefined();
-    expect(FloksUI.PanelParent).toBeDefined();
-    expect(FloksUI.SliderInput).toBeDefined();
-    expect(FloksUI.TextInput).toBeDefined();
-    expect(FloksUI.SelectInput).toBeDefined();
-    expect(FloksUI.ToggleInput).toBeDefined();
-    expect(FloksUI.TileParent).toBeDefined();
-    expect(FloksUI.Badge).toBeDefined();
-    expect(FloksUI.TelemetryPill).toBeDefined();
-    expect(FloksUI.StatusDot).toBeDefined();
-    expect(FloksUI.ThemeProvider).toBeDefined();
-    expect(FloksUI.usePalette).toBeDefined();
+
+    expect(FloksUI.frnlButton).toBeDefined();
+    expect(FloksUI.frnlTextInput).toBeDefined();
+    expect(FloksUI.frnlSelect).toBeDefined();
+    expect(FloksUI.frnlToggle).toBeDefined();
+    expect(FloksUI.frnlSlider).toBeDefined();
+    expect(FloksUI.frnlBadge).toBeDefined();
+    expect(FloksUI.frnlTabWindow).toBeDefined();
+    expect(FloksUI.frnlTopBar).toBeDefined();
+    expect(FloksUI.frnlBottomBar).toBeDefined();
+    expect(FloksUI.frnlPage).toBeDefined();
+    expect(FloksUI.ButtonParent).toBeUndefined();
+    expect(FloksUI.PanelParent).toBeUndefined();
   });
 
   it('exports @floks/canvas-ui visual canvas, dock, tile-menu, editor, 2D node graph, and predictive components', () => {
