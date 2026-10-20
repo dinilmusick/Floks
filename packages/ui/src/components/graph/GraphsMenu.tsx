@@ -4,6 +4,8 @@ import { TilesMenu, type FrnlTileRecord } from '../tiles/TilesMenu.js';
 import { frnlNodeGraph, type FrnlNodeGraphNode, type FrnlNodeGraphEdge } from '../../frnl/frnlNodeGraph.js';
 import { frnlForceGraph, type FrnlForceGraphNode, type FrnlForceGraphLink } from '../../frnl/frnlForceGraph.js';
 
+export const GRAPHS_MENU_REQUIRED_SERVICES = ['workspace'] as const;
+
 export interface GraphRecord extends FrnlTileRecord {
   kind?: 'editable' | 'force';
   nodes?: FrnlNodeGraphNode[];
