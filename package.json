@@ -4,7 +4,8 @@
   "private": false,
   "publishConfig": {
     "access": "public",
-    "registry": "https://registry.npmjs.org/"
+    "registry": "https://registry.npmjs.org/",
+    "provenance": true
   },
   "description": "Floks — Public Frontend, 2D Graph & UI Package Library (@floks/*)",
   "type": "module",
@@ -18,7 +19,8 @@
     "packages/*/src/theme/tokens.css",
     "packages/*/src/styles/**",
     "packages/*/package.json",
-    "packages/*/floks.manifest.json"
+    "packages/*/floks.manifest.json",
+    ".krusbl-release-attestation.json"
   ],
   "exports": {
     ".": {
