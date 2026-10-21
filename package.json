@@ -4,8 +4,7 @@
   "private": false,
   "publishConfig": {
     "access": "public",
-    "registry": "https://registry.npmjs.org/",
-    "provenance": true
+    "registry": "https://registry.npmjs.org/"
   },
   "description": "Floks — Public Frontend, 2D Graph & UI Package Library (@floks/*)",
   "type": "module",
