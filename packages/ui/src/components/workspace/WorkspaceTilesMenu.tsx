@@ -4,13 +4,19 @@ import { defineFrnlComponent } from '@ultrst-armada/frnlts';
 import { useFrnlComponent } from '@ultrst-armada/frnlts/react';
 import { useFloksFrnlStore } from '../../frnl/store.js';
 import { TilesMenu } from '../tiles/TilesMenu.js';
-import { WorkspaceCreateDialog, type WorkspaceCreateInput, type WorkspaceStorageService } from './WorkspaceCreateDialog.js';
+import {
+  WorkspaceCreateDialog,
+  type WorkspaceCreateInput,
+  type WorkspaceStorageService,
+  defaultWorkspaceStorageService,
+} from './WorkspaceCreateDialog.js';
 
 export const WORKSPACE_TILES_MENU_REQUIRED_SERVICES = ['auth', 'workspace', 'storage', 'srkl'] as const;
 
 export interface WorkspaceRecord {
   id: string;
   title: string;
+  name?: string;
   description?: string;
   workspacePath?: string;
   storageProvider?: string;
@@ -18,18 +24,21 @@ export interface WorkspaceRecord {
   b2BucketName?: string;
   b2Endpoint?: string;
   b2Region?: string;
+  localFolderName?: string;
   metadata?: React.ReactNode;
 }
 
 export interface WorkspaceTilesMenuProps {
   workspaces: WorkspaceRecord[];
-  userId: string;
+  userId?: string;
+  currentUser?: { id: string; email: string; name?: string } | null;
   activeWorkspaceId?: string | null;
-  storageService: WorkspaceStorageService;
+  appName?: string;
+  storageService?: WorkspaceStorageService;
   onSelectWorkspace: (workspace: WorkspaceRecord) => void;
-  onCreateWorkspace: (input: WorkspaceCreateInput) => Promise<void>;
-  onUpdateWorkspace?: (workspaceId: string, patch: { name: string; description?: string }) => Promise<void>;
-  onDeleteWorkspace?: (workspaceId: string) => Promise<void>;
+  onCreateWorkspace: (input: WorkspaceCreateInput | any) => Promise<void> | void;
+  onUpdateWorkspace?: (workspaceId: string, patch: { name: string; description?: string }) => Promise<void> | void;
+  onDeleteWorkspace?: (workspaceId: string) => Promise<void> | void;
   onLogout?: () => void;
   loading?: boolean;
   error?: string | null;
@@ -47,8 +56,10 @@ export const workspaceTilesMenuDefinition = defineFrnlComponent({
 export function WorkspaceTilesMenu({
   workspaces,
   userId,
+  currentUser,
   activeWorkspaceId = null,
-  storageService,
+  appName = 'Workspaces',
+  storageService = defaultWorkspaceStorageService,
   onSelectWorkspace,
   onCreateWorkspace,
   onUpdateWorkspace: _onUpdateWorkspace,
@@ -58,6 +69,7 @@ export function WorkspaceTilesMenu({
   error = null,
 }: WorkspaceTilesMenuProps) {
   const store = useFloksFrnlStore();
+  const effectiveUserId = userId || currentUser?.id || 'system';
   const generated = useId().replace(/[:/]/g, '');
   const componentId = `workspaceTilesMenu.${generated}`;
   const [creating, setCreating] = useState(false);
@@ -92,13 +104,13 @@ export function WorkspaceTilesMenu({
         onCreate={() => frnl.events.create(undefined)}
         renderTile={(ws, selected) => (
           <>
-            <div className="flex items-center gap-2 text-xs font-black uppercase">{ws.storageProvider === 'backblaze_b2' ? <Cloud size={14} /> : <HardDrive size={14} />}{ws.title}</div>
+            <div className="flex items-center gap-2 text-xs font-black uppercase">{ws.storageProvider === 'backblaze_b2' ? <Cloud size={14} /> : <HardDrive size={14} />}{ws.title || ws.name || 'Workspace'}</div>
             <p className="mt-2 text-[11px] text-[var(--skipo-text-muted)]">{ws.description}</p>
-            <div className={`mt-2 text-[10px] ${selected || ws.id === activeWorkspaceId ? 'text-[var(--skipo-accent)]' : 'text-[var(--skipo-text-muted)]'}`}><FolderOpen size={11} className="inline mr-1" />{ws.workspacePath ?? ws.b2BucketName ?? ws.id}</div>
+            <div className={`mt-2 text-[10px] ${selected || ws.id === activeWorkspaceId ? 'text-[var(--skipo-accent)]' : 'text-[var(--skipo-text-muted)]'}`}><FolderOpen size={11} className="inline mr-1" />{ws.workspacePath ?? ws.b2BucketName ?? ws.localFolderName ?? ws.id}</div>
           </>
         )}
       />
-      <WorkspaceCreateDialog open={creating} userId={userId} storageService={storageService} onClose={() => setCreating(false)} onSubmit={onCreateWorkspace} />
+      <WorkspaceCreateDialog open={creating} userId={effectiveUserId} currentUser={currentUser} storageService={storageService} onClose={() => setCreating(false)} onSubmit={onCreateWorkspace} />
     </section>
   );
 }

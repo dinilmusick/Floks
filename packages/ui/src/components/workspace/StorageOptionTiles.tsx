@@ -20,26 +20,41 @@ export interface StorageSelection {
 
 interface Props {
   currentUser?: { id: string; email: string; name?: string } | null;
+  userId?: string;
   selectedProvider?: string;
   selectedConnectionId?: string;
+  storageService?: {
+    listBackblazeAccounts?: (userId: string) => Promise<any[]>;
+    listBackblazeBuckets?: (accountId: string, userId: string) => Promise<any[]>;
+  };
   onSelectStorage: (selection: StorageSelection) => void;
 }
 
 export const StorageOptionTiles: React.FC<Props> = ({
   currentUser,
+  userId,
   selectedConnectionId,
+  storageService,
   onSelectStorage,
 }) => {
   const [activeId, setActiveId] = useState<string>(selectedConnectionId || 'local_default');
   const [selectedBucket, setSelectedBucket] = useState<string>('');
   const [srklAccounts, setSrklAccounts] = useState<SrklBackblazeAccount[]>([]);
   const [loadingSrkl, setLoadingSrkl] = useState(false);
+  const effectiveUserId = currentUser?.id || userId || '';
 
   const fetchSrklAccounts = useCallback(async () => {
-    if (!currentUser?.id) return;
+    if (!effectiveUserId) return;
     setLoadingSrkl(true);
     try {
-      const uId = encodeURIComponent(currentUser.id);
+      if (storageService?.listBackblazeAccounts) {
+        const accs = await storageService.listBackblazeAccounts(effectiveUserId);
+        if (Array.isArray(accs) && accs.length > 0) {
+          setSrklAccounts(accs);
+          return;
+        }
+      }
+      const uId = encodeURIComponent(effectiveUserId);
       const res = await fetch(`/api/srkl/accounts?service=backblaze&userId=${uId}`);
       const data = await res.json().catch(() => ({}));
       if (data.success && Array.isArray(data.accounts)) {
@@ -50,7 +65,7 @@ export const StorageOptionTiles: React.FC<Props> = ({
     } finally {
       setLoadingSrkl(false);
     }
-  }, [currentUser?.id]);
+  }, [effectiveUserId, storageService]);
 
   useEffect(() => {
     fetchSrklAccounts();
@@ -131,7 +146,8 @@ export const StorageOptionTiles: React.FC<Props> = ({
             selectedBucketName={selectedBucket}
             isSelectedAccount={account.id === activeId}
             onSelectBucket={handleSelectSrklBucket}
-            userId={currentUser?.id}
+            userId={effectiveUserId}
+            storageService={storageService}
           />
         ))}
       </div>

@@ -13,6 +13,7 @@ export interface AuthPageProps {
   appName?: string;
   appSubtitle?: string;
   footerText?: string;
+  appIcon?: string | React.ReactNode;
   onLogin: (email: string, password: string) => Promise<AuthResult>;
   onRegister: (input: { name: string; email: string; password: string }) => Promise<AuthResult>;
   onSuccess?: (result: AuthResult) => void;
@@ -32,6 +33,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
   appName = 'SKIPO',
   appSubtitle = 'WORKSPACE',
   footerText,
+  appIcon,
   onLogin,
   onRegister,
   onSuccess,
@@ -47,6 +49,9 @@ export const AuthPage: React.FC<AuthPageProps> = ({
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [iconError, setIconError] = useState(false);
+  const iconSrc = typeof appIcon === 'string' ? appIcon : '/src/frontend/assets/app-icon.svg';
+
   const handlers = useMemo(() => ({
     'AuthPage.idle.login': () => {},
     'AuthPage.idle.register': () => {},
@@ -82,13 +87,40 @@ export const AuthPage: React.FC<AuthPageProps> = ({
   };
 
   return (
-    <div id={componentId} data-frnl-component="AuthPage" data-frnl-state={frnl.state} className="min-h-screen w-full bg-[var(--skipo-bg)] text-[var(--skipo-text)] font-mono flex flex-col justify-between">
-      <header className="border-b-2 border-[var(--skipo-border-color)] bg-[var(--skipo-surface)] px-6 py-3.5 flex items-center justify-between">
-        <div className="flex items-center gap-3"><div className="w-8 h-8 bg-[var(--skipo-accent)] text-black font-black flex items-center justify-center">▲</div><div><span className="text-sm font-black uppercase">{appName}</span><span className="ml-2 text-[10px] text-[var(--skipo-text-muted)]">{appSubtitle}</span></div></div>
+    <div
+      id={componentId}
+      data-frnl-component="AuthPage"
+      data-frnl-state={frnl.state}
+      className="min-h-screen h-screen w-screen bg-[var(--skipo-bg)] text-[var(--skipo-text)] font-mono flex flex-col justify-between overflow-hidden"
+      style={{ minHeight: '100vh', height: '100vh', width: '100vw' }}
+    >
+      <header className="border-b-2 border-[var(--skipo-border-color)] bg-[var(--skipo-surface)] px-6 py-3.5 flex items-center justify-between shrink-0">
+        <div className="flex items-center gap-3">
+          {appIcon && typeof appIcon !== 'string' ? (
+            <div className="w-8 h-8 shrink-0 flex items-center justify-center">{appIcon}</div>
+          ) : !iconError ? (
+            <div className="w-8 h-8 shrink-0 flex items-center justify-center overflow-hidden rounded bg-[var(--skipo-surface)] border border-[var(--skipo-border-color)]">
+              <img
+                src={iconSrc}
+                alt={appName}
+                className="w-6 h-6 object-contain shrink-0"
+                onError={() => setIconError(true)}
+              />
+            </div>
+          ) : (
+            <div className="w-8 h-8 shrink-0 bg-[var(--skipo-accent)] text-black font-black flex items-center justify-center text-xs rounded select-none">
+              ▲
+            </div>
+          )}
+          <div>
+            <span className="text-sm font-black uppercase tracking-wider">{appName}</span>
+            <span className="ml-2 text-[10px] text-[var(--skipo-text-muted)] tracking-tight">{appSubtitle}</span>
+          </div>
+        </div>
         {onSwitchToAdmin && <button type="button" onClick={onSwitchToAdmin} className="px-3 py-1.5 text-[10px] font-black border-2 border-[var(--skipo-accent)] text-[var(--skipo-accent)] flex items-center gap-1.5"><Shield size={13} /> ADMIN <ArrowRight size={13} /></button>}
       </header>
-      <main className="flex-1 flex items-center justify-center p-4">
-        <div className="w-full max-w-md border-2 border-[var(--skipo-border-color)] bg-[var(--skipo-surface)] shadow-[6px_6px_0px_var(--skipo-border-color)] p-6">
+      <main className="flex-1 flex items-center justify-center p-4 overflow-auto">
+        <div className="w-full max-w-md border-2 border-[var(--skipo-border-color)] bg-[var(--skipo-surface)] shadow-[6px_6px_0px_var(--skipo-border-color)] p-6 my-auto">
           <div className="grid grid-cols-2 gap-2 mb-5">
             <button type="button" onClick={() => { setMode('login'); setError(null); }} className={`py-2 text-[10px] font-black border ${mode === 'login' ? 'bg-[var(--skipo-accent)] text-black' : 'bg-[var(--skipo-bg)]'}`}><LogIn size={13} className="inline mr-1" /> SIGN IN</button>
             <button type="button" onClick={() => { setMode('register'); setError(null); }} className={`py-2 text-[10px] font-black border ${mode === 'register' ? 'bg-[var(--skipo-accent)] text-black' : 'bg-[var(--skipo-bg)]'}`}><UserPlus size={13} className="inline mr-1" /> CREATE ACCOUNT</button>

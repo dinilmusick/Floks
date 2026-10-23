@@ -26,6 +26,9 @@ interface Props {
   isSelectedAccount: boolean;
   onSelectBucket: (account: SrklBackblazeAccount, bucketName: string) => void;
   userId?: string;
+  storageService?: {
+    listBackblazeBuckets?: (accountId: string, userId: string) => Promise<any[]>;
+  };
 }
 
 export const SrklBackblazeTile: React.FC<Props> = ({
@@ -34,6 +37,7 @@ export const SrklBackblazeTile: React.FC<Props> = ({
   isSelectedAccount,
   onSelectBucket,
   userId,
+  storageService,
 }) => {
   const [buckets, setBuckets] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -41,6 +45,13 @@ export const SrklBackblazeTile: React.FC<Props> = ({
   const fetchBuckets = async () => {
     setLoading(true);
     try {
+      if (storageService?.listBackblazeBuckets) {
+        const res = await storageService.listBackblazeBuckets(account.id, userId || '');
+        if (Array.isArray(res) && res.length > 0) {
+          setBuckets(res);
+          return;
+        }
+      }
       const creds = account.credentials || (account as any).metadata?.credentials || {};
       const keyId = creds.keyId || creds.b2KeyId || '';
       const applicationKey = creds.applicationKey || creds.b2ApplicationKey || '';
@@ -49,7 +60,7 @@ export const SrklBackblazeTile: React.FC<Props> = ({
       const res = await fetch('/api/srkl/backblaze/buckets', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ keyId, applicationKey, userId, bucketName: defaultBucket }),
+        body: JSON.stringify({ accountId: account.id, keyId, applicationKey, userId, bucketName: defaultBucket }),
       });
       const data = await res.json().catch(() => ({}));
       if (data.success && Array.isArray(data.buckets)) {

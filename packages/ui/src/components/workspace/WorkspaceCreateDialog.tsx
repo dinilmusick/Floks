@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Cloud, HardDrive, Loader2 } from 'lucide-react';
+import { Cloud, HardDrive, Loader2, CheckCircle2 } from 'lucide-react';
 
 export const WORKSPACE_CREATE_DIALOG_REQUIRED_SERVICES = ['workspace', 'storage', 'srkl'] as const;
 
@@ -19,8 +19,34 @@ export interface BackblazeAccount {
 
 export interface WorkspaceStorageService {
   listBackblazeAccounts: (userId: string) => Promise<BackblazeAccount[]>;
-  listBackblazeBuckets: (accountId: string, userId: string) => Promise<BackblazeBucket[]>;
+  listBackblazeBuckets: (accountId: string, userId?: string) => Promise<BackblazeBucket[]>;
 }
+
+export const defaultWorkspaceStorageService: WorkspaceStorageService = {
+  listBackblazeAccounts: async (userId: string) => {
+    try {
+      const uId = encodeURIComponent(userId);
+      const res = await fetch(`/api/srkl/accounts?service=backblaze&userId=${uId}`);
+      const data = await res.json().catch(() => ({}));
+      return Array.isArray(data?.accounts) ? data.accounts : [];
+    } catch {
+      return [];
+    }
+  },
+  listBackblazeBuckets: async (accountId: string, userId?: string) => {
+    try {
+      const res = await fetch('/api/srkl/backblaze/buckets', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ accountId, userId }),
+      });
+      const data = await res.json().catch(() => ({}));
+      return Array.isArray(data?.buckets) ? data.buckets : [];
+    } catch {
+      return [];
+    }
+  },
+};
 
 export interface KloksServiceInvoker {
   invoke: (serviceId: string, operation: string, input: Record<string, unknown>) => Promise<unknown>;
@@ -42,6 +68,7 @@ export function createKloksWorkspaceStorageService(invoker: KloksServiceInvoker)
 export interface WorkspaceCreateInput {
   name: string;
   description?: string;
+  storage?: Record<string, unknown>;
   storageProvider: 'local_fs' | 'backblaze_b2';
   storageConnectionId?: string;
   localFolderName?: string;
@@ -52,13 +79,21 @@ export interface WorkspaceCreateInput {
 
 export interface WorkspaceCreateDialogProps {
   open: boolean;
-  userId: string;
-  storageService: WorkspaceStorageService;
+  userId?: string;
+  currentUser?: { id: string; email: string; name?: string } | null;
+  storageService?: WorkspaceStorageService;
   onClose: () => void;
-  onSubmit: (input: WorkspaceCreateInput) => Promise<void>;
+  onSubmit: (input: WorkspaceCreateInput) => Promise<void> | void;
 }
 
-export function WorkspaceCreateDialog({ open, userId, storageService, onClose, onSubmit }: WorkspaceCreateDialogProps) {
+export function WorkspaceCreateDialog({
+  open,
+  userId = 'system',
+  currentUser,
+  storageService = defaultWorkspaceStorageService,
+  onClose,
+  onSubmit,
+}: WorkspaceCreateDialogProps) {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [provider, setProvider] = useState<'local_fs' | 'backblaze_b2'>('local_fs');
@@ -69,21 +104,22 @@ export function WorkspaceCreateDialog({ open, userId, storageService, onClose, o
   const [loading, setLoading] = useState(false);
   const [loadingBuckets, setLoadingBuckets] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const effectiveUserId = userId || currentUser?.id || 'system';
 
   useEffect(() => {
-    if (!open || !userId) return;
+    if (!open || !effectiveUserId) return;
     setError(null);
-    storageService.listBackblazeAccounts(userId).then(setAccounts).catch((e) => setError(e instanceof Error ? e.message : 'Failed to load SRKL accounts.'));
-  }, [open, userId, storageService]);
+    storageService.listBackblazeAccounts(effectiveUserId).then(setAccounts).catch((e) => setError(e instanceof Error ? e.message : 'Failed to load SRKL accounts.'));
+  }, [open, effectiveUserId, storageService]);
 
   useEffect(() => {
     if (provider !== 'backblaze_b2' || !accountId) return;
     setLoadingBuckets(true);
-    storageService.listBackblazeBuckets(accountId, userId).then((items) => {
+    storageService.listBackblazeBuckets(accountId, effectiveUserId).then((items) => {
       setBuckets(items);
       setBucketName('');
     }).catch((e) => setError(e instanceof Error ? e.message : 'Failed to load Backblaze buckets.')).finally(() => setLoadingBuckets(false));
-  }, [provider, accountId, storageService]);
+  }, [provider, accountId, effectiveUserId, storageService]);
 
   if (!open) return null;
 
@@ -94,9 +130,18 @@ export function WorkspaceCreateDialog({ open, userId, storageService, onClose, o
     setLoading(true);
     try {
       const account = accounts.find((a) => a.id === accountId);
+      const storageObj = {
+        provider,
+        connectionId: accountId || undefined,
+        b2BucketName: provider === 'backblaze_b2' ? bucketName : undefined,
+        b2Endpoint: account?.credentials?.endpoint,
+        b2Region: account?.credentials?.region,
+        localFolderName: provider === 'local_fs' ? name.trim() : undefined,
+      };
       await onSubmit({
         name: name.trim(),
         description: description.trim() || undefined,
+        storage: storageObj,
         storageProvider: provider,
         storageConnectionId: accountId || undefined,
         localFolderName: provider === 'local_fs' ? name.trim() : undefined,
@@ -136,10 +181,10 @@ export function WorkspaceCreateDialog({ open, userId, storageService, onClose, o
               {accounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
             </select>
             {loadingBuckets ? <div className="text-xs flex items-center gap-2"><Loader2 size={13} className="animate-spin" /> Loading buckets...</div> :
-              <select aria-label="Backblaze bucket" value={bucketName} onChange={(e) => setBucketName(e.target.value)} className="w-full h-9 bg-[var(--skipo-bg)] border border-[var(--skipo-border-color)] px-2 text-xs">
-                <option value="">Select bucket</option>
-                {buckets.map((b) => { const n = b.bucketName ?? b.name ?? ''; return <option key={b.bucketId ?? b.id ?? n} value={n}>{n}</option>; })}
-              </select>}
+                <select aria-label="Backblaze bucket" value={bucketName} onChange={(e) => setBucketName(e.target.value)} className="w-full h-9 bg-[var(--skipo-bg)] border border-[var(--skipo-border-color)] px-2 text-xs">
+                  <option value="">Select bucket</option>
+                  {buckets.map((b) => { const n = b.bucketName ?? b.name ?? ''; return <option key={b.bucketId ?? b.id ?? n} value={n}>{n}</option>; })}
+                </select>}
           </div>}
         </div>
         <div className="mt-5 flex justify-end gap-2">
