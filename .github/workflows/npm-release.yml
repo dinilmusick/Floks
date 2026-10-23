@@ -239,7 +239,10 @@ jobs:
               },
             }),
           });
-          if (!response.ok) throw new Error('Skipo dispatch failed [' + response.status + ']: ' + await response.text());
-          console.log('Notified Skipo about ' + pkg.name + '@' + pkg.version);
+          if (!response.ok) {
+            console.warn('Skipo dispatch notification warning [' + response.status + ']: ' + await response.text());
+          } else {
+            console.log('Notified Skipo about ' + pkg.name + '@' + pkg.version);
+          }
           NODE
 
