@@ -1,12 +1,16 @@
 'use client';
 import { useEffect, useRef } from 'react';
-import { MonacoIdeServiceFacade } from '@ultrst-armada/kloks/services';
 import { useMonaco } from './useMonaco.js';
 import type { EditorConfig } from './types.js';
+
+export interface MonacoIdeServicePort {
+  execute<TIn = unknown, TOut = unknown>(operation: string, input?: TIn): Promise<TOut>;
+}
 
 export interface MonacoEditorProps extends EditorConfig {
   sessionId?: string;
   uri?: string;
+  ideService?: MonacoIdeServicePort;
   onChange?: (value: string) => void;
   height?: string | number;
   width?: string | number;
@@ -14,16 +18,18 @@ export interface MonacoEditorProps extends EditorConfig {
 
 export function MonacoEditor({
   value, language = 'javascript', readOnly = false, minimap = false, theme = 'skipo-dark',
-  fontSize = 14, sessionId, uri, onChange, height = '100%', width = '100%',
+  fontSize = 14, sessionId, uri, ideService, onChange, height = '100%', width = '100%',
 }: MonacoEditorProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const editorRef = useRef<any>(null);
   const sessionRef = useRef<string | undefined>(sessionId);
   const monaco = useMonaco();
+  const service = ideService || { execute: async () => undefined };
+
 
   useEffect(() => {
     if (!sessionRef.current) sessionRef.current = sessionId || `editor-${Date.now().toString(36)}`;
-    void MonacoIdeServiceFacade.execute('createSession', {
+    void service.execute('createSession', {
       sessionId: sessionRef.current, uri: uri || `inmemory://${sessionRef.current}`, language, value,
       options: { readOnly, minimap, fontSize },
     });
@@ -38,7 +44,7 @@ export function MonacoEditor({
       });
       editorRef.current.onDidChangeModelContent(() => {
         const nextValue = editorRef.current.getValue();
-        void MonacoIdeServiceFacade.execute('updateDocument', {
+        void service.execute('updateDocument', {
           sessionId: sessionRef.current, value: nextValue, language,
         });
         onChange?.(nextValue);
@@ -62,7 +68,7 @@ export function MonacoEditor({
     editorRef.current.updateOptions({ readOnly, fontSize, minimap: { enabled: minimap } });
     if (theme) monaco?.editor.setTheme(theme);
     if (sessionRef.current) {
-      void MonacoIdeServiceFacade.execute('setOptions', {
+      void service.execute('setOptions', {
         sessionId: sessionRef.current, options: { readOnly, minimap, fontSize },
       });
     }
