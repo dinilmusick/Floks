@@ -1,5 +1,5 @@
 import React from 'react';
-import type { UIAuthoringNode } from '@ultrst-armada/kloks/contracts';
+import type { UIAuthoringNode } from './types.js';
 
 export function UiAuthoringInspector(props: {
   node?: UIAuthoringNode;
