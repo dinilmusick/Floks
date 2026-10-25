@@ -9,7 +9,7 @@ import { frnlTextInput } from '../../frnl/frnlTextInput.js';
 
 export const AUTH_PAGE_REQUIRED_SERVICES = ['auth'] as const;
 
-export interface AuthResult { success: boolean; error?: string; user?: unknown; token?: string; }
+export interface AuthResult { success: boolean; error?: string; user?: unknown; token?: string; redirectUrl?: string; }
 export interface AuthPageProps {
   appName?: string;
   appSubtitle?: string;
