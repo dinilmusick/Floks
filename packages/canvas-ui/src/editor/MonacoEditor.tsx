@@ -33,7 +33,7 @@ export function MonacoEditor({
       sessionId: sessionRef.current, uri: uri || `inmemory://${sessionRef.current}`, language, value,
       options: { readOnly, minimap, fontSize },
     });
-  }, []);
+    return () => {\n      if (sessionRef.current) void service.execute('disposeSession', { sessionId: sessionRef.current });\n    };\n  }, []);
 
   useEffect(() => {
     if (!monaco || !containerRef.current) return;
