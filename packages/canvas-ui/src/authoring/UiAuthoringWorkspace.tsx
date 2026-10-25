@@ -1,5 +1,5 @@
 import React from 'react';
-import type { AssetRef, UIAuthoringContext, UIAuthoringNode, UIAuthoringSession } from '@ultrst-armada/kloks/contracts';
+import type { AssetRef, UIAuthoringContext, UIAuthoringNode, UIAuthoringSession } from './types.js';
 import { UiAuthoringInspector } from './UiAuthoringInspector.js';
 import { UiAuthoringTree } from './UiAuthoringTree.js';
 
