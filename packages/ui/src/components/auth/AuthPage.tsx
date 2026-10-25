@@ -1,5 +1,6 @@
 import React, { useId, useMemo, useState } from 'react';
-import { LogIn, UserPlus, Eye, EyeOff, Shield, ArrowRight, AlertCircle } from 'lucide-react';\nimport { GoogleSignInButton } from './GoogleSignInButton.js';
+import { LogIn, UserPlus, Eye, EyeOff, Shield, ArrowRight, AlertCircle } from 'lucide-react';
+import { GoogleSignInButton } from './GoogleSignInButton.js';
 import { defineFrnlComponent } from '@ultrst-armada/frnlts';
 import { useFrnlComponent } from '@ultrst-armada/frnlts/react';
 import { useFloksFrnlStore } from '../../frnl/store.js';
@@ -16,7 +17,8 @@ export interface AuthPageProps {
   appIcon?: string | React.ReactNode;
   onLogin: (email: string, password: string) => Promise<AuthResult>;
   onRegister: (input: { name: string; email: string; password: string }) => Promise<AuthResult>;
-  onSuccess?: (result: AuthResult) => void;\n  onGoogleSignIn?: () => Promise<AuthResult>;
+  onSuccess?: (result: AuthResult) => void;
+  onGoogleSignIn?: () => Promise<AuthResult>;
   onSwitchToAdmin?: () => void;
 }
 
@@ -37,6 +39,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
   onLogin,
   onRegister,
   onSuccess,
+  onGoogleSignIn,
   onSwitchToAdmin,
 }) => {
   const store = useFloksFrnlStore();
@@ -48,9 +51,11 @@ export const AuthPage: React.FC<AuthPageProps> = ({
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);\n  const [googleLoading, setGoogleLoading] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [iconError, setIconError] = useState(false);
-  const iconSrc = typeof appIcon === 'string' ? appIcon : '/src/frontend/assets/app-icon.svg';\n  const emailValid = email.trim() === '' || /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email.trim());
+  const iconSrc = typeof appIcon === 'string' ? appIcon : '/src/frontend/assets/app-icon.svg';
+  const emailValid = email.trim() === '' || /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email.trim());
 
   const handlers = useMemo(() => ({
     'AuthPage.idle.login': () => {},
@@ -69,7 +74,8 @@ export const AuthPage: React.FC<AuthPageProps> = ({
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     const cleanEmail = email.trim();
-    if (!cleanEmail) return setError('Email address is required.');\n    if (!emailValid) return setError('Enter a valid email address.');
+    if (!cleanEmail) return setError('Email address is required.');
+    if (!emailValid) return setError('Enter a valid email address.');
     if (!password) return setError('Password is required.');
     if (mode === 'register' && !name.trim()) return setError('Display name is required.');
     setLoading(true); setError(null);
