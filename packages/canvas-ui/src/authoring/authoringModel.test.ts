@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { UIAuthoringNode } from '@ultrst-armada/kloks/contracts';
+import type { UIAuthoringNode } from './types.js';
 import { getAuthoringChildren, getAuthoringDepth } from './authoringModel.js';
 
 const nodes: UIAuthoringNode[] = [
