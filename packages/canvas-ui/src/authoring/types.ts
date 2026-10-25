@@ -31,7 +31,3 @@ export interface UIAuthoringSession {
   operations: Array<{ operationId: string; name: string; description?: string }>;
   metadata: Record<string, string>;
 }
-
-export interface MonacoIdeServicePort {
-  execute<TIn = unknown, TOut = unknown>(operation: string, input?: TIn): Promise<TOut>;
-}
