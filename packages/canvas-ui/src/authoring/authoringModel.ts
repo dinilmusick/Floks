@@ -1,4 +1,4 @@
-import type { UIAuthoringNode } from '@ultrst-armada/kloks/contracts';
+import type { UIAuthoringNode } from './types.js';
 
 export function getAuthoringDepth(node: UIAuthoringNode, nodes: UIAuthoringNode[]): number {
   let depth = 0;
