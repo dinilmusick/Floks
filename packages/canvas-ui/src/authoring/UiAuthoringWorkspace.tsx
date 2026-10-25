@@ -12,7 +12,7 @@ export function UiAuthoringWorkspace(props: {
   const [selectedNodeId, setSelectedNodeId] = React.useState<string>();
   const selectedNode = props.session.nodes.find((node) => node.id === selectedNodeId);
 
-  const addNode = (kind: UIAuthoringNode['kind'], assetRef?: AssetRef) => {
+  const addNode = (kind: UIAuthoringNode['kind'], assetRef?: AuthoringAssetRef) => {
     const parent = kind === 'section'
       ? props.session.nodes.find((node) => node.kind === 'page')
       : kind === 'component'
