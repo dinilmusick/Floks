@@ -1,11 +1,11 @@
 import React from 'react';
-import type { AssetRef, UIAuthoringContext, UIAuthoringNode, UIAuthoringSession } from './types.js';
+import type { AuthoringAssetRef, UIAuthoringContext, UIAuthoringNode, UIAuthoringSession } from './types.js';
 import { UiAuthoringInspector } from './UiAuthoringInspector.js';
 import { UiAuthoringTree } from './UiAuthoringTree.js';
 
 export function UiAuthoringWorkspace(props: {
   session: UIAuthoringSession;
-  availableAssets: AssetRef[];
+  availableAssets: AuthoringAssetRef[];
   onChange: (session: UIAuthoringSession) => void;
   onValidate?: () => void;
 }) {
