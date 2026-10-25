@@ -1,5 +1,6 @@
 import React, { useId, useMemo, useState } from 'react';
 import { LogIn, UserPlus, Eye, EyeOff, Shield, ArrowRight, AlertCircle } from 'lucide-react';
+import { GoogleSignInButton } from './GoogleSignInButton.js';
 import { defineFrnlComponent } from '@ultrst-armada/frnlts';
 import { useFrnlComponent } from '@ultrst-armada/frnlts/react';
 import { useFloksFrnlStore } from '../../frnl/store.js';
@@ -8,7 +9,7 @@ import { frnlTextInput } from '../../frnl/frnlTextInput.js';
 
 export const AUTH_PAGE_REQUIRED_SERVICES = ['auth'] as const;
 
-export interface AuthResult { success: boolean; error?: string; user?: unknown; token?: string; }
+export interface AuthResult { success: boolean; error?: string; user?: unknown; token?: string; redirectUrl?: string; }
 export interface AuthPageProps {
   appName?: string;
   appSubtitle?: string;
@@ -17,6 +18,7 @@ export interface AuthPageProps {
   onLogin: (email: string, password: string) => Promise<AuthResult>;
   onRegister: (input: { name: string; email: string; password: string }) => Promise<AuthResult>;
   onSuccess?: (result: AuthResult) => void;
+  onGoogleSignIn?: () => Promise<AuthResult>;
   onSwitchToAdmin?: () => void;
 }
 
@@ -37,6 +39,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
   onLogin,
   onRegister,
   onSuccess,
+  onGoogleSignIn,
   onSwitchToAdmin,
 }) => {
   const store = useFloksFrnlStore();
@@ -49,8 +52,10 @@ export const AuthPage: React.FC<AuthPageProps> = ({
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [iconError, setIconError] = useState(false);
   const iconSrc = typeof appIcon === 'string' ? appIcon : '/src/frontend/assets/app-icon.svg';
+  const emailValid = email.trim() === '' || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
 
   const handlers = useMemo(() => ({
     'AuthPage.idle.login': () => {},
@@ -70,6 +75,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
     e.preventDefault();
     const cleanEmail = email.trim();
     if (!cleanEmail) return setError('Email address is required.');
+    if (!emailValid) return setError('Enter a valid email address.');
     if (!password) return setError('Password is required.');
     if (mode === 'register' && !name.trim()) return setError('Display name is required.');
     setLoading(true); setError(null);
@@ -128,12 +134,37 @@ export const AuthPage: React.FC<AuthPageProps> = ({
           {error && <div className="mb-4 p-3 border-2 border-red-500/80 bg-red-950/30 text-red-300 text-xs flex items-center gap-2"><AlertCircle size={14} />{error}</div>}
           <form onSubmit={submit} className="space-y-3">
             {mode === 'register' && React.createElement(frnlTextInput, { id: componentId + '.name', label: 'Full Name', value: name, onChange: (e: React.ChangeEvent<HTMLInputElement>) => setName(e.target.value) })}
-            {React.createElement(frnlTextInput, { id: componentId + '.email', label: 'Email Address', value: email, onChange: (e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value), type: 'email', autoComplete: 'username' })}
+            <div>
+              {React.createElement(frnlTextInput, { id: componentId + '.email', label: 'Email Address', value: email, onChange: (e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value), type: 'email', autoComplete: 'username' })}
+              {!emailValid && <div className="mt-1 text-[10px] text-red-400">Enter a valid email address.</div>}
+            </div>
             <div>
               {React.createElement(frnlTextInput, { id: componentId + '.password', label: 'Password', value: password, onChange: (e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value), type: showPassword ? 'text' : 'password', autoComplete: mode === 'login' ? 'current-password' : 'new-password', trailingIcon: <button type="button" aria-label="Toggle password visibility" onClick={() => setShowPassword((v) => !v)}>{showPassword ? <EyeOff size={13} /> : <Eye size={13} />}</button> })}
             </div>
             {React.createElement(frnlButton, { type: 'submit', disabled: loading, loading, variant: 'accent', size: 'lg', className: 'w-full', icon: <ArrowRight size={13} /> }, mode === 'login' ? 'SIGN IN TO WORKSPACE' : 'CREATE ACCOUNT')}
           </form>
+          {onGoogleSignIn && (
+            <>
+              <div className="my-4 flex items-center gap-2 text-[9px] text-[var(--skipo-text-muted)]"><span className="h-px flex-1 bg-[var(--skipo-border-color)]" /> OR <span className="h-px flex-1 bg-[var(--skipo-border-color)]" /></div>
+              <GoogleSignInButton
+                onSignIn={async () => {
+                  setGoogleLoading(true);
+                  setError(null);
+                  try {
+                    const result = await onGoogleSignIn();
+                    if (!result.success) throw new Error(result.error || 'Google sign-in failed.');
+                    onSuccess?.(result);
+                  } catch (error) {
+                    setError(error instanceof Error ? error.message : 'Google sign-in failed.');
+                  } finally {
+                    setGoogleLoading(false);
+                  }
+                }}
+                disabled={loading}
+                loading={googleLoading}
+              />
+            </>
+          )}
           <p className="mt-5 pt-3 border-t border-[var(--skipo-border-color)] text-center text-[10px] text-[var(--skipo-text-muted)]">{footerText || `${appName} WORKSPACE SYSTEM`}</p>
         </div>
       </main>
