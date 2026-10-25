@@ -60,7 +60,7 @@
     }
   },
   "scripts": {
-    "build": "tsup src/index.ts src/canvas/index.ts src/dock/index.ts src/tile-menu/index.ts src/editor/index.ts src/authoring/index.ts src/graph-2d/index.ts src/predictive/index.ts src/frnl-editable-node-graph/index.ts --format esm --dts --clean --external react --external react-dom --external lucide-react --external @floks/ui --external @ultrst-armada/frnlts --external @kloks/state-graph --external @kloks/audio-midi --external monaco-editor --external @dnd-kit/core --external @dnd-kit/sortable --external @dnd-kit/utilities"
+    "build": "tsup src/index.ts src/canvas/index.ts src/dock/index.ts src/tile-menu/index.ts src/editor/index.ts src/authoring/index.ts src/graph-2d/index.ts src/predictive/index.ts src/frnl-editable-node-graph/index.ts --format esm --dts --clean --external react --external react-dom --external lucide-react --external @floks/ui --external @ultrst-armada/frnlts --external @kloks/state-graph --external @kloks/audio-midi --external monaco-editor --external @dnd-kit/core --external @dnd-kit/sortable --external @dnd-kit/utilities --external @ultrst-armada/kloks"
   },
   "dependencies": {
     "@floks/ui": "workspace:*",
