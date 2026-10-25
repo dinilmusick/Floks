@@ -35,7 +35,8 @@ export function MonacoEditor({
     });
     return () => {
       if (sessionRef.current) void service.execute('disposeSession', { sessionId: sessionRef.current });
-    };\n  }, []);
+    };
+  }, []);
 
   useEffect(() => {
     if (!monaco || !containerRef.current) return;
