@@ -1,6 +1,4 @@
 import React from 'react';
-import { Chrome } from 'lucide-react';
-
 export interface GoogleSignInButtonProps {
   onSignIn: () => Promise<void> | void;
   disabled?: boolean;
@@ -21,7 +19,6 @@ export const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({
     className="w-full py-2.5 text-[10px] font-black border-2 border-[var(--skipo-border-color)] bg-[var(--skipo-bg)] flex items-center justify-center gap-2 disabled:opacity-50"
     aria-label={label}
   >
-    <Chrome size={14} />
     {loading ? 'CONNECTING GOOGLE...' : label}
   </button>
 );
