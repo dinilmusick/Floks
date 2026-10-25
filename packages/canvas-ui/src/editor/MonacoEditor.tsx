@@ -3,75 +3,76 @@ import { useEffect, useRef } from 'react';
 import { useMonaco } from './useMonaco.js';
 import type { EditorConfig } from './types.js';
 
-interface MonacoEditorProps extends EditorConfig {
+export interface MonacoIdeServicePort {
+  execute<TIn = unknown, TOut = unknown>(operation: string, input?: TIn): Promise<TOut>;
+}
+
+export interface MonacoEditorProps extends EditorConfig {
+  sessionId?: string;
+  uri?: string;
+  ideService?: MonacoIdeServicePort;
   onChange?: (value: string) => void;
   height?: string | number;
   width?: string | number;
 }
 
 export function MonacoEditor({
-  value,
-  language = 'javascript',
-  readOnly = false,
-  minimap = false,
-  theme = 'skipo-dark',
-  fontSize = 14,
-  onChange,
-  height = '100%',
-  width = '100%'
+  value, language = 'javascript', readOnly = false, minimap = false, theme = 'skipo-dark',
+  fontSize = 14, sessionId, uri, ideService, onChange, height = '100%', width = '100%',
 }: MonacoEditorProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const editorRef = useRef<any>(null);
+  const sessionRef = useRef<string | undefined>(sessionId);
   const monaco = useMonaco();
+  const service = ideService || { execute: async () => undefined };
+
+
+  useEffect(() => {
+    if (!sessionRef.current) sessionRef.current = sessionId || `editor-${Date.now().toString(36)}`;
+    void service.execute('createSession', {
+      sessionId: sessionRef.current, uri: uri || `inmemory://${sessionRef.current}`, language, value,
+      options: { readOnly, minimap, fontSize },
+    });
+  }, []);
 
   useEffect(() => {
     if (!monaco || !containerRef.current) return;
-
     if (!editorRef.current) {
       editorRef.current = monaco.editor.create(containerRef.current, {
-        value,
-        language,
-        theme,
-        readOnly,
-        fontSize,
-        minimap: { enabled: minimap },
-        automaticLayout: true,
-        scrollBeyondLastLine: false,
-        padding: { top: 16, bottom: 16 },
+        value, language, theme, readOnly, fontSize, minimap: { enabled: minimap },
+        automaticLayout: true, scrollBeyondLastLine: false, padding: { top: 16, bottom: 16 },
       });
-
-      if (onChange) {
-        editorRef.current.onDidChangeModelContent(() => {
-          onChange(editorRef.current.getValue());
+      editorRef.current.onDidChangeModelContent(() => {
+        const nextValue = editorRef.current.getValue();
+        void service.execute('updateDocument', {
+          sessionId: sessionRef.current, value: nextValue, language,
         });
-      }
+        onChange?.(nextValue);
+      });
     }
-
     return () => {
       if (editorRef.current) {
         editorRef.current.dispose();
         editorRef.current = null;
       }
     };
-  }, [monaco]); // Create once when monaco loads
+  }, [monaco]);
 
-  // Update value if changed externally
   useEffect(() => {
-    if (editorRef.current && value !== editorRef.current.getValue()) {
-      editorRef.current.setValue(value);
-    }
+    if (editorRef.current && value !== editorRef.current.getValue()) editorRef.current.setValue(value);
   }, [value]);
 
-  // Update other options
   useEffect(() => {
-    if (editorRef.current) {
-      monaco?.editor.setModelLanguage(editorRef.current.getModel(), language);
-      editorRef.current.updateOptions({ readOnly, fontSize, minimap: { enabled: minimap } });
-      if (theme) monaco?.editor.setTheme(theme);
+    if (!editorRef.current) return;
+    monaco?.editor.setModelLanguage(editorRef.current.getModel(), language);
+    editorRef.current.updateOptions({ readOnly, fontSize, minimap: { enabled: minimap } });
+    if (theme) monaco?.editor.setTheme(theme);
+    if (sessionRef.current) {
+      void service.execute('setOptions', {
+        sessionId: sessionRef.current, options: { readOnly, minimap, fontSize },
+      });
     }
   }, [language, readOnly, fontSize, minimap, theme, monaco]);
 
-  return (
-    <div ref={containerRef} style={{ width, height, overflow: 'hidden', borderRadius: '8px' }} />
-  );
+  return <div ref={containerRef} style={{ width, height, overflow: 'hidden', borderRadius: '8px' }} />;
 }
