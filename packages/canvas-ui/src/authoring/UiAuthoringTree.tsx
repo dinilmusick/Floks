@@ -1,5 +1,5 @@
 import React from 'react';
-import type { UIAuthoringNode } from '@ultrst-armada/kloks/contracts';
+import type { UIAuthoringNode } from './types.js';
 import { getAuthoringDepth } from './authoringModel.js';
 
 export function UiAuthoringTree(props: {
