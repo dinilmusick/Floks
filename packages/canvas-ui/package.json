@@ -64,8 +64,8 @@
   },
   "dependencies": {
     "@floks/ui": "workspace:*",
-    "@ultrst-armada/frnlts": "^0.2.4",
-    "@ultrst-armada/kloks": "^1.4.4"
+    "@ultrst-armada/frnlts": "^0.2.7",
+    "@ultrst-armada/kloks": "^1.10.2"
   },
   "peerDependencies": {
     "@dnd-kit/core": "^6.0.0",
