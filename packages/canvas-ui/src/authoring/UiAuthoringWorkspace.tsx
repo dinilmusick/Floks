@@ -3,6 +3,7 @@ import type { AuthoringAssetRef, UIAuthoringContext, UIAuthoringNode, UIAuthorin
 import { UiAuthoringInspector } from './UiAuthoringInspector.js';
 import { UiAuthoringTree } from './UiAuthoringTree.js';
 import { UiAuthoringBindingEditor } from './UiAuthoringBindingEditor.js';
+import { getAuthoringSubtreeIds } from './authoringModel.js';
 
 export function UiAuthoringWorkspace(props: {
   session: UIAuthoringSession;
@@ -42,9 +43,20 @@ export function UiAuthoringWorkspace(props: {
 
   const removeSelected = () => {
     if (!selectedNode) return;
+    const removedIds = getAuthoringSubtreeIds(selectedNode.id, props.session.nodes);
     props.onChange({
       ...props.session,
-      nodes: props.session.nodes.filter((node) => node.id !== selectedNode.id && node.parentId !== selectedNode.id),
+      nodes: props.session.nodes
+        .filter((node) => !removedIds.has(node.id))
+        .map((node) => ({
+          ...node,
+          slots: node.slots
+            ? Object.fromEntries(Object.entries(node.slots).map(([slot, children]) => [
+                slot, children.filter((childId) => !removedIds.has(childId)),
+              ]))
+            : undefined,
+        })),
+      bindings: props.session.bindings.filter((binding) => !removedIds.has(binding.componentId)),
     });
     setSelectedNodeId(undefined);
   };
