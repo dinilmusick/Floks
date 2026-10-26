@@ -2,6 +2,7 @@ import React from 'react';
 import type { AuthoringAssetRef, UIAuthoringContext, UIAuthoringNode, UIAuthoringSession } from './types.js';
 import { UiAuthoringInspector } from './UiAuthoringInspector.js';
 import { UiAuthoringTree } from './UiAuthoringTree.js';
+import { UiAuthoringBindingEditor } from './UiAuthoringBindingEditor.js';
 
 export function UiAuthoringWorkspace(props: {
   session: UIAuthoringSession;
@@ -78,6 +79,7 @@ export function UiAuthoringWorkspace(props: {
         <UiAuthoringTree nodes={props.session.nodes} selectedNodeId={selectedNodeId} onSelect={setSelectedNodeId} />
         <UiAuthoringInspector node={selectedNode} onChange={updateSelected} />
       </div>
+      <UiAuthoringBindingEditor session={props.session} onChange={props.onChange} />
     </section>
   );
 }
