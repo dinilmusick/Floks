@@ -31,6 +31,6 @@ export interface UIAuthoringSession {
     property: string;
     target: { kind: string; apiId: string; field: string; fieldType?: string };
   }>;
-  operations: Array<{ operationId: string; name: string; description?: string }>;
+  operations: Array<{ operationId: string; name: string; description?: string; inputFields?: Array<{ name: string; type: string }>; outputFields?: Array<{ name: string; type: string }> }>;
   metadata: Record<string, string>;
 }
