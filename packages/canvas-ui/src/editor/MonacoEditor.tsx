@@ -29,6 +29,7 @@ export function MonacoEditor({
   const containerRef = useRef<HTMLDivElement>(null);
   const editorRef = useRef<any>(null);
   const sessionRef = useRef<string | undefined>(sessionId);
+  const sessionReadyRef = useRef<Promise<unknown>>(Promise.resolve());
   const monaco = useMonaco();
   const service = ideService || MonacoIdeServiceFacade;
   const [validationDiagnostics, setValidationDiagnostics] = useState<MonacoDiagnostic[]>([]);
@@ -40,16 +41,23 @@ export function MonacoEditor({
   validateRef.current = onValidate;
   errorRef.current = onServiceError;
   const activeDiagnostics = useMemo(() => [...diagnostics, ...validationDiagnostics], [diagnostics, validationDiagnostics]);
+  const executeForSession = (operation: string, input?: unknown) => sessionReadyRef.current
+    .then(() => service.execute(operation, input))
+    .catch((error) => { errorRef.current?.(error); });
 
 
   useEffect(() => {
     if (!sessionRef.current) sessionRef.current = sessionId || `editor-${Date.now().toString(36)}`;
-    void service.execute('createSession', {
+    sessionReadyRef.current = service.execute('createSession', {
       sessionId: sessionRef.current, uri: uri || `inmemory://${sessionRef.current}`, language, value,
       options: { readOnly, minimap, fontSize },
-    }).catch((error) => errorRef.current?.(error));
+    });
+    void sessionReadyRef.current.catch((error) => errorRef.current?.(error));
     return () => {
-      if (sessionRef.current) void service.execute('disposeSession', { sessionId: sessionRef.current });
+      if (sessionRef.current) {
+        void sessionReadyRef.current.then(() => service.execute('disposeSession', { sessionId: sessionRef.current }))
+          .catch((error) => errorRef.current?.(error));
+      }
     };
   }, []);
 
@@ -63,9 +71,9 @@ export function MonacoEditor({
       editorRef.current.onDidChangeModelContent(() => {
         const nextValue = editorRef.current.getValue();
         const currentSessionId = sessionRef.current;
-        void service.execute('updateDocument', {
+        void executeForSession('updateDocument', {
           sessionId: currentSessionId, value: nextValue, language,
-        }).catch((error) => errorRef.current?.(error));
+        });
         const validate = validateRef.current;
         if (validate && currentSessionId) {
           const sequence = ++validationRunRef.current;
@@ -75,7 +83,7 @@ export function MonacoEditor({
           void validate(document).then((nextDiagnostics) => {
             if (sequence !== validationRunRef.current) return;
             setValidationDiagnostics(nextDiagnostics);
-            return service.execute('setDiagnostics', { sessionId: currentSessionId, diagnostics: nextDiagnostics });
+            return executeForSession('setDiagnostics', { sessionId: currentSessionId, diagnostics: nextDiagnostics });
           }).catch((error) => errorRef.current?.(error));
         }
         onChange?.(nextValue);
@@ -99,7 +107,7 @@ export function MonacoEditor({
     editorRef.current.updateOptions({ readOnly, fontSize, minimap: { enabled: minimap } });
     if (theme) monaco?.editor.setTheme(theme);
     if (sessionRef.current) {
-      void service.execute('setOptions', {
+      void executeForSession('setOptions', {
         sessionId: sessionRef.current, options: { readOnly, minimap, fontSize },
       });
     }
@@ -124,10 +132,10 @@ export function MonacoEditor({
       source: 'kloks',
     })));
     if (sessionRef.current) {
-      void service.execute('setDiagnostics', {
+      void executeForSession('setDiagnostics', {
         sessionId: sessionRef.current,
         diagnostics: activeDiagnostics,
-      }).catch((error) => errorRef.current?.(error));
+      });
     }
   }, [monaco, activeDiagnostics, service]);
 
