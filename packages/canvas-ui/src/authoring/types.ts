@@ -17,6 +17,9 @@ export interface UIAuthoringNode {
   assetRef?: AuthoringAssetRef;
   parentId?: string;
   props: Record<string, string | number | boolean>;
+  slots?: Record<string, string[]>;
+  states?: Record<string, Record<string, string | number | boolean>>;
+  events?: Record<string, string>;
 }
 
 export interface UIAuthoringSession {
