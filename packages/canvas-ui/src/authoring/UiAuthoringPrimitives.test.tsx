@@ -49,3 +49,21 @@ describe('reusable authoring UI primitives', () => {
     expect(screen.getByRole('button', { name: 'Generate' })).toBeDisabled();
   });
 });
+
+
+it('ignores stale slot references instead of crashing the preview', () => {
+  const malformedSession: UIAuthoringSession = {
+    ...session,
+    nodes: session.nodes.map((node) => node.id === 'root'
+      ? { ...node, slots: { content: ['missing-child'] } }
+      : node),
+  };
+  render(
+    <UiAuthoringPreview
+      session={malformedSession}
+      renderComponent={(node, slots) => <div data-testid={node.id}>{node.name}{Object.values(slots).flat()}</div>}
+    />,
+  );
+  expect(screen.getByTestId('root')).toHaveTextContent('Panel');
+  expect(screen.queryByTestId('missing-child')).not.toBeInTheDocument();
+});
