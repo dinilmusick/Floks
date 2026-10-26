@@ -1,6 +1,10 @@
 name: npm Release
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/npm-release.yml"
   workflow_run:
     workflows: ["CI"]
     types: [completed]
@@ -52,7 +56,7 @@ jobs:
 
       - name: Sync published upstream dependencies
         id: updates
-        if: github.event_name == 'schedule'
+        if: github.event_name == 'schedule' || github.event_name == 'push'
         shell: bash
         run: |
           set -euo pipefail
@@ -80,32 +84,32 @@ jobs:
           fi
 
       - name: Install dependencies
-        if: github.event_name != 'schedule' || steps.updates.outputs.changed == 'true'
+        if: (github.event_name != 'schedule' && github.event_name != 'push') || steps.updates.outputs.changed == 'true'
         run: |
-          if [ "${{ github.event_name }}" = "schedule" ]; then
+          if [ "${{ github.event_name }}" = "schedule" ] || [ "${{ github.event_name }}" = "push" ]; then
             pnpm install --no-frozen-lockfile
           else
             pnpm install --frozen-lockfile
           fi
 
       - name: Build
-        if: github.event_name != 'schedule' || steps.updates.outputs.changed == 'true'
+        if: (github.event_name != 'schedule' && github.event_name != 'push') || steps.updates.outputs.changed == 'true'
         run: pnpm run build
 
       - name: Typecheck
-        if: github.event_name != 'schedule' || steps.updates.outputs.changed == 'true'
+        if: (github.event_name != 'schedule' && github.event_name != 'push') || steps.updates.outputs.changed == 'true'
         run: pnpm run typecheck
 
       - name: Test
-        if: github.event_name != 'schedule' || steps.updates.outputs.changed == 'true'
+        if: (github.event_name != 'schedule' && github.event_name != 'push') || steps.updates.outputs.changed == 'true'
         run: pnpm run test
 
       - name: Inspect package contents
-        if: github.event_name != 'schedule' || steps.updates.outputs.changed == 'true'
+        if: (github.event_name != 'schedule' && github.event_name != 'push') || steps.updates.outputs.changed == 'true'
         run: npm pack --dry-run
 
       - name: Commit validated upstream dependency updates
-        if: github.event_name == 'schedule' && steps.updates.outputs.changed == 'true'
+        if: (github.event_name == 'schedule' || github.event_name == 'push') && steps.updates.outputs.changed == 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -166,7 +170,7 @@ jobs:
 
       - name: Validate package metadata
         id: package
-        if: github.event_name != 'schedule' || steps.updates.outputs.changed == 'true'
+        if: (github.event_name != 'schedule' && github.event_name != 'push') || steps.updates.outputs.changed == 'true'
         shell: bash
         run: |
           node --input-type=module <<'NODE'
@@ -183,7 +187,7 @@ jobs:
 
       - name: Check whether this version is already published
         id: registry
-        if: github.event_name != 'schedule' || steps.updates.outputs.changed == 'true'
+        if: (github.event_name != 'schedule' && github.event_name != 'push') || steps.updates.outputs.changed == 'true'
         env:
           PACKAGE_NAME: ${{ steps.package.outputs.name }}
           PACKAGE_VERSION: ${{ steps.package.outputs.version }}
