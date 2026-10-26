@@ -10,12 +10,13 @@ export function UiAuthoringBindingEditor(props: {
   const [property, setProperty] = React.useState('value');
   const [operationId, setOperationId] = React.useState('');
   const [targetKind, setTargetKind] = React.useState<'api-input' | 'api-output'>('api-input');
+  const [fieldName, setFieldName] = React.useState('');
   const operation = props.session.operations.find((item) => item.operationId === operationId);
   const fields = targetKind === 'api-input' ? operation?.inputFields || [] : operation?.outputFields || [];
 
   const addBinding = () => {
     if (!componentId || !property.trim() || !operationId || !fields.length) return;
-    const field = fields[0];
+    const field = fields.find((item) => item.name === fieldName) || fields[0];
     const binding = { componentId, property: property.trim(), target: {
       kind: targetKind, apiId: operationId, field: field.name, fieldType: field.type,
     }};
@@ -47,7 +48,7 @@ export function UiAuthoringBindingEditor(props: {
           <option value="api-input">Operation input</option>
           <option value="api-output">Operation output</option>
         </select>
-        <select className="max-w-40 rounded border px-2 py-1.5" aria-label="Bound field" value={fields[0]?.name || ''} disabled={!fields.length}>
+        <select className="max-w-40 rounded border px-2 py-1.5" aria-label="Bound field" value={fields.some((field) => field.name === fieldName) ? fieldName : fields[0]?.name || ''} disabled={!fields.length} onChange={(event) => setFieldName(event.target.value)}>
           {fields.length ? fields.map((field) => <option key={field.name} value={field.name}>{field.name} · {field.type}</option>) : <option value="">No fields</option>}
         </select>
         <button type="button" className="rounded border px-2 py-1.5 disabled:opacity-40" disabled={!componentId || !operationId || !fields.length} onClick={addBinding}>Add / replace</button>
