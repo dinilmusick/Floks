@@ -1,6 +1,6 @@
 {
   "name": "@ultrst-armada/floks",
-  "version": "1.5.5",
+  "version": "1.5.6",
   "private": false,
   "publishConfig": {
     "access": "public",
