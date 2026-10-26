@@ -123,7 +123,7 @@ it('wires diagnostics, validation results, and language completions into Monaco'
   currentValue = 'const answer = 42';
   changeHandler?.();
   await waitFor(() => expect(validate).toHaveBeenCalledWith(expect.objectContaining({
-    value: 'const answer = 42', language: 'typescript', uri: 'inmemory://editor-',
+    value: 'const answer = 42', language: 'typescript', uri: expect.stringMatching(/^inmemory:\/\/editor-/),
   })));
   await waitFor(() => expect(service.execute).toHaveBeenCalledWith(
     'setDiagnostics',
