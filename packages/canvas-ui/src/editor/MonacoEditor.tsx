@@ -2,6 +2,7 @@
 import { useEffect, useRef } from 'react';
 import { useMonaco } from './useMonaco.js';
 import type { EditorConfig } from './types.js';
+import { MonacoIdeServiceFacade } from '@ultrst-armada/kloks/services';
 
 export interface MonacoIdeServicePort {
   execute<TIn = unknown, TOut = unknown>(operation: string, input?: TIn): Promise<TOut>;
@@ -24,7 +25,7 @@ export function MonacoEditor({
   const editorRef = useRef<any>(null);
   const sessionRef = useRef<string | undefined>(sessionId);
   const monaco = useMonaco();
-  const service = ideService || { execute: async () => undefined };
+  const service = ideService || MonacoIdeServiceFacade;
 
 
   useEffect(() => {
