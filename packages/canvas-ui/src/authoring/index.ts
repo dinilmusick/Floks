@@ -4,3 +4,6 @@ export * from './UiAuthoringInspector.js';
 export * from './UiAuthoringWorkspace.js';
 export * from './types.js';
 export * from './UiAuthoringBindingEditor.js';
+
+export * from './UiAuthoringValidationPanel.js';
+export * from './UiAuthoringPreview.js';
