@@ -32,6 +32,7 @@
       "import": "./packages/ui/dist/index.js",
       "default": "./packages/ui/dist/index.js"
     },
+    "./ui/dist/index.css": "./packages/ui/dist/index.css",
     "./ui/theme/tokens.css": "./packages/ui/src/theme/tokens.css",
     "./ui/styles/*": "./packages/ui/src/styles/*",
     "./canvas-ui": {
@@ -43,8 +44,19 @@
       "types": "./packages/contracts/dist/index.d.ts",
       "import": "./packages/contracts/dist/index.js",
       "default": "./packages/contracts/dist/index.js"
+    },
+    "./ui/ai": {
+      "types": "./packages/ui/dist/components/ai/index.d.ts",
+      "import": "./packages/ui/dist/components/ai/index.js",
+      "default": "./packages/ui/dist/components/ai/index.js"
+    },
+    "./ai": {
+      "types": "./packages/ui/dist/components/ai/index.d.ts",
+      "import": "./packages/ui/dist/components/ai/index.js",
+      "default": "./packages/ui/dist/components/ai/index.js"
     }
   },
+
   "scripts": {
     "build": "pnpm -r run build",
     "postbuild": "node -e \"import('fs').then(fs => { for (const pkg of fs.readdirSync('packages')) { const d = 'packages/' + pkg + '/dist'; if (!fs.existsSync(d)) continue; for (const f of fs.readdirSync(d, { recursive: true })) { const p = d + '/' + f; if (fs.statSync(p).isFile() && (p.endsWith('.js') || p.endsWith('.d.ts'))) { const c = fs.readFileSync(p, 'utf8'); const n = c.replaceAll('@kloks/', '@ultrst-armada/kloks/').replaceAll('@floks/', '@ultrst-armada/floks/').replaceAll('@ultrst/kloks/', '@ultrst-armada/kloks/').replaceAll('@ultrst/floks/', '@ultrst-armada/floks/').replaceAll('\\\"kloks/', '\\\"@ultrst-armada/kloks/').replaceAll('\\'kloks/', '\\'@ultrst-armada/kloks/').replaceAll('\\\"floks/', '\\\"@ultrst-armada/floks/').replaceAll('\\'floks/', '\\'@ultrst-armada/floks/'); if (c !== n) fs.writeFileSync(p, n); } } } })\"",

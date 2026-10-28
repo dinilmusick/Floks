@@ -9,7 +9,9 @@ export * from './components/auth/index.js';
 export * from './components/tiles/index.js';
 export * from './components/graph/index.js';
 export * from './components/workspace/index.js';
+export * from './components/ai/index.js';
 export * from './palette/index.js';
+
 export * from './hierarchy/index.js';
 export * from './frnl/store.js';
 export type { ColorPalette } from './palette/index.js';
