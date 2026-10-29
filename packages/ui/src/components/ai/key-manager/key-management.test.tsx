@@ -17,9 +17,9 @@ describe('AI key management UI', () => {
   it('renders export payload and exposes download/copy actions', () => {
     const payload = { exportMetadata: { totalKeys: 2, totalEmailProfiles: 1 }, keys: [] };
     render(<KeyBackupExportTab exportPayload={payload} />);
-    expect(screen.getByText('2 KEYS')).toBeInTheDocument();
-    expect(screen.getByText('1 SECTIONS')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /export payload/i })).toBeInTheDocument();
+    expect(screen.getByText('2 KEYS')).toBeTruthy();
+    expect(screen.getByText('1 SECTIONS')).toBeTruthy();
+    expect(screen.getByRole('button', { name: /export payload/i })).toBeTruthy();
   });
 
   it('provides generic key lifecycle actions without app imports', () => {
