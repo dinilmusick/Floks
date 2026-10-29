@@ -54,6 +54,11 @@
       "types": "./packages/ui/dist/components/ai/index.d.ts",
       "import": "./packages/ui/dist/components/ai/index.js",
       "default": "./packages/ui/dist/components/ai/index.js"
+    },
+    "./canvas-ui/fod": {
+      "types": "./packages/canvas-ui/dist/fod/index.d.ts",
+      "import": "./packages/canvas-ui/dist/fod/index.js",
+      "default": "./packages/canvas-ui/dist/fod/index.js"
     }
   },
   "scripts": {
