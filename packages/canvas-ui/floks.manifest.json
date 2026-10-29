@@ -1,7 +1,7 @@
 {
   "$schema": "https://skipo.dev/schemas/floks-manifest.v1.json",
   "package": "@floks/canvas-ui",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "components": [
     {
       "id": "InfiniteCanvas",
@@ -50,6 +50,18 @@
       ],
       "requiredServices": [
         "node-graph"
+      ]
+    },
+    {
+      "id": "FodModule",
+      "name": "FOD Workflow Module",
+      "export": "FodModule",
+      "subpath": "fod",
+      "targetTypes": [
+        "Main.tabs.fod"
+      ],
+      "requiredServices": [
+        "fod"
       ]
     }
   ]
