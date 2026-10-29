@@ -8,15 +8,16 @@ export interface AIKeyEntry {
   status?: string;
   validationError?: string;
   lifespan?: string;
-  [key: string]: unknown;
 }
 
 export interface AIKeyUsageStats {
   keyId: string;
-  dayCount: number;
-  weekCount: number;
-  monthCount: number;
-  [key: string]: unknown;
+  dayCount?: number;
+  weekCount?: number;
+  monthCount?: number;
+  dailyCalls?: number;
+  weeklyCalls?: number;
+  monthlyCalls?: number;
 }
 
 export interface AIProviderMeta {
