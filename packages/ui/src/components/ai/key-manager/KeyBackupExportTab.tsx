@@ -44,10 +44,10 @@ export const KeyBackupExportTab: React.FC<KeyBackupExportTabProps> = ({ exportPa
           <span className="text-[10px] text-indigo-400">{metadata?.totalEmailProfiles || 0} SECTIONS</span>
         </div>
         <div className="flex items-center gap-2">
-          <BaseButton size="sm" variant="secondary" onClick={handleCopy} disabled={!jsonString}>
+          <BaseButton size="sm" variant="secondary" aria-label="Copy JSON payload" onClick={handleCopy} disabled={!jsonString}>
             {copied ? <Check size={14} /> : <Copy size={14} />}
           </BaseButton>
-          <BaseButton size="sm" variant="success" onClick={handleDownload} disabled={!jsonString}>
+          <BaseButton size="sm" variant="success" aria-label="Export backup file" onClick={handleDownload} disabled={!jsonString}>
             <Download size={14} />
           </BaseButton>
         </div>
