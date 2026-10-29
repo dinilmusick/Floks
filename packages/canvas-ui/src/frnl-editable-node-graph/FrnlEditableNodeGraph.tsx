@@ -31,9 +31,9 @@ export interface FrnlEditableNodeGraphProps {
   onNodeDoubleClick?: (nodeId: string) => void;
   onMagneticTracesChange?: (traces: Trace[]) => void;
   onMagneticTraceSolidify?: (trace: Trace | SolidConnection) => void;
-  onPredictiveSolidify?: (ghostId: string) => void;
-  onPredictiveSolidifyAllForNode?: (nodeId: string) => void;
-  onPredictiveSolidifyAll?: () => void;
+  onPredictiveSolidify?: (ghostId: string, ghost?: any) => void;
+  onPredictiveSolidifyAllForNode?: (nodeId: string, ghosts?: any[]) => void;
+  onPredictiveSolidifyAll?: (ghosts?: any[]) => void;
 }
 
 export const frnlEditableNodeGraphDefinition = defineFrnlComponent({
@@ -123,7 +123,7 @@ export const FrnlEditableNodeGraph: React.FC<FrnlEditableNodeGraphProps> = ({
     selectedNodeId: selectedNodeIds.size === 1 ? Array.from(selectedNodeIds)[0] : null,
     selectedNodeIds: Array.from(selectedNodeIds),
     onSolidifyPredictiveNodes: (ghosts) => {
-      for (const ghost of ghosts) onPredictiveSolidify?.(ghost.id);
+      for (const ghost of ghosts) onPredictiveSolidify?.(ghost.id, ghost);
     },
   });
 
@@ -261,7 +261,7 @@ export const FrnlEditableNodeGraph: React.FC<FrnlEditableNodeGraphProps> = ({
             <button type="button" onClick={predictive.prevScenario}>←</button>
             <span style={{ padding: '3px 6px', fontSize: 11 }}>Scenario {predictive.scenarioIndex + 1}</span>
             <button type="button" onClick={predictive.nextScenario}>→</button>
-            <button type="button" onClick={() => { predictive.solidifyAll(); onPredictiveSolidifyAll?.(); }}>Solidify all</button>
+            <button type="button" onClick={() => { predictive.solidifyAll(); onPredictiveSolidifyAll?.(predictive.ghostNodes as any[]); }}>Solidify all</button>
           </div>
           <div aria-label="Predictive nodes" style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 45 }}>
             {predictive.ghostNodes.map((ghost: any) => {
@@ -285,7 +285,7 @@ export const FrnlEditableNodeGraph: React.FC<FrnlEditableNodeGraphProps> = ({
       {predictive.isActive && predictive.selectedNodesWithGhosts.size > 0 && (
         <div aria-label="Predictive node actions" style={{ position: 'absolute', left: 10, bottom: 10, zIndex: 60, display: 'flex', flexDirection: 'column', gap: 4, pointerEvents: 'auto' }}>
           {Array.from(predictive.selectedNodesWithGhosts.entries()).map(([nodeId, ghosts]) => (
-            <button key={nodeId} type="button" onClick={() => { predictive.solidifyAllForNode(nodeId); onPredictiveSolidifyAllForNode?.(nodeId); }}>
+            <button key={nodeId} type="button" onClick={() => { predictive.solidifyAllForNode(nodeId); onPredictiveSolidifyAllForNode?.(nodeId, ghosts as any[]); }}>
               Solidify all for {nodeId} ({ghosts.length})
             </button>
           ))}
