@@ -72,6 +72,22 @@ export function FodModule({runtime,nodeDefinitions,workspaceId,className}:FodMod
     setFlows(current=>[...current,next]);setActiveId(next.id);setFlow(next);
   };
   const save=async()=>{if(!flow)return;const saved=await runtime.saveFlow(flow);setFlow(saved);await refresh();setMessage('Saved');};
+  const addMagneticEdge=(trace:any)=>{
+    if(!flow)return;
+    const id=`edge-${Date.now()}-${Math.random().toString(36).slice(2,6)}`;
+    const exists=flow.edges.some(edge=>edge.source===trace.sourceNodeId&&edge.target===trace.targetNodeId&&edge.sourceHandle===trace.sourceHandleId&&edge.targetHandle===trace.targetHandleId);
+    if(!exists)setFlow({...flow,edges:[...flow.edges,{id,source:trace.sourceNodeId,sourceHandle:trace.sourceHandleId,target:trace.targetNodeId,targetHandle:trace.targetHandleId}]});
+  };
+  const solidifyGhost=(ghost:any)=>{
+    if(!flow||!ghost?.prototypeNode)return;
+    const node=ghost.prototypeNode;
+    const exists=flow.nodes.some(item=>item.id===ghost.id);
+    let next=flow;
+    if(!exists)next={...next,nodes:[...next.nodes,{id:ghost.id,type:node.type,position:{x:Number(ghost.worldPosition?.[0]??node.position?.x??0),y:Number(ghost.worldPosition?.[2]??node.position?.y??0)},data:node.data??{}}]};
+    const edge={id:`edge-${Date.now()}-${Math.random().toString(36).slice(2,6)}`,source:ghost.parentSocketPolarity==='input'?ghost.id:ghost.parentNodeId,sourceHandle:ghost.parentSocketPolarity==='input'?ghost.matchingSocketId:ghost.parentSocketId,target:ghost.parentSocketPolarity==='input'?ghost.parentNodeId:ghost.id,targetHandle:ghost.parentSocketPolarity==='input'?ghost.parentSocketId:ghost.matchingSocketId};
+    if(!next.edges.some(item=>item.source===edge.source&&item.target===edge.target&&item.sourceHandle===edge.sourceHandle&&item.targetHandle===edge.targetHandle))next={...next,edges:[...next.edges,edge]};
+    setFlow(next);
+  };
   const run=async()=>{if(!flow)return;await save();setRunning(true);try{const result=await runtime.executeFlow(flow.id);setMessage(result.success?'Execution completed':result.errors?.[0]?.message ?? 'Execution failed');}finally{setRunning(false);}};
 
   const grouped=useMemo(()=>{
@@ -93,7 +109,7 @@ export function FodModule({runtime,nodeDefinitions,workspaceId,className}:FodMod
       }}>{node.label}</button>)}</section>)}
     </aside>
     <main style={{minWidth:0,minHeight:0}}>
-      {flow ? <FrnlEditableNodeGraph nodes={graphNodes} edges={graphEdges} selectedNodeIds={selected} onSelectionChange={setSelected} onNodesChange={updateNodes} onEdgesChange={updateEdges} magneticEnabled autoSolidifyEnabled={false} signalTelemetryEnabled /> : <div style={{padding:30}}>Create or select a flow.</div>}
+      {flow ? <FrnlEditableNodeGraph nodes={graphNodes} edges={graphEdges} selectedNodeIds={selected} onSelectionChange={setSelected} onNodesChange={updateNodes} onEdgesChange={updateEdges} magneticEnabled autoSolidifyEnabled={false} signalTelemetryEnabled onMagneticTraceSolidify={addMagneticEdge} onPredictiveSolidify={(_id,ghost)=>solidifyGhost(ghost)} onPredictiveSolidifyAll={(ghosts)=>ghosts?.forEach(solidifyGhost)} onPredictiveSolidifyAllForNode={(_nodeId,ghosts)=>ghosts?.forEach(solidifyGhost)} /> : <div style={{padding:30}}>Create or select a flow.</div>}
     </main>
   </div>;
 }
