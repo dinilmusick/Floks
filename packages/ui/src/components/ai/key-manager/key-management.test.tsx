@@ -19,7 +19,7 @@ describe('AI key management UI', () => {
     render(<KeyBackupExportTab exportPayload={payload} />);
     expect(screen.getByText('2 KEYS')).toBeTruthy();
     expect(screen.getByText('1 SECTIONS')).toBeTruthy();
-    expect(screen.getByRole('button', { name: /export payload/i })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /export backup file/i })).toBeTruthy();
   });
 
   it('provides generic key lifecycle actions without app imports', () => {
