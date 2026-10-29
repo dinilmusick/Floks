@@ -74,7 +74,7 @@
     "d3-force": "^3.0.0",
     "zod": "^3.24.1",
     "zustand": "^5.0.3",
-    "@dinilmusick/gutts": "^1.0.0"
+    "@dinilmusick/gutts": "^1.1.0"
   },
   "peerDependencies": {
     "@ultrst-armada/kloks": "^1.17.0",
@@ -88,7 +88,7 @@
     "@types/node": "^22.0.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
-    "@ultrst-armada/kloks": "^1.18.0",
+    "@ultrst-armada/kloks": "^1.19.0",
     "@ultrst-armada/frnlts": "^0.2.7",
     "happy-dom": "^21.0.3",
     "lucide-react": "^1.55.0",
