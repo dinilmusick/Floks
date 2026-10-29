@@ -61,11 +61,13 @@ export function FodModule({runtime,nodeDefinitions,workspaceId,className}:FodMod
 
   const updateNodes=(next:any[])=>{
     if(!flow)return;
-    setFlow({...flow,nodes:next.map(node=>({...flow.nodes.find(item=>item.id===node.id),id:node.id,type:node.type,position:node.position,data:node.data})) as FodFlow});
+    const nextFlow:FodFlow={...flow,nodes:next.map(node=>({...flow.nodes.find(item=>item.id===node.id),id:node.id,type:node.type,position:node.position,data:node.data}))};
+    setFlow(nextFlow);
   };
   const updateEdges=(next:any[])=>{
     if(!flow)return;
-    setFlow({...flow,edges:next.map(edge=>({id:edge.id,source:edge.source,sourceHandle:edge.sourceSocket,target:edge.target,targetHandle:edge.targetSocket}))});
+    const nextFlow:FodFlow={...flow,edges:next.map(edge=>({id:edge.id,source:edge.source,sourceHandle:edge.sourceSocket,target:edge.target,targetHandle:edge.targetSocket}))};
+    setFlow(nextFlow);
   };
   const createFlow=()=>{
     const now=new Date().toISOString();
