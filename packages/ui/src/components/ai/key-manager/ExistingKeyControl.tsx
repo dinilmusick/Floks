@@ -7,9 +7,9 @@ export const ExistingKeyControl: React.FC<ExistingKeyControlProps> = ({ provider
   const [editing, setEditing] = useState(false);
   const [label, setLabel] = useState('');
   const stats = usageStats.filter((item) => item.keyId === providerKey.id);
-  const day = stats.reduce((sum, item) => sum + item.dayCount ?? item.dailyCalls ?? 0, 0);
-  const week = stats.reduce((sum, item) => sum + item.weekCount ?? item.weeklyCalls ?? 0, 0);
-  const month = stats.reduce((sum, item) => sum + item.monthCount ?? item.monthlyCalls ?? 0, 0);
+  const day = stats.reduce((sum, item) => sum + (item.dayCount ?? item.dailyCalls ?? 0), 0);
+  const week = stats.reduce((sum, item) => sum + (item.weekCount ?? item.weeklyCalls ?? 0), 0);
+  const month = stats.reduce((sum, item) => sum + (item.monthCount ?? item.monthlyCalls ?? 0), 0);
 
   return (
     <div className="flex items-center justify-between flex-1 gap-2">
