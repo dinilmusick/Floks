@@ -43,8 +43,8 @@ importers:
         specifier: ^19.0.0
         version: 19.3.0(@types/react@19.3.0)
       '@ultrst-armada/kloks':
-        specifier: ^1.17.0
-        version: 1.17.0(@types/react@19.3.0)(react@19.3.0)(use-sync-external-store@1.7.0(react@19.3.0))
+        specifier: ^1.18.0
+        version: 1.18.0(@types/react@19.3.0)(react@19.3.0)(use-sync-external-store@1.7.0(react@19.3.0))
       happy-dom:
         specifier: ^21.0.3
         version: 21.0.3
@@ -85,8 +85,8 @@ importers:
         specifier: ^0.2.7
         version: 0.2.7(@types/react@19.3.0)(react@19.3.0)(use-sync-external-store@1.7.0(react@19.3.0))
       '@ultrst-armada/kloks':
-        specifier: ^1.17.0
-        version: 1.17.0(@types/react@19.3.0)(react@19.3.0)(use-sync-external-store@1.7.0(react@19.3.0))
+        specifier: ^1.18.0
+        version: 1.18.0(@types/react@19.3.0)(react@19.3.0)(use-sync-external-store@1.7.0(react@19.3.0))
       monaco-editor:
         specifier: ^0.50.0
         version: 0.50.0
@@ -825,8 +825,8 @@ packages:
     peerDependencies:
       react: ^18.0.0 || ^19.0.0
 
-  '@ultrst-armada/kloks@1.17.0':
-    resolution: {integrity: sha512-U8y+aYGxmqeop+6KRBpDvXp3153UCWTkTmf+MiWLmICkO+mNAVRxjurcvYu+xg7hNTkU0u3trtkEHg251owEHg==}
+  '@ultrst-armada/kloks@1.18.0':
+    resolution: {integrity: sha512-vZ9eQVYG82UsLF6d1GScSuUIbedMYepDUpWKO8KYJQMie1BIQyPBP+w/jc9RRotxOQqLhlHq4HXukhvj2qCTIQ==}
     peerDependencies:
       '@neondatabase/serverless': ^0.10.0 || ^1.0.0
       '@supabase/supabase-js': ^2.45.0
@@ -2054,7 +2054,7 @@ snapshots:
       - immer
       - use-sync-external-store
 
-  '@ultrst-armada/kloks@1.17.0(@types/react@19.3.0)(react@19.3.0)(use-sync-external-store@1.7.0(react@19.3.0))':
+  '@ultrst-armada/kloks@1.18.0(@types/react@19.3.0)(react@19.3.0)(use-sync-external-store@1.7.0(react@19.3.0))':
     dependencies:
       '@aws-sdk/client-s3': 3.1152.0
       '@webcontainer/api': 1.6.4
