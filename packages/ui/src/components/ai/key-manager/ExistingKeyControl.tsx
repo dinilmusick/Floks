@@ -37,8 +37,8 @@ export const ExistingKeyControl: React.FC<ExistingKeyControlProps> = ({ provider
         <span>{day}D</span><span>{week}W</span><span>{month}M</span>
       </div>
       <div className="flex items-center gap-1.5 shrink-0">
-        <BaseButton size="sm" variant="secondary" onClick={() => onVerifyKey(providerKey.id)}><RefreshCw size={11} /></BaseButton>
-        <BaseButton size="sm" variant="danger" onClick={() => onDeleteKey(providerKey.id)}><Trash2 size={11} /></BaseButton>
+        <BaseButton size="sm" variant="secondary" aria-label="Re-verify key" onClick={() => onVerifyKey(providerKey.id)}><RefreshCw size={11} /></BaseButton>
+        <BaseButton size="sm" variant="danger" aria-label="Delete key" onClick={() => onDeleteKey(providerKey.id)}><Trash2 size={11} /></BaseButton>
       </div>
     </div>
   );
