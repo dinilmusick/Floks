@@ -1,6 +1,7 @@
 'use client';
 import React,{useEffect,useMemo,useState} from 'react';
-import type {FodFlow,FodNodeDefinition} from '@ultrst-armada/kloks/fod';
+interface FodNodeDefinition {type:string;label:string;description:string;category:string;group:string;inputs:Array<{id:string;name:string;direction:string;dataType:string}>;outputs:Array<{id:string;name:string;direction:string;dataType:string}>;metadata?:Record<string,any>;}
+interface FodFlow {id:string;name:string;description?:string;version:number;createdAt:string;updatedAt:string;nodes:any[];edges:any[];viewport?:any;metadata?:Record<string,unknown>;}
 import {FrnlEditableNodeGraph} from '../frnl-editable-node-graph/index.js';
 
 export interface FodRuntimeLike {
