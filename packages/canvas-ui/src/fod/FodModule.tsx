@@ -89,7 +89,7 @@ export function FodModule({runtime,nodeDefinitions,workspaceId,className}:FodMod
       {grouped.map(([group,nodes])=><section key={group}><h4 style={{margin:'8px 0'}}>{group}</h4>{nodes.map(node=><button key={node.type} type='button' style={{display:'block',width:'100%',textAlign:'left',marginBottom:4}} onClick={()=>{
         if(!flow)return;
         const id=`${node.type}-${Date.now()}`;
-        setFlow({...flow,nodes:[...flow.nodes,{id,type:node.type,position:{x:100+flow.nodes.length*24,y:100+flow.nodes.length*24},data:{endpointId:node.metadata?.endpointId}}]});
+        setFlow({...flow,nodes:[...flow.nodes,{id,type:node.type,position:{x:100+flow.nodes.length*24,y:100+flow.nodes.length*24},data:{endpointId:node.metadata?.endpointId,apiId:node.metadata?.apiId}}]});
       }}>{node.label}</button>)}</section>)}
     </aside>
     <main style={{minWidth:0,minHeight:0}}>
