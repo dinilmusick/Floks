@@ -63,6 +63,18 @@
       "requiredServices": [
         "fod"
       ]
+    },
+    {
+      "id": "AikoModule",
+      "name": "Aiko Application Module",
+      "export": "AikoModule",
+      "subpath": "aiko",
+      "targetTypes": [
+        "Main.tabs.aiko"
+      ],
+      "requiredServices": [
+        "aiko"
+      ]
     }
   ]
 }

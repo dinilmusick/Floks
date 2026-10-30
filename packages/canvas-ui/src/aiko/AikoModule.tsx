@@ -10,6 +10,7 @@ export interface AikoRuntimeLike {
  listKeys():Promise<AikoKey[]>;
  getActiveKey(providerId:string):Promise<AikoKey|null>;
  rotateKey(providerId:string):Promise<AikoKey|null>;
+ addKey?(input:{providerId:string;label:string;key:string;emailGroup?:string}):Promise<unknown>;
  syncFromAikoEngine():Promise<{synced:number;message?:string}>;
 }
 export interface AikoModuleProps { runtime:AikoRuntimeLike; workspaceId:string; className?:string; }
