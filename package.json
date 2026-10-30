@@ -59,6 +59,11 @@
       "types": "./packages/canvas-ui/dist/fod/index.d.ts",
       "import": "./packages/canvas-ui/dist/fod/index.js",
       "default": "./packages/canvas-ui/dist/fod/index.js"
+    },
+    "./canvas-ui/aiko": {
+      "types": "./packages/canvas-ui/dist/aiko/index.d.ts",
+      "import": "./packages/canvas-ui/dist/aiko/index.js",
+      "default": "./packages/canvas-ui/dist/aiko/index.js"
     }
   },
   "scripts": {
