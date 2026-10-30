@@ -1,6 +1,6 @@
 {
   "name": "@floks/ui",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Floks UI — Reusable React Component Library with Theme Engine, Base Primitives, Containers, Composite & Layout",
   "type": "module",
   "private": false,
@@ -103,7 +103,7 @@
   },
   "dependencies": {
     "zod": "^3.24.1",
-    "@ultrst-armada/frnlts": "^0.2.7",
+    "@ultrst-armada/frnlts": "^0.3.0",
     "zustand": "^5.0.3",
     "@xyflow/react": "^12.8.6",
     "d3-force": "^3.0.0"

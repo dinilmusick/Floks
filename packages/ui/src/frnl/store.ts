@@ -1,5 +1,5 @@
 import React, { createContext, useContext, type ReactNode } from 'react';
-import { createFrnlStore, type FrnlStore } from '@ultrst-armada/frnlts';
+import { createFrnlFrontendApi, installFrnlFrontendApi, createFrnlStore, type FrnlStore } from '@ultrst-armada/frnlts';
 
 export type { FrnlStore };
 
@@ -8,6 +8,10 @@ export type { FrnlStore };
  * For application-level custom store isolation, prefer using `FrnlStoreProvider`.
  */
 export const floksFrnlStore: FrnlStore = createFrnlStore();
+
+/** Canonical programmatic API for every Frnl component registered in Floks. */
+export const floksFrnlFrontendApi = createFrnlFrontendApi(floksFrnlStore);
+installFrnlFrontendApi(floksFrnlFrontendApi);
 
 /**
  * Returns the currently active global Frnl store (defaults to `floksFrnlStore`).
