@@ -14,3 +14,4 @@ export * from "./Viewer2DNodes.js";
 export * from "./frnl-editable-node-graph/index.js";
 export * from './authoring/index.js';
 export * from './fod/index.js';
+export * from './aiko/index.js';
