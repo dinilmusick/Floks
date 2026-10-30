@@ -10,5 +10,7 @@ describe('embedded Aiko UI',()=>{
   expect(source).toContain('executeAgent');
   expect(source).toContain('syncFromAikoEngine');
   expect(source).toContain('Fetch from Aiko Engine');
+  expect(source).toContain('emailGroup');
+  expect(source).toContain('Rotate');
  });
 });
