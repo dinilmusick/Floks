@@ -7,7 +7,7 @@ import { defineFrnlComponent } from '@ultrst-armada/frnlts';
 import { useFrnlComponent } from '@ultrst-armada/frnlts/react';
 import { useFloksFrnlStore } from './store.js';
 import { useBottomStrip } from '../components/bottom-strip/index.js';
-import { resolveFrnlInput, type FrnlInputContract } from '@ultrst-armada/frnlts';
+import { resolveFrnlInput, useFrnlSemanticInputContext, type FrnlInputContract } from '@ultrst-armada/frnlts';
 
 export interface FrnlTextInputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'size'> {
   id?: string;
@@ -99,6 +99,7 @@ export const frnlTextInput: React.FC<FrnlTextInputProps> = ({
   ...rest
 }) => {
   const store = useFloksFrnlStore();
+  const semanticContext = useFrnlSemanticInputContext();
   const { setInspectionText } = useBottomStrip();
   const generatedId = useId().replace(/[:/]/g, '');
   const componentId = id ?? `frnlTextInput.${label ? label.toLowerCase().replace(/[^a-z0-9]/g, '-') : generatedId}`;
@@ -138,7 +139,10 @@ export const frnlTextInput: React.FC<FrnlTextInputProps> = ({
 
   const handleSemanticBlur = async () => {
     if (!semanticInput || typeof value !== 'string' || !value.trim()) return;
-    const result = await resolveFrnlInput(semanticInput, value);
+    const result = await resolveFrnlInput({
+      ...semanticInput,
+      context: {...semanticContext, ...semanticInput.context},
+    }, value);
     if (result.status === 'resolved' && typeof result.value === 'string') {
       onSemanticValue?.(result.value, result.rawInput);
       if (result.value !== value) {
