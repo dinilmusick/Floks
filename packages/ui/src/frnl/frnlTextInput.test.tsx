@@ -418,4 +418,50 @@ describe('frnlTextInput Semantic Input Specification', () => {
     );
     expect(receivedValue).toBe('delegated-ok');
   });
+  it('10. exposes non-resolved semantic evidence to the host for clarification UX', async () => {
+    resolveFrnlInputMock.mockResolvedValueOnce({
+      status: 'ambiguous',
+      value: undefined,
+      candidates: [
+        {value: 'May', similarity: 0.72, relevance: 5},
+        {value: 'March', similarity: 0.70, relevance: 4.95},
+      ],
+      modelOutput: 'uncertain month',
+      clarification: {
+        question: 'Which value did you mean?',
+        candidates: ['May', 'March'],
+      },
+    });
+
+    let observed: any;
+    const contract: FrnlInputContract<string> = createFrnlInputContract<string>({
+      name: 'birthMonth',
+      label: 'Birth Month',
+      schema: {type: 'string'},
+      validator: z.string(),
+      vocabulary: ['May', 'March'],
+    });
+
+    render(
+      React.createElement(frnlTextInput, {
+        id: 'clarification-input',
+        label: 'Birth Month',
+        value: 'mage',
+        semanticInput: contract,
+        onChange: () => {},
+        onSemanticResult: (result) => {
+          observed = result;
+        },
+      })
+    );
+
+    await act(async () => {
+      fireEvent.blur(screen.getByLabelText('Birth Month'));
+      await new Promise((r) => setTimeout(r, 20));
+    });
+
+    expect(observed?.status).toBe('ambiguous');
+    expect(observed?.clarification?.candidates).toEqual(['May', 'March']);
+  });
+
 });
