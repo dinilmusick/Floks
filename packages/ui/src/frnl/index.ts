@@ -5,6 +5,7 @@
 
 // Store & Context
 export * from './store.js';
+export type { FrnlInputContract } from '@ultrst-armada/frnlts';
 export type { FrnlFrontendApi, FrnlFrontendSnapshot, FrnlComponentSnapshot, FrnlComponentControl } from '@ultrst-armada/frnlts';
 
 // Basic Components (frnl*)
