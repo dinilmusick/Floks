@@ -30,6 +30,58 @@ afterEach(() => {
 });
 
 describe('frnlTextInput Semantic Input Specification', () => {
+  it('automatically attaches the framework semantic contract for text inputs', async () => {
+    resolveFrnlInputMock.mockResolvedValueOnce({
+      status: 'resolved',
+      value: 'canonical text',
+      candidates: [],
+      modelOutput: 'canonical text',
+    });
+
+    const onSemanticValue = vi.fn();
+    render(
+      React.createElement(frnlTextInput, {
+        id: 'auto-semantic',
+        label: 'Notes',
+        name: 'notes',
+        type: 'text',
+        value: 'natural language note',
+        onChange: () => {},
+        onSemanticValue,
+      })
+    );
+
+    const input = screen.getByLabelText('Notes');
+    expect(input).toHaveAttribute('data-semantic-input', 'true');
+
+    await act(async () => {
+      fireEvent.blur(input);
+      await new Promise((r) => setTimeout(r, 20));
+    });
+
+    expect(resolveFrnlInputMock).toHaveBeenCalledTimes(1);
+    const [contract, rawInput] = resolveFrnlInputMock.mock.calls[0];
+    expect(contract.name).toBe('notes');
+    expect(contract.schema).toEqual({type: 'string'});
+    expect(rawInput).toBe('natural language note');
+    expect(onSemanticValue).toHaveBeenCalledWith('canonical text', undefined);
+  });
+
+  it('allows an explicit null semanticInput to disable the automatic semantic layer', () => {
+    render(
+      React.createElement(frnlTextInput, {
+        id: 'semantic-off',
+        label: 'Plain',
+        type: 'text',
+        value: 'ordinary text',
+        semanticInput: null,
+        onChange: () => {},
+      })
+    );
+
+    expect(screen.getByLabelText('Plain')).toHaveAttribute('data-semantic-input', 'false');
+  });
+
   // 1. Semantic contract attachment
   it('1. reflects semantic contract attachment via data-semantic-input attribute', () => {
     const contract = createFrnlInputContract<string>({
@@ -59,6 +111,7 @@ describe('frnlTextInput Semantic Input Specification', () => {
         label: 'Contract Input',
         value: 'hello',
         onChange: () => {},
+        semanticInput: null,
       })
     );
 
