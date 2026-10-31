@@ -9,11 +9,11 @@ importers:
   .:
     dependencies:
       '@dinilmusick/gutts':
-        specifier: ^1.1.0
-        version: 1.1.0(@types/node@22.20.5)
+        specifier: ^1.2.0
+        version: 1.2.0(@types/node@22.20.5)
       '@ultrst-armada/frnlts':
-        specifier: ^0.3.0
-        version: 0.3.0(@types/react@19.3.0)(react@19.3.0)(use-sync-external-store@1.7.0(react@19.3.0))
+        specifier: ^0.4.0
+        version: 0.4.0(@types/node@22.20.5)(@types/react@19.3.0)(react@19.3.0)(use-sync-external-store@1.7.0(react@19.3.0))
       '@xyflow/react':
         specifier: ^12.8.6
         version: 12.12.0(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
@@ -82,8 +82,8 @@ importers:
         specifier: workspace:*
         version: link:../ui
       '@ultrst-armada/frnlts':
-        specifier: ^0.3.0
-        version: 0.3.0(@types/react@19.3.0)(react@19.3.0)(use-sync-external-store@1.7.0(react@19.3.0))
+        specifier: ^0.4.0
+        version: 0.4.0(@types/node@22.20.5)(@types/react@19.3.0)(react@19.3.0)(use-sync-external-store@1.7.0(react@19.3.0))
       '@ultrst-armada/kloks':
         specifier: ^1.22.2
         version: 1.22.2(@types/react@19.3.0)(react@19.3.0)(use-sync-external-store@1.7.0(react@19.3.0))
@@ -103,8 +103,8 @@ importers:
   packages/ui:
     dependencies:
       '@ultrst-armada/frnlts':
-        specifier: ^0.3.0
-        version: 0.3.0(@types/react@19.3.0)(react@19.3.0)(use-sync-external-store@1.7.0(react@19.3.0))
+        specifier: ^0.4.0
+        version: 0.4.0(@types/node@22.20.5)(@types/react@19.3.0)(react@19.3.0)(use-sync-external-store@1.7.0(react@19.3.0))
       '@xyflow/react':
         specifier: ^12.8.6
         version: 12.12.0(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
@@ -224,11 +224,8 @@ packages:
     resolution: {integrity: sha512-NpugTzbKgGrNe45Ui32cN8vCFFMxVtP/9rtfwv0nP5FRDAjvYBxJcLVpYA9mr1jxP6cnIT7x9LUzuDTbWYYNRA==}
     engines: {node: '>=6.9.0'}
 
-  '@dinilmusick/gutts@0.1.3':
-    resolution: {integrity: sha512-EkL4p7bYdxHVk3U+aib8FkQXwEe38h9lzK6qMHVkzmbfwri4/xHNcf2I8CRhspAEN3Z2Ez3gp2jKuHuU30bqKA==}
-
-  '@dinilmusick/gutts@1.1.0':
-    resolution: {integrity: sha512-DPnEBAPUUnmRrxjgEyIQsjYG4f74PDYXV0W1Lt9JkmWqiz7Sc4KVYeJBJwmhvB50LIrCjqaKj98/JBE2EdSAqA==}
+  '@dinilmusick/gutts@1.2.0':
+    resolution: {integrity: sha512-0z9QRJkAQT093GHgqbDnl/Ef6ha4Yk0fCHcUvuVE6pk7ZTUOj1fho1OJNDikRMO4vzdV83Ugl08yihkhnuKBKg==}
 
   '@dnd-kit/accessibility@3.1.1':
     resolution: {integrity: sha512-2P+YgaXF+gRsIihwwY1gCsQSYnu9Zyj2py8kY5fFvUM1qm2WA2u639R6YNVfU4GWr+ZM5mqEsfHZZLoRONbemw==}
@@ -1030,8 +1027,8 @@ packages:
   '@types/ws@8.18.2':
     resolution: {integrity: sha512-67MQl+fpWKVTT1NYdnmo3U4sc/xPo/zQBncVnI74qmQa0z/b+1g6iYqNmGCPbxO+zz2aklb08a0oHfegiVd0/w==}
 
-  '@ultrst-armada/frnlts@0.3.0':
-    resolution: {integrity: sha512-mf1tHgNX5KqtwtGUGrFd7/KxUYHoG9FWVDuSdvtfEv3ebMT5mxABZN68Buges1zIY/BDtkNMxsO0pULwxlo1CQ==}
+  '@ultrst-armada/frnlts@0.4.0':
+    resolution: {integrity: sha512-88M7EmS2HxcOH+Jy4gpvOUrxUT7NFprlKxLARiZI3ZdL8z+/Vdc84f7kN6Yozy48s4TQHdE1R/uffO7Um9abqA==}
     engines: {node: '>=20.0.0'}
     hasBin: true
     peerDependencies:
@@ -1976,12 +1973,7 @@ snapshots:
 
   '@babel/runtime@7.29.10': {}
 
-  '@dinilmusick/gutts@0.1.3':
-    dependencies:
-      lodash-es: 4.18.1
-      validator: 13.15.35
-
-  '@dinilmusick/gutts@1.1.0(@types/node@22.20.5)':
+  '@dinilmusick/gutts@1.2.0(@types/node@22.20.5)':
     dependencies:
       '@huggingface/transformers': 4.3.2(@types/node@22.20.5)
       cactus-needle: 0.3.0
@@ -2529,15 +2521,17 @@ snapshots:
     dependencies:
       '@types/node': 22.20.5
 
-  '@ultrst-armada/frnlts@0.3.0(@types/react@19.3.0)(react@19.3.0)(use-sync-external-store@1.7.0(react@19.3.0))':
+  '@ultrst-armada/frnlts@0.4.0(@types/node@22.20.5)(@types/react@19.3.0)(react@19.3.0)(use-sync-external-store@1.7.0(react@19.3.0))':
     dependencies:
-      '@dinilmusick/gutts': 0.1.3
+      '@dinilmusick/gutts': 1.2.0(@types/node@22.20.5)
       react: 19.3.0
       typescript: 5.9.3
       zod: 3.25.76
       zustand: 5.0.15(@types/react@19.3.0)(react@19.3.0)(use-sync-external-store@1.7.0(react@19.3.0))
     transitivePeerDependencies:
+      - '@types/node'
       - '@types/react'
+      - ai
       - immer
       - use-sync-external-store
 
