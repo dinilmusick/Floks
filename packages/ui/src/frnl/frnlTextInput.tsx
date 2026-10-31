@@ -7,7 +7,7 @@ import { defineFrnlComponent } from '@ultrst-armada/frnlts';
 import { useFrnlComponent } from '@ultrst-armada/frnlts/react';
 import { useFloksFrnlStore } from './store.js';
 import { useBottomStrip } from '../components/bottom-strip/index.js';
-import { resolveFrnlInput, useFrnlSemanticInputContext, type FrnlInputContract } from '@ultrst-armada/frnlts';
+import { createDefaultFrnlInputContract, resolveFrnlInput, useFrnlSemanticInputContext, type FrnlInputContract } from '@ultrst-armada/frnlts';
 
 export interface FrnlTextInputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'size'> {
   id?: string;
@@ -18,7 +18,8 @@ export interface FrnlTextInputProps extends Omit<React.InputHTMLAttributes<HTMLI
   leadingIcon?: React.ReactNode;
   trailingIcon?: React.ReactNode;
   onClear?: () => void;
-  semanticInput?: FrnlInputContract<any>;
+  /** undefined = framework auto contract; null = explicitly disable semantic resolution. */
+  semanticInput?: FrnlInputContract<any> | null;
   onSemanticValue?: (value: any, rawInput?: string) => void;
 }
 
@@ -90,6 +91,8 @@ export const frnlTextInput: React.FC<FrnlTextInputProps> = ({
   onSemanticValue,
   disabled = false,
   value,
+  name,
+  type = 'text',
   onChange,
   onFocus,
   onBlur,
@@ -104,6 +107,16 @@ export const frnlTextInput: React.FC<FrnlTextInputProps> = ({
   const { setInspectionText } = useBottomStrip();
   const generatedId = useId().replace(/[:/]/g, '');
   const componentId = id ?? `frnlTextInput.${label ? label.toLowerCase().replace(/[^a-z0-9]/g, '-') : generatedId}`;
+  const effectiveSemanticInput = useMemo(() => {
+    if (semanticInput === null) return undefined;
+    return semanticInput ?? createDefaultFrnlInputContract({
+      name: name ?? componentId,
+      label: label ?? name ?? componentId,
+      description,
+      inputType: type,
+      context: semanticContext,
+    });
+  }, [semanticInput, name, componentId, label, description, type, semanticContext]);
 
   const resolvedState = disabled
     ? 'disabled'
@@ -140,9 +153,9 @@ export const frnlTextInput: React.FC<FrnlTextInputProps> = ({
   };
 
   const handleSemanticBlur = async () => {
-    if (!semanticInput || typeof value !== 'string' || !value.trim()) return;
-    const result = await resolveFrnlInput(semanticInput, value, semanticContext);
-    if (result.status === 'resolved' && result.value !== undefined) {
+    if (!effectiveSemanticInput || typeof value !== 'string' || !value.trim()) return;
+    const result = await resolveFrnlInput(effectiveSemanticInput, value, semanticContext);
+    if (result && result.status === 'resolved' && result.value !== undefined) {
       onSemanticValue?.(result.value, result.rawInput);
       const strVal = typeof result.value === 'string' ? result.value : String(result.value);
       if (strVal !== value) {
@@ -183,10 +196,12 @@ export const frnlTextInput: React.FC<FrnlTextInputProps> = ({
         <input
           {...rest}
           id={componentId}
+          name={name}
+          type={type}
           value={value}
           disabled={disabled}
           data-frnl-component="frnlTextInput"
-          data-semantic-input={semanticInput ? 'true' : 'false'}
+          data-semantic-input={effectiveSemanticInput ? 'true' : 'false'}
           data-frnl-state={frnl.state}
           onChange={(e) => {
             onChange?.(e);
