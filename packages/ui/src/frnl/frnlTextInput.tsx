@@ -196,6 +196,8 @@ export const frnlTextInput: React.FC<FrnlTextInputProps> = ({
         <input
           {...rest}
           id={componentId}
+          name={name}
+          type={type}
           value={value}
           disabled={disabled}
           data-frnl-component="frnlTextInput"
