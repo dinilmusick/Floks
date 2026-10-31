@@ -7,6 +7,7 @@ import { defineFrnlComponent } from '@ultrst-armada/frnlts';
 import { useFrnlComponent } from '@ultrst-armada/frnlts/react';
 import { useFloksFrnlStore } from './store.js';
 import { useBottomStrip } from '../components/bottom-strip/index.js';
+import { resolveFrnlInput, type FrnlInputContract } from '@ultrst-armada/frnlts';
 
 export interface FrnlTextInputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'size'> {
   id?: string;
@@ -17,6 +18,8 @@ export interface FrnlTextInputProps extends Omit<React.InputHTMLAttributes<HTMLI
   leadingIcon?: React.ReactNode;
   trailingIcon?: React.ReactNode;
   onClear?: () => void;
+  semanticInput?: FrnlInputContract<string>;
+  onSemanticValue?: (value: string, rawInput?: string) => void;
 }
 
 export const frnlTextInputDefinition = defineFrnlComponent({
@@ -82,6 +85,8 @@ export const frnlTextInput: React.FC<FrnlTextInputProps> = ({
   leadingIcon,
   trailingIcon,
   onClear,
+  semanticInput,
+  onSemanticValue,
   disabled = false,
   value,
   onChange,
@@ -131,6 +136,18 @@ export const frnlTextInput: React.FC<FrnlTextInputProps> = ({
     }
   };
 
+  const handleSemanticBlur = async () => {
+    if (!semanticInput || typeof value !== 'string' || !value.trim()) return;
+    const result = await resolveFrnlInput(semanticInput, value);
+    if (result.status === 'resolved' && typeof result.value === 'string') {
+      onSemanticValue?.(result.value, result.rawInput);
+      if (result.value !== value) {
+        const syntheticEvent = { target: { value: result.value } } as React.ChangeEvent<HTMLInputElement>;
+        onChange?.(syntheticEvent);
+      }
+    }
+  };
+
   const handleLeave = (e: React.MouseEvent<HTMLInputElement>) => {
     onMouseLeave?.(e);
     setInspectionText(null);
@@ -165,6 +182,7 @@ export const frnlTextInput: React.FC<FrnlTextInputProps> = ({
           value={value}
           disabled={disabled}
           data-frnl-component="frnlTextInput"
+          data-semantic-input={semanticInput ? 'true' : 'false'}
           data-frnl-state={frnl.state}
           onChange={(e) => {
             onChange?.(e);
@@ -177,6 +195,7 @@ export const frnlTextInput: React.FC<FrnlTextInputProps> = ({
           }}
           onBlur={(e) => {
             onBlur?.(e);
+            void handleSemanticBlur();
             frnl.events.blur?.(e);
             setInspectionText(null);
           }}
