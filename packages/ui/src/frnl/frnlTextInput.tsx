@@ -155,7 +155,7 @@ export const frnlTextInput: React.FC<FrnlTextInputProps> = ({
   const handleSemanticBlur = async () => {
     if (!effectiveSemanticInput || typeof value !== 'string' || !value.trim()) return;
     const result = await resolveFrnlInput(effectiveSemanticInput, value, semanticContext);
-    if (result.status === 'resolved' && result.value !== undefined) {
+    if (result && result.status === 'resolved' && result.value !== undefined) {
       onSemanticValue?.(result.value, result.rawInput);
       const strVal = typeof result.value === 'string' ? result.value : String(result.value);
       if (strVal !== value) {

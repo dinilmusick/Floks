@@ -339,7 +339,7 @@ describe('frnlTextInput Semantic Input Specification', () => {
     expect(enabledRaw).toBe('   messy natural input   ');
   });
 
-  // 7. Ordinary inputs without semantic configuration behave normally
+  // 7. Ordinary inputs with semanticInput={null} behave normally
   it('7. ordinary inputs without semanticInput behave normally and fire onBlur without resolution', async () => {
     let blurFired = false;
     let changeFired = false;
@@ -349,6 +349,7 @@ describe('frnlTextInput Semantic Input Specification', () => {
         id: 'normal-input',
         label: 'Standard',
         value: 'plain text',
+        semanticInput: null,
         onBlur: () => {
           blurFired = true;
         },
