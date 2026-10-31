@@ -464,4 +464,36 @@ describe('frnlTextInput Semantic Input Specification', () => {
     expect(observed?.clarification?.candidates).toEqual(['May', 'March']);
   });
 
+  it("11. surfaces every semantic result to the host", async () => {
+    resolveFrnlInputMock.mockResolvedValueOnce({
+      status: "invalid",
+      value: undefined,
+      candidates: [],
+      modelOutput: undefined,
+      error: {code: "SCHEMA_MISMATCH", message: "invalid"},
+    });
+    let observed: any;
+    render(
+      React.createElement(frnlTextInput, {
+        id: "result-surface-input",
+        label: "Result Surface",
+        value: "bad value",
+        semanticInput: createFrnlInputContract({
+          name: "resultSurface",
+          label: "Result Surface",
+          schema: {type: "number"},
+          validator: z.number(),
+        }),
+        onChange: () => {},
+        onSemanticResult: (result: any) => { observed = result; },
+      }),
+    );
+    await act(async () => {
+      fireEvent.blur(screen.getByLabelText("Result Surface"));
+      await new Promise((r) => setTimeout(r, 20));
+    });
+    expect(observed?.status).toBe("invalid");
+    expect(observed?.error?.code).toBe("SCHEMA_MISMATCH");
+  });
+
 });
