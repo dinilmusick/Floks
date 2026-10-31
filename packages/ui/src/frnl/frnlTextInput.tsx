@@ -18,8 +18,8 @@ export interface FrnlTextInputProps extends Omit<React.InputHTMLAttributes<HTMLI
   leadingIcon?: React.ReactNode;
   trailingIcon?: React.ReactNode;
   onClear?: () => void;
-  semanticInput?: FrnlInputContract<string>;
-  onSemanticValue?: (value: string, rawInput?: string) => void;
+  semanticInput?: FrnlInputContract<any>;
+  onSemanticValue?: (value: any, rawInput?: string) => void;
 }
 
 export const frnlTextInputDefinition = defineFrnlComponent({
@@ -30,6 +30,7 @@ export const frnlTextInputDefinition = defineFrnlComponent({
       events: {
         change: { functionId: 'frnlTextInput.idle.change' },
         focus: { functionId: 'frnlTextInput.idle.focus' },
+        blur: { functionId: 'frnlTextInput.idle.blur' },
       },
       visualParameters: { borderColor: 'var(--skipo-border-subtle, #334155)' },
       phases: {
@@ -114,6 +115,7 @@ export const frnlTextInput: React.FC<FrnlTextInputProps> = ({
     () => ({
       'frnlTextInput.idle.change': (payload: unknown) => onChange?.(payload as any),
       'frnlTextInput.idle.focus': (payload: unknown) => onFocus?.(payload as any),
+      'frnlTextInput.idle.blur': (payload: unknown) => onBlur?.(payload as any),
       'frnlTextInput.focused.change': (payload: unknown) => onChange?.(payload as any),
       'frnlTextInput.focused.blur': (payload: unknown) => onBlur?.(payload as any),
       'frnlTextInput.error.change': (payload: unknown) => onChange?.(payload as any),
@@ -139,14 +141,12 @@ export const frnlTextInput: React.FC<FrnlTextInputProps> = ({
 
   const handleSemanticBlur = async () => {
     if (!semanticInput || typeof value !== 'string' || !value.trim()) return;
-    const result = await resolveFrnlInput({
-      ...semanticInput,
-      context: {...semanticContext, ...semanticInput.context},
-    }, value);
-    if (result.status === 'resolved' && typeof result.value === 'string') {
+    const result = await resolveFrnlInput(semanticInput, value, semanticContext);
+    if (result.status === 'resolved' && result.value !== undefined) {
       onSemanticValue?.(result.value, result.rawInput);
-      if (result.value !== value) {
-        const syntheticEvent = { target: { value: result.value } } as React.ChangeEvent<HTMLInputElement>;
+      const strVal = typeof result.value === 'string' ? result.value : String(result.value);
+      if (strVal !== value) {
+        const syntheticEvent = { target: { value: strVal } } as React.ChangeEvent<HTMLInputElement>;
         onChange?.(syntheticEvent);
       }
     }

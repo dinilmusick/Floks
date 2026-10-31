@@ -103,7 +103,7 @@
   },
   "dependencies": {
     "zod": "^3.24.1",
-    "@ultrst-armada/frnlts": "^0.3.0",
+    "@ultrst-armada/frnlts": "^0.4.0",
     "zustand": "^5.0.3",
     "@xyflow/react": "^12.8.6",
     "d3-force": "^3.0.0"
