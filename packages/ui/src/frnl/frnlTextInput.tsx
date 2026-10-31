@@ -7,7 +7,7 @@ import { defineFrnlComponent } from '@ultrst-armada/frnlts';
 import { useFrnlComponent } from '@ultrst-armada/frnlts/react';
 import { useFloksFrnlStore } from './store.js';
 import { useBottomStrip } from '../components/bottom-strip/index.js';
-import { createDefaultFrnlInputContract, resolveFrnlInput, useFrnlSemanticInputContext, type FrnlInputContract } from '@ultrst-armada/frnlts';
+import { createDefaultFrnlInputContract, resolveFrnlInput, useFrnlSemanticInputContext, type FrnlInputContract, type FrnlResolvedInput } from '@ultrst-armada/frnlts';
 
 export interface FrnlTextInputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'size'> {
   id?: string;
@@ -20,7 +20,7 @@ export interface FrnlTextInputProps extends Omit<React.InputHTMLAttributes<HTMLI
   onClear?: () => void;
   /** undefined = framework auto contract; null = explicitly disable semantic resolution. */
   semanticInput?: FrnlInputContract<any> | null;
-  onSemanticValue?: (value: any, rawInput?: string) => void;
+  onSemanticValue?: (value: any, rawInput?: string) => void;\n  onSemanticResult?: (result: FrnlResolvedInput<any>) => void;
 }
 
 export const frnlTextInputDefinition = defineFrnlComponent({
