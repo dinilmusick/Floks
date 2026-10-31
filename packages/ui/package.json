@@ -97,13 +97,13 @@
     }
   },
   "scripts": {
-    "build": "tsup src/index.ts src/theme/index.ts src/palette/index.ts src/hierarchy/index.ts src/frnl/index.ts src/frnl/store.ts src/components/base/index.ts src/components/containers/index.ts src/components/composite/index.ts src/components/layout/index.ts src/components/bottom-strip/index.ts src/components/settings/index.ts src/components/auth/index.ts src/components/workspace/index.ts src/components/tiles/index.ts src/components/graph/index.ts src/components/ai/index.ts --format esm --dts --clean --external react --external react-dom --external lucide-react",
+    "build": "tsup src/index.ts src/theme/index.ts src/palette/index.ts src/hierarchy/index.ts src/frnl/index.ts src/frnl/store.ts src/components/base/index.ts src/components/containers/index.ts src/components/composite/index.ts src/components/layout/index.ts src/components/bottom-strip/index.ts src/components/settings/index.ts src/components/auth/index.ts src/components/workspace/index.ts src/components/tiles/index.ts src/components/graph/index.ts src/components/ai/index.ts --format esm --dts --clean --external react --external react-dom --external lucide-react --external @ultrst-armada/frnlts",
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist"
   },
   "dependencies": {
     "zod": "^3.24.1",
-    "@ultrst-armada/frnlts": "^0.4.1",
+    "@ultrst-armada/frnlts": "^0.5.3",
     "zustand": "^5.0.3",
     "@xyflow/react": "^12.8.6",
     "d3-force": "^3.0.0"

@@ -9,11 +9,11 @@ importers:
   .:
     dependencies:
       '@dinilmusick/gutts':
-        specifier: ^1.2.1
-        version: 1.3.1(@types/node@22.20.5)
+        specifier: ^1.3.2
+        version: 1.3.2(@types/node@22.20.5)
       '@ultrst-armada/frnlts':
-        specifier: ^0.4.1
-        version: 0.5.2(@types/node@22.20.5)(@types/react@19.3.0)(react@19.3.0)(use-sync-external-store@1.7.0(react@19.3.0))
+        specifier: ^0.5.3
+        version: 0.5.3(@types/node@22.20.5)(@types/react@19.3.0)(react@19.3.0)(use-sync-external-store@1.7.0(react@19.3.0))
       '@xyflow/react':
         specifier: ^12.8.6
         version: 12.12.0(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
@@ -82,8 +82,8 @@ importers:
         specifier: workspace:*
         version: link:../ui
       '@ultrst-armada/frnlts':
-        specifier: ^0.4.1
-        version: 0.5.2(@types/node@22.20.5)(@types/react@19.3.0)(react@19.3.0)(use-sync-external-store@1.7.0(react@19.3.0))
+        specifier: ^0.5.3
+        version: 0.5.3(@types/node@22.20.5)(@types/react@19.3.0)(react@19.3.0)(use-sync-external-store@1.7.0(react@19.3.0))
       '@ultrst-armada/kloks':
         specifier: ^1.22.2
         version: 1.22.2(@types/react@19.3.0)(react@19.3.0)(use-sync-external-store@1.7.0(react@19.3.0))
@@ -103,8 +103,8 @@ importers:
   packages/ui:
     dependencies:
       '@ultrst-armada/frnlts':
-        specifier: ^0.4.1
-        version: 0.5.2(@types/node@22.20.5)(@types/react@19.3.0)(react@19.3.0)(use-sync-external-store@1.7.0(react@19.3.0))
+        specifier: ^0.5.3
+        version: 0.5.3(@types/node@22.20.5)(@types/react@19.3.0)(react@19.3.0)(use-sync-external-store@1.7.0(react@19.3.0))
       '@xyflow/react':
         specifier: ^12.8.6
         version: 12.12.0(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
@@ -224,8 +224,8 @@ packages:
     resolution: {integrity: sha512-NpugTzbKgGrNe45Ui32cN8vCFFMxVtP/9rtfwv0nP5FRDAjvYBxJcLVpYA9mr1jxP6cnIT7x9LUzuDTbWYYNRA==}
     engines: {node: '>=6.9.0'}
 
-  '@dinilmusick/gutts@1.3.1':
-    resolution: {}
+  '@dinilmusick/gutts@1.3.2':
+    resolution: {integrity: sha512-MMUFUtSd+ayEEekv96t/jZIR0DybaTwKJXyAw+xmXBgYsVJE1pF+6doLJRexWG5Y269ygX7xCocl/t0faUAR7A==}
 
   '@dnd-kit/accessibility@3.1.1':
     resolution: {integrity: sha512-2P+YgaXF+gRsIihwwY1gCsQSYnu9Zyj2py8kY5fFvUM1qm2WA2u639R6YNVfU4GWr+ZM5mqEsfHZZLoRONbemw==}
@@ -1027,8 +1027,8 @@ packages:
   '@types/ws@8.18.2':
     resolution: {integrity: sha512-67MQl+fpWKVTT1NYdnmo3U4sc/xPo/zQBncVnI74qmQa0z/b+1g6iYqNmGCPbxO+zz2aklb08a0oHfegiVd0/w==}
 
-  '@ultrst-armada/frnlts@0.5.2':
-    resolution: {}
+  '@ultrst-armada/frnlts@0.5.3':
+    resolution: {integrity: sha512-4BHow5tkLmlX+qYm4Jyg8476TRtYP/hzxzc9LAdG0U2JnKjp95QA8DDtRmbQXDR+haq0NlVRdoM3ktBTMAU1Mw==}
     engines: {node: '>=20.0.0'}
     hasBin: true
     peerDependencies:
@@ -1973,7 +1973,7 @@ snapshots:
 
   '@babel/runtime@7.29.10': {}
 
-  '@dinilmusick/gutts@1.3.1(@types/node@22.20.5)':
+  '@dinilmusick/gutts@1.3.2(@types/node@22.20.5)':
     dependencies:
       '@huggingface/transformers': 4.3.2(@types/node@22.20.5)
       cactus-needle: 0.3.0
@@ -2521,9 +2521,9 @@ snapshots:
     dependencies:
       '@types/node': 22.20.5
 
-  '@ultrst-armada/frnlts@0.5.2(@types/node@22.20.5)(@types/react@19.3.0)(react@19.3.0)(use-sync-external-store@1.7.0(react@19.3.0))':
+  '@ultrst-armada/frnlts@0.5.3(@types/node@22.20.5)(@types/react@19.3.0)(react@19.3.0)(use-sync-external-store@1.7.0(react@19.3.0))':
     dependencies:
-      '@dinilmusick/gutts': 1.3.1(@types/node@22.20.5)
+      '@dinilmusick/gutts': 1.3.2(@types/node@22.20.5)
       react: 19.3.0
       typescript: 5.9.3
       zod: 3.25.76

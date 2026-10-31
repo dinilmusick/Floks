@@ -13,6 +13,7 @@ import {
   frnlBottomBar,
   frnlPage,
   floksFrnlStore,
+  FrnlStoreProvider,
 } from '../packages/ui/src/index.js';
 import {
   createFrnlStore,
@@ -65,7 +66,7 @@ it('8. frnlPage mounts supplied page orchestrations and cleans them up', async (
 
   render(
     React.createElement(
-      (await import('../packages/ui/src/frnl/store.js')).FrnlStoreProvider,
+      FrnlStoreProvider,
       { store },
       React.createElement(frnlPage, { orchestrations: [orchestration] }, <div>Page</div>),
     ),

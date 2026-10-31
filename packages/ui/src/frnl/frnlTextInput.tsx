@@ -90,6 +90,7 @@ export const frnlTextInput: React.FC<FrnlTextInputProps> = ({
   onClear,
   semanticInput,
   onSemanticValue,
+  onSemanticResult,
   disabled = false,
   value,
   name,
