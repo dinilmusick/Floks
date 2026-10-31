@@ -93,7 +93,7 @@
     "@types/node": "^22.0.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
-    "@ultrst-armada/kloks": "^1.22.2",
+    "@ultrst-armada/kloks": "^1.23.0",
     "@ultrst-armada/frnlts": "^0.5.3",
     "happy-dom": "^21.0.3",
     "lucide-react": "^1.55.0",
