@@ -20,7 +20,8 @@ export interface FrnlTextInputProps extends Omit<React.InputHTMLAttributes<HTMLI
   onClear?: () => void;
   /** undefined = framework auto contract; null = explicitly disable semantic resolution. */
   semanticInput?: FrnlInputContract<any> | null;
-  onSemanticValue?: (value: any, rawInput?: string) => void;\n  onSemanticResult?: (result: FrnlResolvedInput<any>) => void;
+  onSemanticValue?: (value: any, rawInput?: string) => void;
+  onSemanticResult?: (result: FrnlResolvedInput<any>) => void;
 }
 
 export const frnlTextInputDefinition = defineFrnlComponent({
@@ -155,6 +156,7 @@ export const frnlTextInput: React.FC<FrnlTextInputProps> = ({
   const handleSemanticBlur = async () => {
     if (!effectiveSemanticInput || typeof value !== 'string' || !value.trim()) return;
     const result = await resolveFrnlInput(effectiveSemanticInput, value, semanticContext);
+    onSemanticResult?.(result);
     if (result && result.status === 'resolved' && result.value !== undefined) {
       onSemanticValue?.(result.value, result.rawInput);
       const strVal = typeof result.value === 'string' ? result.value : String(result.value);
