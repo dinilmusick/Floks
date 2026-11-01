@@ -4,7 +4,7 @@
  */
 
 import React, { useState } from 'react';
-import { Send } from 'lucide-react';
+import { Bug, Send } from 'lucide-react';
 import { BaseButton } from '../../base/BaseButton.js';
 import { BaseTextarea } from '../../base/BaseTextarea.js';
 
@@ -13,6 +13,7 @@ export interface DirectChatInputProps {
   disabled?: boolean;
   placeholder?: string;
   toolsSlot?: React.ReactNode;
+  onReportBug?: (description: string) => void;
 }
 
 export const DirectChatInput: React.FC<DirectChatInputProps> = ({
@@ -20,6 +21,7 @@ export const DirectChatInput: React.FC<DirectChatInputProps> = ({
   disabled = false,
   placeholder = 'Type a prompt... (Shift+Enter for new line)',
   toolsSlot,
+  onReportBug,
 }) => {
   const [content, setContent] = useState('');
 
@@ -39,7 +41,7 @@ export const DirectChatInput: React.FC<DirectChatInputProps> = ({
   return (
     <div className="p-3 border-t border-slate-300 dark:border-slate-800 bg-white dark:bg-slate-900 font-mono text-xs">
       <div className="flex items-center justify-between pb-2">
-        <div className="flex items-center gap-2">{toolsSlot}</div>
+        <div className="flex items-center gap-2">{toolsSlot}{onReportBug && <BaseButton size="sm" variant="ghost" onClick={() => content.trim() && onReportBug(content.trim())} disabled={disabled || !content.trim()} title="Report bug"><Bug size={13} /> Report bug</BaseButton>}</div>
       </div>
 
       <div className="flex items-end gap-2">
