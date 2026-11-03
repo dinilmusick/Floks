@@ -150,6 +150,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
             <>
               <div className="my-4 flex items-center gap-2 text-[9px] text-[var(--skipo-text-muted)]"><span className="h-px flex-1 bg-[var(--skipo-border-color)]" /> OR <span className="h-px flex-1 bg-[var(--skipo-border-color)]" /></div>
               <GoogleSignInButton
+                label={mode === 'register' ? 'SIGN UP WITH GOOGLE' : 'CONTINUE WITH GOOGLE'}
                 onSignIn={async () => {
                   setGoogleLoading(true);
                   setError(null);

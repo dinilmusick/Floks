@@ -1,6 +1,6 @@
 {
   "name": "@floks/ui",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Floks UI — Reusable React Component Library with Theme Engine, Base Primitives, Containers, Composite & Layout",
   "type": "module",
   "private": false,
@@ -109,9 +109,15 @@
     "d3-force": "^3.0.0"
   },
   "peerDependencies": {
+    "better-auth": ">=1.7.0",
     "lucide-react": ">=0.300.0",
     "react": "^18.0.0 || ^19.0.0",
     "react-dom": "^18.0.0 || ^19.0.0"
+  },
+  "peerDependenciesMeta": {
+    "better-auth": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "@types/d3-force": "^3.0.10"
