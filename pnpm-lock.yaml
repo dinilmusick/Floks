@@ -43,8 +43,8 @@ importers:
         specifier: ^19.0.0
         version: 19.3.0(@types/react@19.3.0)
       '@ultrst-armada/kloks':
-        specifier: ^1.24.0
-        version: 1.24.0(@types/react@19.3.0)(react@19.3.0)(use-sync-external-store@1.7.0(react@19.3.0))
+        specifier: ^1.24.4
+        version: 1.24.4(@types/react@19.3.0)(react@19.3.0)(use-sync-external-store@1.7.0(react@19.3.0))
       happy-dom:
         specifier: ^21.0.3
         version: 21.0.3
@@ -85,8 +85,8 @@ importers:
         specifier: ^0.5.3
         version: 0.5.3(@types/node@22.20.5)(@types/react@19.3.0)(react@19.3.0)(use-sync-external-store@1.7.0(react@19.3.0))
       '@ultrst-armada/kloks':
-        specifier: ^1.24.0
-        version: 1.24.0(@types/react@19.3.0)(react@19.3.0)(use-sync-external-store@1.7.0(react@19.3.0))
+        specifier: ^1.24.4
+        version: 1.24.4(@types/react@19.3.0)(react@19.3.0)(use-sync-external-store@1.7.0(react@19.3.0))
       monaco-editor:
         specifier: ^0.50.0
         version: 0.50.0
@@ -1035,17 +1035,20 @@ packages:
     peerDependencies:
       react: ^18.0.0 || ^19.0.0
 
-  '@ultrst-armada/kloks@1.24.0':
-    resolution: {integrity: sha512-u+2SZuPnZNVsAXQlskzO0dJQB80Gc+rR93AcRf3Jit0Lexzgxktu2QG02KtzNoSgUKDrzRjdX4zLyhJ3g9DhgQ==}
+  '@ultrst-armada/kloks@1.24.4':
+    resolution: {integrity: sha512-J2EKK6Qx6gPQNEpCtgr391a06eZmch3OtOpJHTeex6gjUm/F/aB28Pl52rvo3KTxXiyMB5GFVkEmBosEHaIQRA==}
     peerDependencies:
       '@neondatabase/serverless': ^0.10.0 || ^1.0.0
       '@supabase/supabase-js': ^2.45.0
+      '@ultrst-armada/krnl': ^1.0.9
       better-sqlite3: ^11.0.0
       react: ^18.0.0 || ^19.0.0
     peerDependenciesMeta:
       '@neondatabase/serverless':
         optional: true
       '@supabase/supabase-js':
+        optional: true
+      '@ultrst-armada/krnl':
         optional: true
       better-sqlite3:
         optional: true
@@ -2536,7 +2539,7 @@ snapshots:
       - immer
       - use-sync-external-store
 
-  '@ultrst-armada/kloks@1.24.0(@types/react@19.3.0)(react@19.3.0)(use-sync-external-store@1.7.0(react@19.3.0))':
+  '@ultrst-armada/kloks@1.24.4(@types/react@19.3.0)(react@19.3.0)(use-sync-external-store@1.7.0(react@19.3.0))':
     dependencies:
       '@aws-sdk/client-s3': 3.1152.0
       '@webcontainer/api': 1.6.4
