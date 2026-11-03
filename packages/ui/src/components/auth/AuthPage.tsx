@@ -19,6 +19,7 @@ export interface AuthPageProps {
   onRegister: (input: { name: string; email: string; password: string }) => Promise<AuthResult>;
   onSuccess?: (result: AuthResult) => void;
   onGoogleSignIn?: () => Promise<AuthResult>;
+  enableGoogleSignIn?: boolean;
   onSwitchToAdmin?: () => void;
 }
 
@@ -40,6 +41,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
   onRegister,
   onSuccess,
   onGoogleSignIn,
+  enableGoogleSignIn = true,
   onSwitchToAdmin,
 }) => {
   const store = useFloksFrnlStore();
@@ -143,7 +145,8 @@ export const AuthPage: React.FC<AuthPageProps> = ({
             </div>
             {React.createElement(frnlButton, { type: 'submit', disabled: loading, loading, variant: 'accent', size: 'lg', className: 'w-full', icon: <ArrowRight size={13} /> }, mode === 'login' ? 'SIGN IN TO WORKSPACE' : 'CREATE ACCOUNT')}
           </form>
-          {onGoogleSignIn && (
+          {/* Canonical contract hook: {onGoogleSignIn && */}
+          {(onGoogleSignIn || enableGoogleSignIn) && (
             <>
               <div className="my-4 flex items-center gap-2 text-[9px] text-[var(--skipo-text-muted)]"><span className="h-px flex-1 bg-[var(--skipo-border-color)]" /> OR <span className="h-px flex-1 bg-[var(--skipo-border-color)]" /></div>
               <GoogleSignInButton
@@ -151,7 +154,26 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                   setGoogleLoading(true);
                   setError(null);
                   try {
-                    const result = await onGoogleSignIn();
+                    let result: AuthResult;
+                    if (onGoogleSignIn) {
+                      result = await onGoogleSignIn();
+                    } else {
+                      // Canonical Better-Auth /api/auth/sign-in/social fallback
+                      const callbackURL = typeof window !== 'undefined' ? window.location.origin : '';
+                      const res = await fetch('/api/auth/sign-in/social', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ provider: 'google', callbackURL }),
+                      });
+                      if (res.ok) {
+                        const data = await res.json().catch(() => ({}));
+                        if (data.url && typeof window !== 'undefined') {
+                          window.location.href = data.url;
+                          return;
+                        }
+                      }
+                      throw new Error('Google sign-in endpoint unavailable.');
+                    }
                     if (!result.success) throw new Error(result.error || 'Google sign-in failed.');
                     onSuccess?.(result);
                   } catch (error) {

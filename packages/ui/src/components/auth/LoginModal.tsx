@@ -7,23 +7,29 @@ import React, { useState } from 'react';
 import { ArrowRight, ShieldCheck, AlertCircle } from 'lucide-react';
 import { BaseButton } from '../base/BaseButton.js';
 import { BaseInput } from '../base/BaseInput.js';
+import { GoogleSignInButton } from './GoogleSignInButton.js';
 
 export interface LoginModalProps {
   appName?: string;
   onSuccess: (user: any, token: string) => void;
   defaultEmail?: string;
+  onGoogleSignIn?: () => Promise<void> | void;
+  enableGoogleSignIn?: boolean;
 }
 
 export const LoginModal: React.FC<LoginModalProps> = ({
   appName = 'Ecosystem App',
   onSuccess,
   defaultEmail = '',
+  onGoogleSignIn,
+  enableGoogleSignIn = true,
 }) => {
   const [email, setEmail] = useState(defaultEmail);
   const [password, setPassword] = useState('');
   const [isRegister, setIsRegister] = useState(false);
   const [name, setName] = useState('');
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -137,6 +143,45 @@ export const LoginModal: React.FC<LoginModalProps> = ({
             </BaseButton>
           </div>
         </form>
+
+        {enableGoogleSignIn !== false && (
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 text-[9px] text-[var(--skipo-text-muted)]">
+              <span className="h-px flex-1 bg-[var(--skipo-border-color)]" /> OR <span className="h-px flex-1 bg-[var(--skipo-border-color)]" />
+            </div>
+            <GoogleSignInButton
+              disabled={loading || googleLoading}
+              loading={googleLoading}
+              onSignIn={async () => {
+                setGoogleLoading(true);
+                setError(null);
+                try {
+                  if (onGoogleSignIn) {
+                    await onGoogleSignIn();
+                  } else {
+                    const res = await fetch('/api/auth/sign-in/social', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ provider: 'google', callbackURL: window.location.origin }),
+                    });
+                    if (res.ok) {
+                      const data = await res.json().catch(() => ({}));
+                      if (data.url) {
+                        window.location.href = data.url;
+                        return;
+                      }
+                    }
+                    throw new Error('Google sign-in endpoint unavailable.');
+                  }
+                } catch (err: any) {
+                  setError(err.message || 'Google sign-in failed.');
+                } finally {
+                  setGoogleLoading(false);
+                }
+              }}
+            />
+          </div>
+        )}
 
         <div className="pt-2 border-t border-[var(--skipo-border-color)]/60 flex items-center justify-between text-[11px]">
           <button
