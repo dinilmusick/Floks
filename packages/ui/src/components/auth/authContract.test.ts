@@ -43,6 +43,17 @@ describe('canonical auth UI contract', () => {
     expect(source).toContain('<LuthAuthPage');
   });
 
+  it('keeps LoginModal on the canonical client without local token storage or direct auth endpoints', () => {
+    const source = fs.readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), 'LoginModal.tsx'), 'utf8');
+    expect(source).toContain('useLuthAuth');
+    expect(source).toContain('auth.signIn');
+    expect(source).toContain('auth.signUp');
+    expect(source).toContain('auth.signInWithGoogle');
+    expect(source).not.toContain('localStorage');
+    expect(source).not.toContain("fetch('/api/auth");
+    expect(source).not.toContain('skipo_auth_token');
+  });
+
   it('keeps Google Drive authorization out of the sign-in control', () => {
     const source = fs.readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), 'GoogleSignInButton.tsx'), 'utf8');
     expect(source).not.toContain('drive');
