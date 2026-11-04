@@ -114,7 +114,10 @@ export const LuthAuthPage: React.FC<LuthAuthPageProps> = ({
     if (auth.session.authenticated && auth.user) onAuthenticatedRef.current?.(auth.user);
   }, [auth.session.authenticated, auth.user]);
 
-  const toResult = (user: unknown): AuthResult => ({ success: true, user });
+  const toResult = (session: LuthSessionResult): AuthResult => {
+    if (!session.authenticated || !session.user) return { success: false, error: 'Luth did not establish an authenticated session.' };
+    return { success: true, user: session.user };
+  };
 
   if (auth.loading) return <AuthLoadingScreen label="CONNECTING TO LUTH..." />;
 
@@ -131,8 +134,8 @@ export const LuthAuthPage: React.FC<LuthAuthPageProps> = ({
   return (
     <AuthPage
       {...presentation}
-      onLogin={async (email, password) => toResult((await auth.signIn({ email, password })).user)}
-      onRegister={async ({ name, email, password }) => toResult((await auth.signUp({ name, email, password })).user)}
+      onLogin={async (email, password) => toResult(await auth.signIn({ email, password }))}
+      onRegister={async ({ name, email, password }) => toResult(await auth.signUp({ name, email, password }))}
       onGoogleSignIn={async () => {
         try {
           const value = await auth.signInWithGoogle();
@@ -146,7 +149,6 @@ export const LuthAuthPage: React.FC<LuthAuthPageProps> = ({
       }}
       onSuccess={(value) => {
         onSuccess?.(value);
-        if (value.user) onAuthenticatedRef.current?.(value.user as NonNullable<LuthSessionResult['user']>);
       }}
     />
   );
