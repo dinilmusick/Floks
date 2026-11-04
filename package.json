@@ -79,7 +79,7 @@
     "d3-force": "^3.0.0",
     "zod": "^3.24.1",
     "zustand": "^5.0.3",
-    "@dinilmusick/gutts": "^1.4.2"
+    "@dinilmusick/gutts": "git+https://github.com/dinilmusick/GutTS.git#2ccc70f0026e77ef85717c6fb8696c23a6779499"
   },
   "peerDependencies": {
     "@ultrst-armada/kloks": "^1.17.0",
@@ -109,5 +109,9 @@
     "type": "git",
     "url": "git+https://github.com/dinilmusick/Floks.git"
   },
-  "pnpm": {}
+  "pnpm": {
+    "overrides": {
+      "@dinilmusick/gutts": "git+https://github.com/dinilmusick/GutTS.git#2ccc70f0026e77ef85717c6fb8696c23a6779499"
+    }
+  }
 }
