@@ -165,7 +165,6 @@ export class LuthAuthClient {
   }
 
   public async signOut(): Promise<void> {
-    await this.ensureRegistered();
     const response = await this.request('/api/auth/sign-out', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
