@@ -4,3 +4,6 @@ export type { AuthPageProps, AuthResult } from './AuthPage.js';
 export type { LoginModalProps } from './LoginModal.js';
 
 export * from './GoogleSignInButton.js';
+
+export * from './LuthAuthClient.js';
+export * from './luthAuthTypes.js';
