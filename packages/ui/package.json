@@ -102,6 +102,7 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
+    "@dinilmusick/gutts": "^1.4.0",
     "zod": "^3.24.1",
     "@ultrst-armada/frnlts": "^0.5.3",
     "zustand": "^5.0.3",
