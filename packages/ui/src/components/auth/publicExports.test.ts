@@ -5,7 +5,7 @@ import {
   LuthAuthPage,
   LuthProtectedRoute,
   useLuthAuth,
-} from '@ultrst-armada/floks/auth';
+} from './index.js';
 
 describe('Floks public authentication exports', () => {
   it('resolves integrated auth UI, lifecycle hook, and protected route from the package subpath', () => {
