@@ -28,6 +28,8 @@ export interface LuthAuthPageProps extends Omit<AuthPageProps, 'onLogin' | 'onRe
   onAuthenticated?: (user: NonNullable<LuthSessionResult['user']>) => void;
   onSuccess?: (result: AuthResult) => void;
   authenticatedContent?: React.ReactNode;
+  unauthenticatedContent?: React.ReactNode;
+  loadingContent?: React.ReactNode;
 }
 
 export function createLuthAuthClientForApplication(input: LuthAuthConfig): LuthAuthClient {
@@ -117,6 +119,8 @@ export const LuthAuthPage: React.FC<LuthAuthPageProps> = ({
   onAuthenticated,
   onSuccess,
   authenticatedContent,
+  unauthenticatedContent,
+  loadingContent,
   ...presentation
 }) => {
   const auth = useLuthAuth({ ecosystemId, applicationId, luthUrl });
@@ -132,7 +136,7 @@ export const LuthAuthPage: React.FC<LuthAuthPageProps> = ({
     return { success: true, user: session.user };
   };
 
-  if (auth.initializing) return <AuthLoadingScreen label="CONNECTING TO LUTH..." />;
+  if (auth.initializing) return <>{loadingContent ?? <AuthLoadingScreen label="CONNECTING TO LUTH..." />}</>;
 
   if (auth.session.authenticated && auth.user) {
     return authenticatedContent ?? (
@@ -143,6 +147,8 @@ export const LuthAuthPage: React.FC<LuthAuthPageProps> = ({
       </div>
     );
   }
+
+  if (unauthenticatedContent) return <>{unauthenticatedContent}</>;
 
   return (
     <AuthPage
