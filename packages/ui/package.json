@@ -1,6 +1,6 @@
 {
   "name": "@floks/ui",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Floks UI — Reusable React Component Library with Theme Engine, Base Primitives, Containers, Composite & Layout",
   "type": "module",
   "private": false,
