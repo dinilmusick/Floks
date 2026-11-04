@@ -58,6 +58,31 @@ describe('useLuthAuth lifecycle', () => {
     expect(result.current.session.authenticated).toBe(false);
   });
 
+  it('registers new accounts through the canonical Luth client and hydrates the returned session', async () => {
+    const user = { id: 'luth-user-2', email: 'new@example.test', name: 'New User' };
+    mocks.client.getSession
+      .mockResolvedValueOnce({ authenticated: false })
+      .mockResolvedValueOnce({ authenticated: true, user, session: { id: 'session-2', userId: user.id } });
+    const { result } = renderHook(() => useLuthAuth({ ecosystemId: 'ultrst-armada', applicationId: 'test-app' }));
+    await waitFor(() => expect(result.current.initializing).toBe(false));
+    await act(async () => {
+      await result.current.signUp({ name: user.name, email: user.email, password: 'not-a-real-password' });
+    });
+    expect(mocks.client.signUpWithEmail).toHaveBeenCalledWith({
+      name: user.name, email: user.email, password: 'not-a-real-password',
+    });
+    expect(result.current.user).toEqual(user);
+    expect(result.current.session.authenticated).toBe(true);
+  });
+
+  it('surfaces session hydration failures without inventing an authenticated state', async () => {
+    mocks.client.getSession.mockRejectedValueOnce(new Error('Luth unavailable'));
+    const { result } = renderHook(() => useLuthAuth({ ecosystemId: 'ultrst-armada', applicationId: 'test-app' }));
+    await waitFor(() => expect(result.current.initializing).toBe(false));
+    expect(result.current.session.authenticated).toBe(false);
+    expect(result.current.error).toBe('Luth unavailable');
+  });
+
   it('delegates Google sign-in to Luth', async () => {
     const { result } = renderHook(() => useLuthAuth({
       ecosystemId: 'ultrst-armada',
