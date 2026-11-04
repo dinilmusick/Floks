@@ -16,6 +16,8 @@ export type {
   GoogleSignInOptions,
   LuthAuthClientConfig,
   LuthAuthTokenStore,
+  LuthSession,
+  LuthUser,
   LuthSessionResult,
   RegisterApplicationResult,
 } from '@ultrst-armada/kloks/auth';
