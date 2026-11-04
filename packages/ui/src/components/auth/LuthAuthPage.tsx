@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { AuthPage, type AuthPageProps, type AuthResult } from './AuthPage.js';
 import { AuthLoadingScreen } from './AuthLoadingScreen.js';
 import { createLuthAuthClient as createClient } from './LuthAuthClient.js';
@@ -37,17 +37,19 @@ export const LuthAuthPage: React.FC<LuthAuthPageProps> = ({
     [ecosystemId, applicationId, luthUrl],
   );
   const [ready, setReady] = useState(false);
+  const onAuthenticatedRef = useRef(onAuthenticated);
+  useEffect(() => { onAuthenticatedRef.current = onAuthenticated; }, [onAuthenticated]);
 
   useEffect(() => {
     let active = true;
     void auth.getSession()
       .then((session) => {
-        if (active && session.authenticated && session.user) onAuthenticated?.(session.user);
+        if (active && session.authenticated && session.user) onAuthenticatedRef.current?.(session.user);
       })
       .catch(() => undefined)
       .finally(() => { if (active) setReady(true); });
     return () => { active = false; };
-  }, [auth, onAuthenticated]);
+  }, [auth]);
 
   const result = (value: unknown): AuthResult => {
     const payload = value && typeof value === 'object' ? value as Record<string, unknown> : {};
@@ -72,7 +74,7 @@ export const LuthAuthPage: React.FC<LuthAuthPageProps> = ({
       }}
       onSuccess={(value) => {
         onSuccess?.(value);
-        if (value.user) onAuthenticated?.(value.user);
+        if (value.user) onAuthenticatedRef.current?.(value.user);
       }}
     />
   );
