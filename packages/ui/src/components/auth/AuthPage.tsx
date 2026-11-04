@@ -1,4 +1,4 @@
-import React, { useId, useMemo, useState } from 'react';
+import React, { useEffect, useId, useMemo, useState } from 'react';
 import { LogIn, UserPlus, Eye, EyeOff, Shield, ArrowRight, AlertCircle } from 'lucide-react';
 import { GoogleSignInButton } from './GoogleSignInButton.js';
 import { defineFrnlComponent } from '@ultrst-armada/frnlts';
@@ -21,6 +21,7 @@ export interface AuthPageProps {
   onGoogleSignIn?: () => Promise<AuthResult>;
   enableGoogleSignIn?: boolean;
   onSwitchToAdmin?: () => void;
+  authError?: string | null;
 }
 
 export const authPageDefinition = defineFrnlComponent({
@@ -43,6 +44,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
   onGoogleSignIn,
   enableGoogleSignIn = true,
   onSwitchToAdmin,
+  authError,
 }) => {
   const store = useFloksFrnlStore();
   const generated = useId().replace(/[:/]/g, '');
