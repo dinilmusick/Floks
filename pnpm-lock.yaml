@@ -102,6 +102,9 @@ importers:
 
   packages/ui:
     dependencies:
+      '@dinilmusick/gutts':
+        specifier: ^1.4.0
+        version: 1.4.0(@types/node@22.20.5)
       '@ultrst-armada/frnlts':
         specifier: ^0.5.3
         version: 0.5.3(@types/node@22.20.5)(@types/react@19.3.0)(react@19.3.0)(use-sync-external-store@1.7.0(react@19.3.0))
