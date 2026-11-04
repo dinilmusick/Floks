@@ -1,4 +1,4 @@
-import React, { useId, useMemo, useState } from 'react';
+import React, { useEffect, useId, useMemo, useState } from 'react';
 import { LogIn, UserPlus, Eye, EyeOff, Shield, ArrowRight, AlertCircle } from 'lucide-react';
 import { GoogleSignInButton } from './GoogleSignInButton.js';
 import { defineFrnlComponent } from '@ultrst-armada/frnlts';
@@ -9,7 +9,7 @@ import { frnlTextInput } from '../../frnl/frnlTextInput.js';
 
 export const AUTH_PAGE_REQUIRED_SERVICES = ['auth'] as const;
 
-export interface AuthResult { success: boolean; error?: string; user?: unknown; token?: string; redirectUrl?: string; }
+export interface AuthResult { success: boolean; error?: string; user?: unknown; redirectUrl?: string; }
 export interface AuthPageProps {
   appName?: string;
   appSubtitle?: string;
@@ -21,6 +21,7 @@ export interface AuthPageProps {
   onGoogleSignIn?: () => Promise<AuthResult>;
   enableGoogleSignIn?: boolean;
   onSwitchToAdmin?: () => void;
+  authError?: string | null;
 }
 
 export const authPageDefinition = defineFrnlComponent({
@@ -43,6 +44,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
   onGoogleSignIn,
   enableGoogleSignIn = true,
   onSwitchToAdmin,
+  authError,
 }) => {
   const store = useFloksFrnlStore();
   const generated = useId().replace(/[:/]/g, '');
@@ -58,6 +60,8 @@ export const AuthPage: React.FC<AuthPageProps> = ({
   const [iconError, setIconError] = useState(false);
   const iconSrc = typeof appIcon === 'string' ? appIcon : '/src/frontend/assets/app-icon.svg';
   const emailValid = email.trim() === '' || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+
+  useEffect(() => { setError(authError ?? null); }, [authError]);
 
   const handlers = useMemo(() => ({
     'AuthPage.idle.login': () => {},

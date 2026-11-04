@@ -21,3 +21,5 @@ jobs:
       - run: pnpm build
       - run: pnpm typecheck
       - run: pnpm test
+      - name: Inspect published package contents
+        run: npm pack --dry-run
