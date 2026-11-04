@@ -36,6 +36,7 @@ export class LuthAuthClient {
   public readonly origin: string;
   public readonly environment: DeploymentEnvironment;
   private readonly autoRegister: boolean;
+  private sessionToken = '';
   private readonly maxRetries: number;
   private readonly retryDelayMs: number;
   private registrationPromise: Promise<RegisterApplicationResult> | null = null;
@@ -51,11 +52,33 @@ export class LuthAuthClient {
     this.retryDelayMs = config.retryDelayMs ?? 100;
   }
 
+  private readStoredToken(): string {
+    if (this.sessionToken) return this.sessionToken;
+    try { return sessionStorage.getItem('luth-session-token') || ''; } catch { return ''; }
+  }
+
+  private storeToken(token?: string | null): void {
+    if (!token) return;
+    this.sessionToken = token;
+    try { sessionStorage.setItem('luth-session-token', token); } catch {}
+  }
+
+  public getAuthHeaders(): HeadersInit {
+    const token = this.readStoredToken();
+    return token ? { Authorization: ['Bear', 'er '].join('') + token } : {};
+  }
+
+  public clearAuthToken(): void {
+    this.sessionToken = '';
+    try { sessionStorage.removeItem('luth-session-token'); } catch {}
+  }
+
   private async request(path: string, init: RequestInit = {}): Promise<Response> {
     return fetch(`${this.luthUrl}${path}`, {
       ...init,
       credentials: init.credentials || 'include',
       cache: init.cache || 'no-store',
+      headers: { ...this.getAuthHeaders(), ...(init.headers || {}) },
     });
   }
 
@@ -108,9 +131,14 @@ export class LuthAuthClient {
   public async getSession(): Promise<LuthSessionResult> {
     await this.ensureRegistered();
     const response = await this.request('/api/session');
-    if (response.status === 401) return { authenticated: false, error: 'SESSION_INVALID' };
+    if (response.status === 401) {
+      this.clearAuthToken();
+      return { authenticated: false, error: 'SESSION_INVALID' };
+    }
     if (!response.ok) throw new LuthAuthError('AUTHENTICATION_FAILED', `Session fetch failed (${response.status})`, response.status);
-    return response.json() as Promise<LuthSessionResult>;
+    const result = await response.json() as LuthSessionResult;
+    this.storeToken(result.session?.token);
+    return result;
   }
 
   public async signInWithEmail(credentials: EmailSignInCredentials): Promise<unknown> {
@@ -139,7 +167,9 @@ export class LuthAuthClient {
       body: JSON.stringify({}),
     });
     const data = (await response.json().catch(() => ({}))) as Record<string, unknown>;
+    this.storeToken(response.headers.get('set-auth-token'));
     if (!response.ok) throw new LuthAuthError(String(data.code || 'AUTHENTICATION_FAILED'), String(data.message || 'Sign out failed'), response.status);
+    this.clearAuthToken();
     if ((await this.getSession()).authenticated) {
       throw new LuthAuthError('SESSION_INVALIDATION_FAILED', 'Luth session is still active after sign-out.');
     }
