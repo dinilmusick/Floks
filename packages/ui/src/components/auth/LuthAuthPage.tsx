@@ -27,7 +27,7 @@ export interface UseLuthAuthResult {
 export interface LuthAuthPageProps extends Omit<AuthPageProps, 'onLogin' | 'onRegister' | 'onGoogleSignIn' | 'onSuccess'>, LuthAuthConfig {
   onAuthenticated?: (user: NonNullable<LuthSessionResult['user']>) => void;
   onSuccess?: (result: AuthResult) => void;
-  authenticatedContent?: React.ReactNode;
+  authenticatedContent?: React.ReactNode | ((auth: UseLuthAuthResult) => React.ReactNode);
   unauthenticatedContent?: React.ReactNode;
   loadingContent?: React.ReactNode;
 }
@@ -147,6 +147,7 @@ export const LuthAuthPage: React.FC<LuthAuthPageProps> = ({
   if (auth.initializing) return <>{loadingContent ?? <AuthLoadingScreen label="CONNECTING TO LUTH..." />}</>;
 
   if (auth.session.authenticated && auth.user) {
+    if (typeof authenticatedContent === 'function') return <>{authenticatedContent(auth)}</>;
     return authenticatedContent ?? (
       <div data-frnl-component="LuthAuthenticatedView" className="min-h-screen flex flex-col items-center justify-center gap-4 bg-[var(--skipo-bg)] text-[var(--skipo-text)] font-mono">
         <span className="text-xs">SIGNED IN AS {auth.user.email}</span>
