@@ -1,7 +1,10 @@
 import React from 'react';
-import { LuthAuthPage, type LuthAuthConfig } from './LuthAuthPage.js';
+import { LuthAuthPage, type LuthAuthPageProps } from './LuthAuthPage.js';
 
-export interface LuthProtectedRouteProps extends LuthAuthConfig {
+export interface LuthProtectedRouteProps extends Omit<
+  LuthAuthPageProps,
+  'authenticatedContent' | 'unauthenticatedContent' | 'loadingContent'
+> {
   children: React.ReactNode;
   fallback?: React.ReactNode;
   loadingFallback?: React.ReactNode;
@@ -15,8 +18,10 @@ export const LuthProtectedRoute: React.FC<LuthProtectedRouteProps> = ({
   children,
   fallback,
   loadingFallback,
+  ...presentation
 }) => (
   <LuthAuthPage
+    {...presentation}
     ecosystemId={ecosystemId}
     applicationId={applicationId}
     luthUrl={luthUrl}
