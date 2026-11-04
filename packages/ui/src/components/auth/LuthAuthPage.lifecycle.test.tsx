@@ -1,6 +1,7 @@
-import { act, renderHook, waitFor } from '@testing-library/react';
+import { act, render, renderHook, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { useLuthAuth } from './LuthAuthPage.js';
+import { LuthAuthPage, useLuthAuth } from './LuthAuthPage.js';
+import { LuthProtectedRoute } from './LuthProtectedRoute.js';
 
 const mocks = vi.hoisted(() => ({
   getSession: vi.fn(),
@@ -93,6 +94,17 @@ describe('useLuthAuth lifecycle', () => {
     await act(async () => { window.dispatchEvent(new Event('focus')); });
     await waitFor(() => expect(result.current.session.authenticated).toBe(false));
     expect(mocks.client.getSession).toHaveBeenCalledTimes(2);
+  });
+
+  it('renders protected application content only after canonical session hydration', async () => {
+    const user = { id: 'luth-protected-user', email: 'protected@example.test', name: 'Protected User' };
+    mocks.client.getSession.mockResolvedValueOnce({ authenticated: true, user, session: { id: 'protected-session', userId: user.id } });
+    render(
+      <LuthProtectedRoute ecosystemId="ultrst-armada" applicationId="protected-app" appName="Protected App">
+        {({ user: currentUser }) => <main>Welcome {currentUser?.email}</main>}
+      </LuthProtectedRoute>,
+    );
+    expect(await screen.findByText('Welcome protected@example.test')).toBeTruthy();
   });
 
   it('delegates Google sign-in to Luth', async () => {
