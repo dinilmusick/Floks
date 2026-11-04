@@ -10,3 +10,4 @@ export * from './LuthAuthClient.js';
 export * from './luthAuthTypes.js';
 
 export * from './LuthAuthPage.js';
+export * from './LuthProtectedRoute.js';
