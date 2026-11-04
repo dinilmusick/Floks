@@ -6,7 +6,7 @@
     "access": "public",
     "registry": "https://registry.npmjs.org/"
   },
-  "description": "Floks — Public Frontend, 2D Graph & UI Package Library (@floks/*)",
+  "description": "Floks — Public Frontend, 2D Graph & UI Package Library (@floks/*) — canonical Luth client integration",
   "type": "module",
   "main": "./index.js",
   "module": "./index.js",
