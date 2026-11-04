@@ -1,12 +1,12 @@
 import {
   resolveClientOrigin,
   resolveClientEnvironment,
-} from '@dinilmusick/gutts/auth';
+} from '@dinilmusick/gutts';
 
 export {
   LuthAuthClient,
   createLuthAuthClient,
-} from '@dinilmusick/gutts/auth';
+} from '@dinilmusick/gutts';
 
 export type {
   DeploymentEnvironment,
@@ -17,9 +17,9 @@ export type {
   LuthAuthTokenStore,
   LuthSessionResult,
   RegisterApplicationResult,
-} from '@dinilmusick/gutts/auth';
+} from '@dinilmusick/gutts';
 
-export { LuthAuthError } from '@dinilmusick/gutts/auth';
+export { LuthAuthError } from '@dinilmusick/gutts';
 
 export const resolveLuthOrigin = resolveClientOrigin;
 export const resolveLuthEnvironment = resolveClientEnvironment;
