@@ -159,6 +159,11 @@ export class LuthAuthClient {
     }, 'Google sign-in failed');
   }
 
+  /** Backward-compatible local cleanup hook; canonical session state lives in Luth. */
+  public clearAuthToken(): void {
+    // Luth uses HttpOnly cookies, so there is no client bearer token to persist.
+  }
+
   public async signOut(): Promise<void> {
     await this.ensureRegistered();
     const response = await this.request('/api/auth/sign-out', {
