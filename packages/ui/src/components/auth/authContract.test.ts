@@ -4,6 +4,10 @@ import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 
 describe('canonical auth UI contract', () => {
+  it('exposes the canonical authentication hydration screen', () => {
+    const source = fs.readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), 'index.ts'), 'utf8');
+    expect(source).toContain("AuthLoadingScreen");
+  });
   it('exposes Google sign-in and live email validation', () => {
     const source = fs.readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), 'AuthPage.tsx'), 'utf8');
     expect(source).toContain('onGoogleSignIn');
