@@ -1,18 +1,22 @@
 import { describe, expect, it } from 'vitest';
-import {
-  AuthLoadingScreen,
-  LoginModal,
-  LuthAuthPage,
-  LuthProtectedRoute,
-  useLuthAuth,
-} from '@ultrst-armada/floks/auth';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-describe('Floks public authentication package export', () => {
-  it('resolves integrated auth UI, lifecycle hook, and protected route from the package subpath', () => {
-    expect(AuthLoadingScreen).toBeTypeOf('function');
-    expect(LoginModal).toBeTypeOf('function');
-    expect(LuthAuthPage).toBeTypeOf('function');
-    expect(LuthProtectedRoute).toBeTypeOf('function');
-    expect(useLuthAuth).toBeTypeOf('function');
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+
+describe('Floks public canonical auth package export', () => {
+  it('maps the consumer auth subpath to built UI JavaScript and declarations', () => {
+    const manifest = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
+    const auth = manifest.exports['./auth'];
+    expect(auth.import).toBe('./packages/ui/dist/components/auth/index.js');
+    expect(auth.default).toBe(auth.import);
+    expect(fs.existsSync(path.join(root, auth.import))).toBe(true);
+    expect(fs.existsSync(path.join(root, auth.types))).toBe(true);
+    const declarations = fs.readFileSync(path.join(root, auth.types), 'utf8');
+    expect(declarations).toContain('LuthAuthPage');
+    expect(declarations).toContain('LuthProtectedRoute');
+    expect(declarations).toContain('useLuthAuth');
+    expect(declarations).toContain('LoginModal');
   });
 });
