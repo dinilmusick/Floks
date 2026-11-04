@@ -17,7 +17,7 @@ export interface UseLuthAuthResult {
   loading: boolean;
   initializing: boolean;
   error: string | null;
-  refresh: () => Promise<LuthSessionResult>;
+  refresh: (options?: { silent?: boolean }) => Promise<LuthSessionResult>;
   signIn: (credentials: { email: string; password: string }) => Promise<LuthSessionResult>;
   signUp: (input: { name: string; email: string; password: string }) => Promise<LuthSessionResult>;
   signInWithGoogle: (callbackURL?: string) => Promise<unknown>;
@@ -48,8 +48,8 @@ export function useLuthAuth(config: LuthAuthConfig): UseLuthAuthResult {
   const [initializing, setInitializing] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const refresh = useCallback(async () => {
-    setLoading(true);
+  const refresh = useCallback(async (options: { silent?: boolean } = {}) => {
+    if (!options.silent) setLoading(true);
     setError(null);
     try {
       const next = await client.getSession();
@@ -60,12 +60,22 @@ export function useLuthAuth(config: LuthAuthConfig): UseLuthAuthResult {
       setError(message);
       throw cause;
     } finally {
-      setLoading(false);
+      if (!options.silent) setLoading(false);
       setInitializing(false);
     }
   }, [client]);
 
-  useEffect(() => { void refresh().catch(() => undefined); }, [refresh]);
+  useEffect(() => {
+    void refresh().catch(() => undefined);
+    if (typeof window === 'undefined') return;
+    const revalidate = () => { void refresh({ silent: true }).catch(() => undefined); };
+    window.addEventListener('focus', revalidate);
+    window.addEventListener('online', revalidate);
+    return () => {
+      window.removeEventListener('focus', revalidate);
+      window.removeEventListener('online', revalidate);
+    };
+  }, [refresh]);
 
   const signIn = useCallback(async (credentials: { email: string; password: string }) => {
     await client.signInWithEmail(credentials);
@@ -147,13 +157,18 @@ export const LuthAuthPage: React.FC<LuthAuthPageProps> = ({
         if (value.success) onSuccess?.(value);
         return value;
       }}
+      authError={auth.error}
       onGoogleSignIn={async () => {
         try {
           const value = await auth.signInWithGoogle();
           const payload = value && typeof value === 'object' ? value as Record<string, unknown> : {};
           const redirectUrl = typeof payload.url === 'string' ? payload.url : undefined;
-          if (redirectUrl && typeof window !== 'undefined') window.location.assign(redirectUrl);
-          return { success: true, redirectUrl };
+          if (redirectUrl && typeof window !== 'undefined') {
+            window.location.assign(redirectUrl);
+            return { success: true, redirectUrl };
+          }
+          const session = await auth.refresh();
+          return toResult(session);
         } catch (cause) {
           return { success: false, error: cause instanceof Error ? cause.message : 'Google sign-in failed.' };
         }
