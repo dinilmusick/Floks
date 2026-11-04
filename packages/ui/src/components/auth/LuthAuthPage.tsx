@@ -125,10 +125,18 @@ export const LuthAuthPage: React.FC<LuthAuthPageProps> = ({
 }) => {
   const auth = useLuthAuth({ ecosystemId, applicationId, luthUrl });
   const onAuthenticatedRef = useRef(onAuthenticated);
+  const notifiedUserId = useRef<string | null>(null);
   useEffect(() => { onAuthenticatedRef.current = onAuthenticated; }, [onAuthenticated]);
 
   useEffect(() => {
-    if (auth.session.authenticated && auth.user) onAuthenticatedRef.current?.(auth.user);
+    if (!auth.session.authenticated) {
+      notifiedUserId.current = null;
+      return;
+    }
+    if (auth.user && notifiedUserId.current !== auth.user.id) {
+      notifiedUserId.current = auth.user.id;
+      onAuthenticatedRef.current?.(auth.user);
+    }
   }, [auth.session.authenticated, auth.user]);
 
   const toResult = (session: LuthSessionResult): AuthResult => {
