@@ -15,6 +15,7 @@ export interface UseLuthAuthResult {
   session: LuthSessionResult;
   user: LuthSessionResult['user'];
   loading: boolean;
+  initializing: boolean;
   error: string | null;
   refresh: () => Promise<LuthSessionResult>;
   signIn: (credentials: { email: string; password: string }) => Promise<LuthSessionResult>;
@@ -44,6 +45,7 @@ export function useLuthAuth(config: LuthAuthConfig): UseLuthAuthResult {
   );
   const [session, setSession] = useState<LuthSessionResult>({ authenticated: false });
   const [loading, setLoading] = useState(true);
+  const [initializing, setInitializing] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
@@ -59,6 +61,7 @@ export function useLuthAuth(config: LuthAuthConfig): UseLuthAuthResult {
       throw cause;
     } finally {
       setLoading(false);
+      setInitializing(false);
     }
   }, [client]);
 
@@ -94,7 +97,7 @@ export function useLuthAuth(config: LuthAuthConfig): UseLuthAuthResult {
     }
   }, [client]);
 
-  return { client, session, user: session.user, loading, error, refresh, signIn, signUp, signInWithGoogle, signOut };
+  return { client, session, user: session.user, loading, initializing, error, refresh, signIn, signUp, signInWithGoogle, signOut };
 }
 
 export const LuthAuthPage: React.FC<LuthAuthPageProps> = ({
@@ -119,7 +122,7 @@ export const LuthAuthPage: React.FC<LuthAuthPageProps> = ({
     return { success: true, user: session.user };
   };
 
-  if (auth.loading) return <AuthLoadingScreen label="CONNECTING TO LUTH..." />;
+  if (auth.initializing) return <AuthLoadingScreen label="CONNECTING TO LUTH..." />;
 
   if (auth.session.authenticated && auth.user) {
     return authenticatedContent ?? (
@@ -134,8 +137,16 @@ export const LuthAuthPage: React.FC<LuthAuthPageProps> = ({
   return (
     <AuthPage
       {...presentation}
-      onLogin={async (email, password) => toResult(await auth.signIn({ email, password }))}
-      onRegister={async ({ name, email, password }) => toResult(await auth.signUp({ name, email, password }))}
+      onLogin={async (email, password) => {
+        const value = toResult(await auth.signIn({ email, password }));
+        if (value.success) onSuccess?.(value);
+        return value;
+      }}
+      onRegister={async ({ name, email, password }) => {
+        const value = toResult(await auth.signUp({ name, email, password }));
+        if (value.success) onSuccess?.(value);
+        return value;
+      }}
       onGoogleSignIn={async () => {
         try {
           const value = await auth.signInWithGoogle();
@@ -146,9 +157,6 @@ export const LuthAuthPage: React.FC<LuthAuthPageProps> = ({
         } catch (cause) {
           return { success: false, error: cause instanceof Error ? cause.message : 'Google sign-in failed.' };
         }
-      }}
-      onSuccess={(value) => {
-        onSuccess?.(value);
       }}
     />
   );
