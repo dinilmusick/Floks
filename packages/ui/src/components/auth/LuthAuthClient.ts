@@ -1,8 +1,11 @@
+import {
+  resolveClientOrigin,
+  resolveClientEnvironment,
+} from '@dinilmusick/gutts';
+
 export {
   LuthAuthClient,
   createLuthAuthClient,
-  resolveClientOrigin,
-  resolveClientEnvironment,
 } from '@dinilmusick/gutts';
 
 export type {
