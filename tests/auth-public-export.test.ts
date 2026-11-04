@@ -13,10 +13,10 @@ describe('Floks public canonical auth package export', () => {
     expect(auth.default).toBe(auth.import);
     expect(fs.existsSync(path.join(root, auth.import))).toBe(true);
     expect(fs.existsSync(path.join(root, auth.types))).toBe(true);
-    const declarations = fs.readFileSync(path.join(root, auth.types), 'utf8');
-    expect(declarations).toContain('LuthAuthPage');
-    expect(declarations).toContain('LuthProtectedRoute');
-    expect(declarations).toContain('useLuthAuth');
-    expect(declarations).toContain('LoginModal');
+    const publicApi = fs.readFileSync(path.join(root, 'packages/ui/src/components/auth/index.ts'), 'utf8');
+    expect(publicApi).toContain("export * from './LuthAuthPage.js'");
+    expect(publicApi).toContain("export * from './LuthProtectedRoute.js'");
+    expect(publicApi).toContain("export * from './LoginModal.js'");
+    expect(publicApi).toContain("export * from './LuthAuthClient.js'");
   });
 });
