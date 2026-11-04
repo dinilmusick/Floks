@@ -83,6 +83,18 @@ describe('useLuthAuth lifecycle', () => {
     expect(result.current.error).toBe('Luth unavailable');
   });
 
+  it('revalidates on focus and drops expired sessions before protected content can continue', async () => {
+    const user = { id: 'luth-user-expiring', email: 'expired@example.test', name: 'Expired User' };
+    mocks.client.getSession
+      .mockResolvedValueOnce({ authenticated: true, user, session: { id: 'session-expiring', userId: user.id } })
+      .mockResolvedValueOnce({ authenticated: false, error: 'SESSION_INVALID' });
+    const { result } = renderHook(() => useLuthAuth({ ecosystemId: 'ultrst-armada', applicationId: 'test-app' }));
+    await waitFor(() => expect(result.current.session.authenticated).toBe(true));
+    await act(async () => { window.dispatchEvent(new Event('focus')); });
+    await waitFor(() => expect(result.current.session.authenticated).toBe(false));
+    expect(mocks.client.getSession).toHaveBeenCalledTimes(2);
+  });
+
   it('delegates Google sign-in to Luth', async () => {
     const { result } = renderHook(() => useLuthAuth({
       ecosystemId: 'ultrst-armada',
