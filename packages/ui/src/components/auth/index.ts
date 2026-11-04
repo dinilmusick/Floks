@@ -8,3 +8,5 @@ export * from './GoogleSignInButton.js';
 
 export * from './LuthAuthClient.js';
 export * from './luthAuthTypes.js';
+
+export * from './LuthAuthPage.js';
