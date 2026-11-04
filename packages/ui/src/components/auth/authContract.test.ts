@@ -25,6 +25,24 @@ describe('canonical auth UI contract', () => {
     expect(source).toContain("setGoogleLoading(false)");
   });
 
+  it('routes the integrated auth page through the canonical Kloks client and session lifecycle', () => {
+    const source = fs.readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), 'LuthAuthPage.tsx'), 'utf8');
+    expect(source).toContain("createLuthAuthClient as createClient");
+    expect(source).toContain('client.getSession()');
+    expect(source).toContain('client.signInWithEmail(credentials)');
+    expect(source).toContain('client.signUpWithEmail(input)');
+    expect(source).toContain('client.signInWithGoogle');
+    expect(source).toContain('client.signOut()');
+    expect(source).toContain("window.addEventListener('focus', revalidate)");
+  });
+
+  it('provides a protected route that verifies Luth before rendering children', () => {
+    const source = fs.readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), 'LuthProtectedRoute.tsx'), 'utf8');
+    expect(source).toContain('useLuthAuth');
+    expect(source).toContain('auth.session.authenticated');
+    expect(source).toContain('<LuthAuthPage');
+  });
+
   it('keeps Google Drive authorization out of the sign-in control', () => {
     const source = fs.readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), 'GoogleSignInButton.tsx'), 'utf8');
     expect(source).not.toContain('drive');
