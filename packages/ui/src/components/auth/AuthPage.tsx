@@ -61,6 +61,8 @@ export const AuthPage: React.FC<AuthPageProps> = ({
   const iconSrc = typeof appIcon === 'string' ? appIcon : '/src/frontend/assets/app-icon.svg';
   const emailValid = email.trim() === '' || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
 
+  useEffect(() => { setError(authError ?? null); }, [authError]);
+
   const handlers = useMemo(() => ({
     'AuthPage.idle.login': () => {},
     'AuthPage.idle.register': () => {},
