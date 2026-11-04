@@ -156,25 +156,10 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                   setError(null);
                   try {
                     let result: AuthResult;
-                    if (onGoogleSignIn) {
-                      result = await onGoogleSignIn();
-                    } else {
-                      // Canonical Better-Auth /api/auth/sign-in/social fallback
-                      const callbackURL = typeof window !== 'undefined' ? window.location.origin : '';
-                      const res = await fetch('/api/auth/sign-in/social', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ provider: 'google', callbackURL }),
-                      });
-                      if (res.ok) {
-                        const data = await res.json().catch(() => ({}));
-                        if (data.url && typeof window !== 'undefined') {
-                          window.location.href = data.url;
-                          return;
-                        }
-                      }
-                      throw new Error('Google sign-in endpoint unavailable.');
+                    if (!onGoogleSignIn) {
+                      throw new Error('Canonical Luth Google sign-in handler is not configured.');
                     }
+                    result = await onGoogleSignIn();
                     if (!result.success) throw new Error(result.error || 'Google sign-in failed.');
                     onSuccess?.(result);
                   } catch (error) {
