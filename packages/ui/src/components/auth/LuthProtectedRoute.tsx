@@ -1,11 +1,11 @@
 import React from 'react';
-import { LuthAuthPage, type LuthAuthPageProps } from './LuthAuthPage.js';
+import { LuthAuthPage, type LuthAuthPageProps, type UseLuthAuthResult } from './LuthAuthPage.js';
 
 export interface LuthProtectedRouteProps extends Omit<
   LuthAuthPageProps,
   'authenticatedContent' | 'unauthenticatedContent' | 'loadingContent'
 > {
-  children: React.ReactNode;
+  children: React.ReactNode | ((auth: UseLuthAuthResult) => React.ReactNode);
   fallback?: React.ReactNode;
   loadingFallback?: React.ReactNode;
 }
