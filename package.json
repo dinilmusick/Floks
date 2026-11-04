@@ -1,6 +1,6 @@
 {
   "name": "@ultrst-armada/floks",
-  "version": "1.13.11",
+  "version": "1.13.12",
   "private": false,
   "publishConfig": {
     "access": "public",
@@ -64,6 +64,11 @@
       "types": "./packages/canvas-ui/dist/aiko/index.d.ts",
       "import": "./packages/canvas-ui/dist/aiko/index.js",
       "default": "./packages/canvas-ui/dist/aiko/index.js"
+    },
+    "./auth": {
+      "types": "./packages/ui/dist/components/auth/index.d.ts",
+      "import": "./packages/ui/dist/components/auth/index.js",
+      "default": "./packages/ui/dist/components/auth/index.js"
     }
   },
   "scripts": {
