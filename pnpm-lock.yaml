@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      '@dinilmusick/gutts':
+        specifier: ^1.4.4
+        version: 1.4.4(@types/node@22.20.5)
       '@ultrst-armada/frnlts':
         specifier: ^0.5.5
         version: 0.5.5(@types/node@22.20.5)(@types/react@19.3.0)(react@19.3.0)(use-sync-external-store@1.7.0(react@19.3.0))
@@ -224,8 +227,8 @@ packages:
     resolution: {integrity: sha512-NpugTzbKgGrNe45Ui32cN8vCFFMxVtP/9rtfwv0nP5FRDAjvYBxJcLVpYA9mr1jxP6cnIT7x9LUzuDTbWYYNRA==}
     engines: {node: '>=6.9.0'}
 
-  '@dinilmusick/gutts@1.4.3':
-    resolution: {integrity: sha512-Ei3rqqUt81sQ5jTUYnwOu40I4ousLbpu9r3iD9zU5pYExM2MeqLhPjsYXR9Z1EpOpRw85wPS8iSWKYt5csxrsA==}
+  '@dinilmusick/gutts@1.4.4':
+    resolution: {integrity: sha512-em0Yup7SLHLQFuCkXGEYSBG8FL38siPFtUtHJlDmk22aKb76U2S/iBfqjbqj6fXEdSUacuW8bF9u5TWbQlsjwQ==}
 
   '@dnd-kit/accessibility@3.1.1':
     resolution: {integrity: sha512-2P+YgaXF+gRsIihwwY1gCsQSYnu9Zyj2py8kY5fFvUM1qm2WA2u639R6YNVfU4GWr+ZM5mqEsfHZZLoRONbemw==}
@@ -1971,7 +1974,7 @@ snapshots:
 
   '@babel/runtime@7.29.10': {}
 
-  '@dinilmusick/gutts@1.4.3(@types/node@22.20.5)':
+  '@dinilmusick/gutts@1.4.4(@types/node@22.20.5)':
     dependencies:
       '@huggingface/transformers': 4.3.2(@types/node@22.20.5)
       cactus-needle: 0.3.0
@@ -2521,7 +2524,7 @@ snapshots:
 
   '@ultrst-armada/frnlts@0.5.5(@types/node@22.20.5)(@types/react@19.3.0)(react@19.3.0)(use-sync-external-store@1.7.0(react@19.3.0))':
     dependencies:
-      '@dinilmusick/gutts': 1.4.3(@types/node@22.20.5)
+      '@dinilmusick/gutts': 1.4.4(@types/node@22.20.5)
       react: 19.3.0
       typescript: 5.9.3
       zod: 3.25.76
@@ -2536,7 +2539,7 @@ snapshots:
   '@ultrst-armada/kloks@1.24.9(@types/node@22.20.5)(@types/react@19.3.0)(react@19.3.0)(use-sync-external-store@1.7.0(react@19.3.0))':
     dependencies:
       '@aws-sdk/client-s3': 3.1152.0
-      '@dinilmusick/gutts': 1.4.3(@types/node@22.20.5)
+      '@dinilmusick/gutts': 1.4.4(@types/node@22.20.5)
       '@webcontainer/api': 1.6.4
       ws: 8.22.0
       zod: 3.25.76
