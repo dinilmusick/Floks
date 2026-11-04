@@ -38,9 +38,10 @@ describe('canonical auth UI contract', () => {
 
   it('provides a protected route that verifies Luth before rendering children', () => {
     const source = fs.readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), 'LuthProtectedRoute.tsx'), 'utf8');
-    expect(source).toContain('useLuthAuth');
-    expect(source).toContain('auth.session.authenticated');
     expect(source).toContain('<LuthAuthPage');
+    expect(source).toContain('authenticatedContent={children}');
+    expect(source).toContain('unauthenticatedContent={fallback}');
+    expect(source).toContain('loadingContent={loadingFallback}');
   });
 
   it('keeps LoginModal on the canonical client without local token storage or direct auth endpoints', () => {
