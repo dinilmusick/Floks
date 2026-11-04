@@ -1039,7 +1039,7 @@ packages:
       react: ^18.0.0 || ^19.0.0
 
   '@ultrst-armada/kloks@1.24.11':
-    resolution: {integrity: sha512-pWliRUyohEBSAs7PKPk43QFlWNTw0aDtYhFBqAYQ3pUNLtxebHFY/HQMKy4nbwl4kYjHIJigxvLAD1vZjfzpBg==}
+    resolution: {tarball: https://registry.npmjs.org/@ultrst-armada/kloks/-/kloks-1.24.11.tgz}
     peerDependencies:
       '@neondatabase/serverless': ^0.10.0 || ^1.0.0
       '@supabase/supabase-js': ^2.45.0
