@@ -97,7 +97,7 @@ export class LuthAuthClient {
           }),
         });
         const data = (await response.json().catch(() => ({}))) as Record<string, unknown>;
-        if (response.ok) return data as RegisterApplicationResult;
+        if (response.ok) return data as unknown as RegisterApplicationResult;
         const error = new LuthAuthError(
           String(data.code || (response.status === 404 ? 'APPLICATION_NOT_REGISTERED' : 'REGISTRATION_FAILED')),
           String(data.message || 'Application registration failed'),
