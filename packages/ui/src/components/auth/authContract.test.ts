@@ -42,6 +42,7 @@ describe('canonical auth UI contract', () => {
     expect(source).toContain('authenticatedContent={children}');
     expect(source).toContain('unauthenticatedContent={fallback}');
     expect(source).toContain('loadingContent={loadingFallback}');
+    expect(source).toContain('...presentation');
   });
 
   it('keeps LoginModal on the canonical client without local token storage or direct auth endpoints', () => {
