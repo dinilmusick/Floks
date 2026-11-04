@@ -106,13 +106,13 @@
     "@ultrst-armada/frnlts": "^0.5.5",
     "zustand": "^5.0.3",
     "@xyflow/react": "^12.8.6",
-    "d3-force": "^3.0.0"
+    "d3-force": "^3.0.0",
+    "@ultrst-armada/kloks": "^1.24.9"
   },
   "peerDependencies": {
     "lucide-react": ">=0.300.0",
     "react": "^18.0.0 || ^19.0.0",
-    "react-dom": "^18.0.0 || ^19.0.0",
-    "@ultrst-armada/kloks": "^1.24.9"
+    "react-dom": "^18.0.0 || ^19.0.0"
   },
   "peerDependenciesMeta": {},
   "devDependencies": {
