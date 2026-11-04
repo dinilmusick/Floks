@@ -4,7 +4,7 @@ import { BaseButton } from '../base/BaseButton.js';
 import { BaseInput } from '../base/BaseInput.js';
 import { GoogleSignInButton } from './GoogleSignInButton.js';
 import { useLuthAuth } from './LuthAuthPage.js';
-import type { LuthUser } from './luthAuthTypes.js';
+import type { LuthUser } from './LuthAuthClient.js';
 
 export interface LoginModalProps {
   ecosystemId: string;
