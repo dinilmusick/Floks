@@ -84,8 +84,8 @@
     "d3-force": "^3.0.0",
     "zod": "^3.24.1",
     "zustand": "^5.0.3",
-    "@ultrst-armada/kloks": "^1.24.11",
-    "@dinilmusick/gutts": "^1.4.4"
+    "@ultrst-armada/kloks": "^1.25.0",
+    "@dinilmusick/gutts": "^1.5.0"
   },
   "peerDependencies": {
     "lucide-react": ">=0.300.0",

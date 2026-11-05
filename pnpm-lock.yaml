@@ -9,14 +9,14 @@ importers:
   .:
     dependencies:
       '@dinilmusick/gutts':
-        specifier: ^1.4.4
-        version: 1.4.4(@types/node@22.20.5)
+        specifier: ^1.5.0
+        version: 1.5.0(@types/node@22.20.5)
       '@ultrst-armada/frnlts':
         specifier: ^0.5.5
         version: 0.5.5(@types/node@22.20.5)(@types/react@19.3.0)(react@19.3.0)(use-sync-external-store@1.7.0(react@19.3.0))
       '@ultrst-armada/kloks':
-        specifier: ^1.24.11
-        version: 1.24.11(@types/node@22.20.5)(@types/react@19.3.0)(react@19.3.0)(use-sync-external-store@1.7.0(react@19.3.0))
+        specifier: ^1.25.0
+        version: 1.25.0(@types/node@22.20.5)(@types/react@19.3.0)(react@19.3.0)(use-sync-external-store@1.7.0(react@19.3.0))
       '@xyflow/react':
         specifier: ^12.8.6
         version: 12.12.0(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
@@ -85,8 +85,8 @@ importers:
         specifier: ^0.5.5
         version: 0.5.5(@types/node@22.20.5)(@types/react@19.3.0)(react@19.3.0)(use-sync-external-store@1.7.0(react@19.3.0))
       '@ultrst-armada/kloks':
-        specifier: ^1.24.11
-        version: 1.24.11(@types/node@22.20.5)(@types/react@19.3.0)(react@19.3.0)(use-sync-external-store@1.7.0(react@19.3.0))
+        specifier: ^1.25.0
+        version: 1.25.0(@types/node@22.20.5)(@types/react@19.3.0)(react@19.3.0)(use-sync-external-store@1.7.0(react@19.3.0))
       monaco-editor:
         specifier: ^0.50.0
         version: 0.50.0
@@ -106,8 +106,8 @@ importers:
         specifier: ^0.5.5
         version: 0.5.5(@types/node@22.20.5)(@types/react@19.3.0)(react@19.3.0)(use-sync-external-store@1.7.0(react@19.3.0))
       '@ultrst-armada/kloks':
-        specifier: ^1.24.11
-        version: 1.24.11(@types/node@22.20.5)(@types/react@19.3.0)(react@19.3.0)(use-sync-external-store@1.7.0(react@19.3.0))
+        specifier: ^1.25.0
+        version: 1.25.0(@types/node@22.20.5)(@types/react@19.3.0)(react@19.3.0)(use-sync-external-store@1.7.0(react@19.3.0))
       '@xyflow/react':
         specifier: ^12.8.6
         version: 12.12.0(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
@@ -227,8 +227,8 @@ packages:
     resolution: {integrity: sha512-NpugTzbKgGrNe45Ui32cN8vCFFMxVtP/9rtfwv0nP5FRDAjvYBxJcLVpYA9mr1jxP6cnIT7x9LUzuDTbWYYNRA==}
     engines: {node: '>=6.9.0'}
 
-  '@dinilmusick/gutts@1.4.4':
-    resolution: {integrity: sha512-em0Yup7SLHLQFuCkXGEYSBG8FL38siPFtUtHJlDmk22aKb76U2S/iBfqjbqj6fXEdSUacuW8bF9u5TWbQlsjwQ==}
+  '@dinilmusick/gutts@1.5.0':
+    resolution: {integrity: sha512-ybWxV/j7QSdjHIas7s28wdc7sIxSbbcsIRzMfCcVPmR61sDEieBYUA+JB7QSH771rPrh4cZOBSaPM/bNPm246Q==}
 
   '@dnd-kit/accessibility@3.1.1':
     resolution: {integrity: sha512-2P+YgaXF+gRsIihwwY1gCsQSYnu9Zyj2py8kY5fFvUM1qm2WA2u639R6YNVfU4GWr+ZM5mqEsfHZZLoRONbemw==}
@@ -1038,12 +1038,12 @@ packages:
     peerDependencies:
       react: ^18.0.0 || ^19.0.0
 
-  '@ultrst-armada/kloks@1.24.11':
-    resolution: {tarball: https://registry.npmjs.org/@ultrst-armada/kloks/-/kloks-1.24.11.tgz}
+  '@ultrst-armada/kloks@1.25.0':
+    resolution: {integrity: sha512-f4X5iavTqNSw0LG8+Tnug8lzOqqVVv58NibmYyJ2g22JvQDx1OHl2DJt1tkegsS/xeJvs9SYuzH2JgTsmH9mWg==}
     peerDependencies:
       '@neondatabase/serverless': ^0.10.0 || ^1.0.0
       '@supabase/supabase-js': ^2.45.0
-      '@ultrst-armada/krnl': ^1.0.9
+      '@ultrst-armada/krnl': ^1.0.11
       react: ^18.0.0 || ^19.0.0
     peerDependenciesMeta:
       '@neondatabase/serverless':
@@ -1974,7 +1974,7 @@ snapshots:
 
   '@babel/runtime@7.29.10': {}
 
-  '@dinilmusick/gutts@1.4.4(@types/node@22.20.5)':
+  '@dinilmusick/gutts@1.5.0(@types/node@22.20.5)':
     dependencies:
       '@huggingface/transformers': 4.3.2(@types/node@22.20.5)
       cactus-needle: 0.3.0
@@ -2524,7 +2524,7 @@ snapshots:
 
   '@ultrst-armada/frnlts@0.5.5(@types/node@22.20.5)(@types/react@19.3.0)(react@19.3.0)(use-sync-external-store@1.7.0(react@19.3.0))':
     dependencies:
-      '@dinilmusick/gutts': 1.4.4(@types/node@22.20.5)
+      '@dinilmusick/gutts': 1.5.0(@types/node@22.20.5)
       react: 19.3.0
       typescript: 5.9.3
       zod: 3.25.76
@@ -2536,10 +2536,10 @@ snapshots:
       - immer
       - use-sync-external-store
 
-  '@ultrst-armada/kloks@1.24.11(@types/node@22.20.5)(@types/react@19.3.0)(react@19.3.0)(use-sync-external-store@1.7.0(react@19.3.0))':
+  '@ultrst-armada/kloks@1.25.0(@types/node@22.20.5)(@types/react@19.3.0)(react@19.3.0)(use-sync-external-store@1.7.0(react@19.3.0))':
     dependencies:
       '@aws-sdk/client-s3': 3.1152.0
-      '@dinilmusick/gutts': 1.4.4(@types/node@22.20.5)
+      '@dinilmusick/gutts': 1.5.0(@types/node@22.20.5)
       '@webcontainer/api': 1.6.4
       ws: 8.22.0
       zod: 3.25.76
