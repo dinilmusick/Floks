@@ -8,6 +8,7 @@ export interface LuthAuthConfig {
   ecosystemId: string;
   applicationId: string;
   luthUrl?: string;
+  origin?: string;
 }
 
 export interface UseLuthAuthResult {
@@ -37,13 +38,14 @@ export function createLuthAuthClientForApplication(input: LuthAuthConfig): LuthA
     ecosystemId: input.ecosystemId,
     applicationId: input.applicationId,
     ...(input.luthUrl ? { luthUrl: input.luthUrl } : {}),
+    ...(input.origin ? { origin: input.origin } : {}),
   });
 }
 
 export function useLuthAuth(config: LuthAuthConfig): UseLuthAuthResult {
   const client = useMemo(
     () => createLuthAuthClientForApplication(config),
-    [config.ecosystemId, config.applicationId, config.luthUrl],
+    [config.ecosystemId, config.applicationId, config.luthUrl, config.origin],
   );
   const [session, setSession] = useState<LuthSessionResult>({ authenticated: false });
   const [loading, setLoading] = useState(true);
@@ -116,6 +118,7 @@ export const LuthAuthPage: React.FC<LuthAuthPageProps> = ({
   ecosystemId,
   applicationId,
   luthUrl,
+  origin,
   onAuthenticated,
   onSuccess,
   authenticatedContent,
@@ -123,7 +126,7 @@ export const LuthAuthPage: React.FC<LuthAuthPageProps> = ({
   loadingContent,
   ...presentation
 }) => {
-  const auth = useLuthAuth({ ecosystemId, applicationId, luthUrl });
+  const auth = useLuthAuth({ ecosystemId, applicationId, luthUrl, origin });
   const onAuthenticatedRef = useRef(onAuthenticated);
   const notifiedUserId = useRef<string | null>(null);
   useEffect(() => { onAuthenticatedRef.current = onAuthenticated; }, [onAuthenticated]);
