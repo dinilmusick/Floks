@@ -11,9 +11,9 @@ describe('independent service UI surfaces',()=>{
  });
  it('distinguishes physical MIDI hardware from logical endpoints',()=>{
   const create=vi.fn(),send=vi.fn();
-  render(<MidiServicePanel devices={[{id:'physical',name:'Keyboard',origin:'physical',state:'connected',direction:'input',capabilities:{input:true,output:false,virtualDeviceCreation:false}},{id:'logical',name:'Logical Output',origin:'logical',state:'connected',direction:'output',capabilities:{input:false,output:true,virtualDeviceCreation:false}}]} messages={[]} onRefresh={()=>{}} onConnect={()=>{}} onDisconnect={()=>{}} onSend={send} onCreateLogicalDevice={create}/>);
+  render(<MidiServicePanel devices={[{id:'physical',name:'Keyboard',origin:'physical',state:'connected',inputState:'connected',outputState:'disconnected',direction:'duplex',capabilities:{input:true,output:true,virtualDeviceCreation:false}},{id:'logical',name:'Logical Output',origin:'logical',state:'connected',direction:'output',capabilities:{input:false,output:true,virtualDeviceCreation:false}}]} messages={[]} onRefresh={()=>{}} onConnect={()=>{}} onDisconnect={()=>{}} onSend={send} onCreateLogicalDevice={create}/>);
   expect(screen.getByText(/physical · connected/)).toBeInTheDocument();
-  expect(screen.getByText(/not OS virtual MIDI ports/)).toBeInTheDocument();
+  expect(screen.getByText(/not OS virtual MIDI ports/)).toBeInTheDocument();expect(screen.getByRole('button',{name:'Connect output'})).toBeInTheDocument();fireEvent.click(screen.getByLabelText('Keyboard'));expect(screen.getByRole('button',{name:'Send Control Change'})).toBeDisabled();
   fireEvent.click(screen.getByRole('button',{name:'Create logical MIDI endpoint'}));expect(create).toHaveBeenCalled();fireEvent.click(screen.getByLabelText('Logical Output'));fireEvent.click(screen.getByRole('button',{name:'Send Control Change'}));expect(send).toHaveBeenCalledWith('logical',{type:'controlChange',channel:0,noteOrController:1,value:64});
  });
  it('configures OSC endpoints and sends JSON arguments',()=>{
