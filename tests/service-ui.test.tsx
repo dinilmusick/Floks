@@ -4,17 +4,17 @@ import {fireEvent,render,screen} from '@testing-library/react';
 import {ClockServicePanel,MidiServicePanel,OscServicePanel} from '@ultrst-armada/floks/ui/services';
 describe('independent service UI surfaces',()=>{
  it('renders clock position and dispatches timing controls',()=>{
-  const start=vi.fn(),tempo=vi.fn();
-  render(<ClockServicePanel snapshot={{state:'stopped',tempo:120,beat:0,bar:1,beatInBar:1,tick:0,subdivision:0,elapsedMs:0,resolution:24}} onStart={start} onStop={()=>{}} onPause={()=>{}} onResume={()=>{}} onReset={()=>{}} onTempoChange={tempo}/>);
+  const start=vi.fn(),tempo=vi.fn(),resolution=vi.fn(),signature=vi.fn();
+  render(<ClockServicePanel snapshot={{state:'stopped',tempo:120,beat:0,bar:1,beatInBar:1,tick:0,subdivision:0,elapsedMs:0,resolution:24,timeSignature:[4,4]}} onStart={start} onStop={()=>{}} onPause={()=>{}} onResume={()=>{}} onReset={()=>{}} onTempoChange={tempo} onResolutionChange={resolution} onTimeSignatureChange={signature}/>);
   fireEvent.click(screen.getByRole('button',{name:'Start'}));expect(start).toHaveBeenCalled();
-  fireEvent.change(screen.getByLabelText('Tempo BPM'),{target:{value:'128'}});expect(tempo).toHaveBeenCalledWith(128);
+  fireEvent.change(screen.getByLabelText('Tempo BPM'),{target:{value:'128'}});expect(tempo).toHaveBeenCalledWith(128);fireEvent.change(screen.getByLabelText('Clock resolution'),{target:{value:'48'}});expect(resolution).toHaveBeenCalledWith(48);fireEvent.change(screen.getByLabelText('Time signature numerator'),{target:{value:'3'}});expect(signature).toHaveBeenCalledWith(3,4);
  });
  it('distinguishes physical MIDI hardware from logical endpoints',()=>{
-  const create=vi.fn();
-  render(<MidiServicePanel devices={[{id:'physical',name:'Keyboard',origin:'physical',state:'connected',direction:'input',capabilities:{input:true,output:false,virtualDeviceCreation:false}}]} messages={[]} onRefresh={()=>{}} onConnect={()=>{}} onDisconnect={()=>{}} onSend={()=>{}} onCreateLogicalDevice={create}/>);
+  const create=vi.fn(),send=vi.fn();
+  render(<MidiServicePanel devices={[{id:'physical',name:'Keyboard',origin:'physical',state:'connected',direction:'input',capabilities:{input:true,output:false,virtualDeviceCreation:false}},{id:'logical',name:'Logical Output',origin:'logical',state:'connected',direction:'output',capabilities:{input:false,output:true,virtualDeviceCreation:false}}]} messages={[]} onRefresh={()=>{}} onConnect={()=>{}} onDisconnect={()=>{}} onSend={send} onCreateLogicalDevice={create}/>);
   expect(screen.getByText(/physical · connected/)).toBeInTheDocument();
   expect(screen.getByText(/not OS virtual MIDI ports/)).toBeInTheDocument();
-  fireEvent.click(screen.getByRole('button',{name:'Create logical MIDI endpoint'}));expect(create).toHaveBeenCalled();
+  fireEvent.click(screen.getByRole('button',{name:'Create logical MIDI endpoint'}));expect(create).toHaveBeenCalled();fireEvent.click(screen.getByLabelText('Logical Output'));fireEvent.click(screen.getByRole('button',{name:'Send Control Change'}));expect(send).toHaveBeenCalledWith('logical',{type:'controlChange',channel:0,noteOrController:1,value:64});
  });
  it('configures OSC endpoints and sends JSON arguments',()=>{
   const send=vi.fn();
