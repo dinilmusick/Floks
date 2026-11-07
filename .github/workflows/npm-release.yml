@@ -209,6 +209,13 @@ jobs:
             echo "exists=false" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Verify published registry artifact metadata
+        if: steps.registry.outputs.exists == 'true'
+        env:
+          PACKAGE_NAME: ${{ steps.package.outputs.name }}
+          PACKAGE_VERSION: ${{ steps.package.outputs.version }}
+        run: npm view "${PACKAGE_NAME}@${PACKAGE_VERSION}" dist --json
+
       - name: Write Krusbl release attestation
         if: (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' && steps.registry.outputs.exists == 'false') || (github.event_name == 'workflow_dispatch' && inputs.publish)
         shell: bash
