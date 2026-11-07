@@ -1,4 +1,4 @@
-.floks-service-panel{display:flex;flex-direction:column;gap:.75rem;padding:1rem;border:1px solid var(--skipo-border-color,var(--skipo-border));border-radius:var(--skipo-radius,8px);background:var(--skipo-bg,var(--skipo-matte-bg));color:var(--skipo-text);font:inherit}
+.floks-service-panel{display:flex;flex-direction:column;gap:.75rem;padding:1rem;border:var(--skipo-border);border-radius:var(--skipo-radius,8px);background:var(--skipo-bg,var(--skipo-matte-bg));color:var(--skipo-text);font:inherit}
 .floks-service-panel header,.floks-service-panel li,.floks-clock-controls{display:flex;align-items:center;justify-content:space-between;gap:.5rem;flex-wrap:wrap}
 .floks-service-panel h3,.floks-service-panel h4{margin:0;font-weight:700}
 .floks-service-panel label{display:flex;flex-direction:column;gap:.25rem;font-size:.85rem}
