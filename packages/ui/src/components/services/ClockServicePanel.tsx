@@ -4,15 +4,17 @@ import { BaseButton } from '../base/BaseButton.js';
 
 export interface ClockUiSnapshot {
   state:'stopped'|'running'|'paused'; tempo:number; beat:number; bar:number; beatInBar:number;
-  tick:number; subdivision:number; elapsedMs:number; resolution:number;
+  tick:number; subdivision:number; elapsedMs:number; resolution:number; timeSignature?:readonly [number,number];
 }
 export interface ClockServicePanelProps {
   snapshot:ClockUiSnapshot;
   onStart:()=>void; onStop:()=>void; onPause:()=>void; onResume:()=>void; onReset:()=>void;
   onTempoChange:(tempo:number)=>void;
+  onResolutionChange?:(resolution:number)=>void;
+  onTimeSignatureChange?:(numerator:number,denominator:number)=>void;
   title?:string;
 }
-export function ClockServicePanel({snapshot,onStart,onStop,onPause,onResume,onReset,onTempoChange,title='Application Clock'}:ClockServicePanelProps){
+export function ClockServicePanel({snapshot,onStart,onStop,onPause,onResume,onReset,onTempoChange,onResolutionChange,onTimeSignatureChange,title='Application Clock'}:ClockServicePanelProps){
   const running=snapshot.state==='running';
   return <section className="floks-service-panel floks-clock-panel" aria-label={title}>
     <header><h3>{title}</h3><span role="status" data-state={snapshot.state}>{snapshot.state}</span></header>
@@ -25,6 +27,16 @@ export function ClockServicePanel({snapshot,onStart,onStop,onPause,onResume,onRe
       <input aria-label="Tempo BPM" type="number" min="1" max="1000" value={snapshot.tempo}
         onChange={event=>onTempoChange(Number(event.currentTarget.value))}/>
     </label>
+    <label>Resolution (ticks/beat)
+      <input aria-label="Clock resolution" type="number" min="1" max="960" value={snapshot.resolution}
+        disabled={!onResolutionChange} onChange={event=>onResolutionChange?.(Number(event.currentTarget.value))}/>
+    </label>
+    {snapshot.timeSignature&&<fieldset><legend>Time signature</legend>
+      <label>Numerator<input aria-label="Time signature numerator" type="number" min="1" max="32" value={snapshot.timeSignature[0]}
+        disabled={!onTimeSignatureChange} onChange={event=>onTimeSignatureChange?.(Number(event.currentTarget.value),snapshot.timeSignature![1])}/></label>
+      <label>Denominator<input aria-label="Time signature denominator" type="number" min="1" max="64" value={snapshot.timeSignature[1]}
+        disabled={!onTimeSignatureChange} onChange={event=>onTimeSignatureChange?.(snapshot.timeSignature![0],Number(event.currentTarget.value))}/></label>
+    </fieldset>}
     <div className="floks-clock-controls">
       <BaseButton variant="accent" onClick={onStart} disabled={running}>Start</BaseButton>
       <BaseButton onClick={onPause} disabled={!running}>Pause</BaseButton>
