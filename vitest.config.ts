@@ -10,6 +10,7 @@ export default defineConfig({
       '@floks/ui': path.resolve(__dirname, 'packages/ui/src/index.ts'),
       '@floks/canvas-ui': path.resolve(__dirname, 'packages/canvas-ui/src/index.ts'),
       '@floks/contracts': path.resolve(__dirname, 'packages/contracts/src/index.ts'),
+      '@ultrst-armada/floks/ui/services': path.resolve(__dirname, 'packages/ui/dist/serviceUIComponents/index.js'),
       '@ultrst-armada/floks/ui': path.resolve(__dirname, 'packages/ui/src/index.ts'),
       '@ultrst-armada/floks/canvas-ui': path.resolve(__dirname, 'packages/canvas-ui/src/index.ts'),
       '@ultrst-armada/floks/contracts': path.resolve(__dirname, 'packages/contracts/src/index.ts'),
