@@ -44,7 +44,6 @@ export interface WorkspaceStorageOption {
   googleRootFolderId?: string;
   googleRootFolderName?: string;
   credentials?: Record<string, unknown>;
-  [key: string]: unknown;
 }
 
 export interface WorkspaceStorageSelection {
