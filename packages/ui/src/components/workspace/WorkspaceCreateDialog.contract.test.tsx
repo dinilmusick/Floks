@@ -15,7 +15,7 @@ describe('canonical Floks workspace creation', () => {
         appName: 'DocuStack',
         currentUser: { id: 'user-1', email: 'user@example.test', username: 'user' },
         storageOptions: [
-          { id: 'drive-1', provider: 'google_drive', label: 'Google Drive — user@example.test' },
+          { id: 'drive-1', provider: 'google_drive' as const, label: 'Google Drive — user@example.test' },
           { id: 'b2-1', provider: 'backblaze_b2', label: 'Production Bucket' },
         ],
         onClose: () => undefined,

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Cloud, HardDrive, Loader2 } from 'lucide-react';
+import { HardDrive, Loader2 } from 'lucide-react';
 
 export type WorkspaceStorageProvider =
   | 'local_fs'
@@ -372,7 +372,7 @@ export function WorkspaceCreateDialog({
     setError(null);
     try {
       const option = selectedOption.provider === 'local_fs'
-        ? { ...selectedOption, localFolderName: localFolderName.trim() || name.trim() }
+        ? { ...selectedOption, localFolderName: localFolderName.trim() || selectedOption.localFolderName || name.trim() }
         : selectedOption;
       await onSubmit(buildWorkspaceCreateInput(name, description, option));
       onClose();
