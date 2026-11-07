@@ -321,8 +321,13 @@ export function WorkspaceCreateDialog({
   useEffect(() => {
     if (!open || storageOptions) return;
     let active = true;
+    const listConnections = storageService.listStorageConnections;
+    if (!listConnections) {
+      setLoadingStorage(false);
+      return () => { active = false; };
+    }
     setLoadingStorage(true);
-    storageService.listStorageConnections?.(effectiveUserId)
+    listConnections(effectiveUserId)
       .then((options) => { if (active) setLoadedOptions(Array.isArray(options) ? options : []); })
       .catch((reason) => { if (active) setError(reason instanceof Error ? reason.message : 'Unable to load storage connections.'); })
       .finally(() => { if (active) setLoadingStorage(false); });
