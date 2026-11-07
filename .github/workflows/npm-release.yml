@@ -37,6 +37,8 @@ jobs:
     if: github.event_name != 'workflow_run' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_sha == github.sha)
     name: Test, sync dependencies, and publish
     runs-on: ubuntu-latest
+    env:
+      NODE_OPTIONS: --max-old-space-size=4096
     steps:
       - name: Check out main
         uses: actions/checkout@v4
