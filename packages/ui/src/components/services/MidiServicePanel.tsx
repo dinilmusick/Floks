@@ -17,7 +17,7 @@ export function MidiServicePanel({devices,messages,onRefresh,onConnect,onDisconn
   const [name,setName]=useState('Internal MIDI');
   const [selected,setSelected]=useState('');
   const [note,setNote]=useState(60);
-  const [velocity,setVelocity]=useState(100);
+  const [velocity,setVelocity]=useState(100);const [channel,setChannel]=useState(0);const [controller,setController]=useState(1);const [controlValue,setControlValue]=useState(64);
   const selectedDevice=devices.find(device=>device.id===selected);
   return <section className="floks-service-panel floks-midi-panel" aria-label="MIDI Service">
     <header><h3>MIDI Devices</h3><BaseButton onClick={onRefresh}>Discover devices</BaseButton></header>
@@ -38,6 +38,12 @@ export function MidiServicePanel({devices,messages,onRefresh,onConnect,onDisconn
       <label>Velocity<input type="number" min="0" max="127" value={velocity} onChange={event=>setVelocity(Number(event.currentTarget.value))}/></label>
       <BaseButton disabled={!selectedDevice?.capabilities.output} onClick={()=>selected&&onSend(selected,{type:'noteOn',channel:0,noteOrController:note,value:velocity})}>Send Note On</BaseButton>
       <BaseButton disabled={!selectedDevice?.capabilities.output} onClick={()=>selected&&onSend(selected,{type:'noteOff',channel:0,noteOrController:note,value:0})}>Send Note Off</BaseButton>
+    </div>
+    <div><h4>Send Control Change</h4>
+      <label>Channel<input type="number" min="0" max="15" value={channel} onChange={event=>setChannel(Number(event.currentTarget.value))}/></label>
+      <label>Controller<input type="number" min="0" max="127" value={controller} onChange={event=>setController(Number(event.currentTarget.value))}/></label>
+      <label>Value<input type="number" min="0" max="127" value={controlValue} onChange={event=>setControlValue(Number(event.currentTarget.value))}/></label>
+      <BaseButton disabled={!selectedDevice?.capabilities.output} onClick={()=>selected&&onSend(selected,{type:'controlChange',channel,noteOrController:controller,value:controlValue})}>Send Control Change</BaseButton>
     </div>
     <div aria-label="MIDI receive monitor"><h4>Received MIDI</h4><ol>{messages.slice(-20).map((message,index)=><li key={index}>{message.type} · ch {message.channel??'—'} · {message.noteOrController??''} · {message.value??''}</li>)}</ol></div>
   </section>;
