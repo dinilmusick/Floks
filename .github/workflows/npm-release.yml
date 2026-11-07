@@ -101,19 +101,19 @@ jobs:
           fi
 
       - name: Build
-        if: (github.event_name != 'schedule' && github.event_name != 'push') || steps.updates.outputs.changed == 'true'
+        if: github.event_name != 'push' && (github.event_name != 'schedule' || steps.updates.outputs.changed == 'true')
         run: pnpm run build
 
       - name: Typecheck
-        if: (github.event_name != 'schedule' && github.event_name != 'push') || steps.updates.outputs.changed == 'true'
+        if: github.event_name != 'push' && (github.event_name != 'schedule' || steps.updates.outputs.changed == 'true')
         run: pnpm run typecheck
 
       - name: Test
-        if: (github.event_name != 'schedule' && github.event_name != 'push') || steps.updates.outputs.changed == 'true'
+        if: github.event_name != 'push' && (github.event_name != 'schedule' || steps.updates.outputs.changed == 'true')
         run: pnpm run test
 
       - name: Inspect package contents
-        if: (github.event_name != 'schedule' && github.event_name != 'push') || steps.updates.outputs.changed == 'true'
+        if: github.event_name != 'push' && (github.event_name != 'schedule' || steps.updates.outputs.changed == 'true')
         run: npm pack --dry-run
 
       - name: Commit validated upstream dependency updates
