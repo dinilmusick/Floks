@@ -18,10 +18,10 @@ describe('independent service UI surfaces',()=>{
   fireEvent.click(screen.getByRole('button',{name:'Create logical MIDI endpoint'}));expect(create).toHaveBeenCalled();fireEvent.click(screen.getByLabelText('Logical Output'));fireEvent.click(screen.getByRole('button',{name:'Send Control Change'}));expect(send).toHaveBeenCalledWith('logical',{type:'controlChange',channel:0,noteOrController:1,value:64});fireEvent.click(screen.getByRole('button',{name:'Send Program Change'}));expect(send).toHaveBeenLastCalledWith('logical',{type:'programChange',channel:0,value:0});fireEvent.click(screen.getByRole('button',{name:'Send Pitch Bend'}));expect(send).toHaveBeenLastCalledWith('logical',{type:'pitchBend',channel:0,value:8192});
  });
  it('configures OSC endpoints and sends JSON arguments',()=>{
-  const send=vi.fn();
-  render(<OscServicePanel clients={[{id:'out',host:'127.0.0.1',port:9000,transport:'udp'}]} servers={[]} messages={[]} onAddClient={()=>{}} onStartServer={()=>{}} onStopServer={()=>{}} onSend={send}/>);
+  const send=vi.fn(),stop=vi.fn();
+  render(<OscServicePanel clients={[{id:'out',host:'127.0.0.1',port:9000,transport:'udp'}]} servers={[{id:'in',host:'0.0.0.0',port:9001,transport:'udp',state:'listening'}]} messages={[]} onAddClient={()=>{}} onStartServer={()=>{}} onStopServer={stop} onSend={send}/>);
   fireEvent.click(screen.getByRole('button',{name:'Select'}));
   fireEvent.change(screen.getByLabelText('Address'),{target:{value:'/lights/1'}});
-  fireEvent.click(screen.getByRole('button',{name:'Send message'}));expect(send).toHaveBeenCalledWith('out',{address:'/lights/1',args:[]});
+  fireEvent.click(screen.getByRole('button',{name:'Send message'}));expect(send).toHaveBeenCalledWith('out',{address:'/lights/1',args:[]});expect(screen.getByText(/listening/)).toBeInTheDocument();fireEvent.click(screen.getByRole('button',{name:'Stop server'}));expect(stop).toHaveBeenCalledWith('in');
  });
 });
