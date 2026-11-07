@@ -303,6 +303,13 @@ export function WorkspaceCreateDialog({
   const [localFolderName, setLocalFolderName] = useState('');
   const [selectedStorageId, setSelectedStorageId] = useState('local_fs');
   const [defaultStorageApplied, setDefaultStorageApplied] = useState(false);
+  const [backblazeMode, setBackblazeMode] = useState(false);
+  const [backblazeAccounts, setBackblazeAccounts] = useState<BackblazeAccount[]>([]);
+  const [backblazeAccountId, setBackblazeAccountId] = useState('');
+  const [backblazeBuckets, setBackblazeBuckets] = useState<BackblazeBucket[]>([]);
+  const [backblazeBucketName, setBackblazeBucketName] = useState('');
+  const [loadingBackblazeAccounts, setLoadingBackblazeAccounts] = useState(false);
+  const [loadingBackblazeBuckets, setLoadingBackblazeBuckets] = useState(false);
   const [loadingStorage, setLoadingStorage] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -316,6 +323,11 @@ export function WorkspaceCreateDialog({
     setError(null);
     setSelectedStorageId('local_fs');
     setDefaultStorageApplied(false);
+    setBackblazeMode(false);
+    setBackblazeAccounts([]);
+    setBackblazeAccountId('');
+    setBackblazeBuckets([]);
+    setBackblazeBucketName('');
   }, [open]);
 
   useEffect(() => {
@@ -352,12 +364,12 @@ export function WorkspaceCreateDialog({
 
   useEffect(() => {
     if (!open) return;
-    const selectedStillExists = availableOptions.some((option) => option.id === selectedStorageId);
+    const selectedStillExists = backblazeMode || availableOptions.some((option) => option.id === selectedStorageId);
     if (!selectedStillExists) {
       const primary = availableOptions.find((option) => option.role === 'primary');
       setSelectedStorageId(primary?.id || 'local_fs');
     }
-  }, [open, availableOptions, selectedStorageId]);
+  }, [open, availableOptions, selectedStorageId, backblazeMode]);
 
   if (!open) return null;
 
@@ -365,19 +377,74 @@ export function WorkspaceCreateDialog({
   const userName = currentUser?.username || currentUser?.name || currentUser?.email?.split('@')[0] || 'user';
   const folderPreview = formatWorkspaceFolderPreview(appName, userName, name || 'workspace');
 
+  const handleSelectBackblaze = async () => {
+    setBackblazeMode(true);
+    setSelectedStorageId('backblaze_srkl');
+    setBackblazeAccountId('');
+    setBackblazeBuckets([]);
+    setBackblazeBucketName('');
+    setError(null);
+    if (!storageService.listBackblazeAccounts) {
+      setBackblazeAccounts([]);
+      return;
+    }
+    setLoadingBackblazeAccounts(true);
+    try {
+      const accounts = await storageService.listBackblazeAccounts(effectiveUserId);
+      setBackblazeAccounts(Array.isArray(accounts) ? accounts : []);
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : 'Failed to load SRKL Backblaze accounts.');
+    } finally {
+      setLoadingBackblazeAccounts(false);
+    }
+  };
+
+  const handleBackblazeAccountChange = async (accountId: string) => {
+    setBackblazeAccountId(accountId);
+    setBackblazeBuckets([]);
+    setBackblazeBucketName('');
+    if (!accountId || !storageService.listBackblazeBuckets) return;
+    setLoadingBackblazeBuckets(true);
+    try {
+      const buckets = await storageService.listBackblazeBuckets(accountId, effectiveUserId);
+      setBackblazeBuckets(Array.isArray(buckets) ? buckets : []);
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : 'Failed to load Backblaze buckets.');
+    } finally {
+      setLoadingBackblazeBuckets(false);
+    }
+  };
+
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!name.trim()) {
       setError('Workspace name is required.');
       return;
     }
-    if (loadingStorage || submitting) return;
+    if (backblazeMode && (!backblazeAccountId || !backblazeBucketName)) {
+      setError('Select an SRKL Backblaze account and bucket.');
+      return;
+    }
+    if (loadingStorage || loadingBackblazeAccounts || loadingBackblazeBuckets || submitting) return;
     setSubmitting(true);
     setError(null);
     try {
-      const option = selectedOption.provider === 'local_fs'
-        ? { ...selectedOption, localFolderName: localFolderName.trim() || selectedOption.localFolderName || name.trim() }
-        : selectedOption;
+      const backblazeAccount = backblazeAccounts.find((account) => account.id === backblazeAccountId);
+      const option: WorkspaceStorageOption = backblazeMode
+        ? {
+            id: backblazeAccountId,
+            provider: 'backblaze_b2',
+            label: backblazeAccount?.name || 'SRKL Backblaze B2',
+            b2BucketName: backblazeBucketName,
+            bucketName: backblazeBucketName,
+            b2Endpoint: backblazeAccount?.credentials?.endpoint,
+            endpoint: backblazeAccount?.credentials?.endpoint,
+            b2Region: backblazeAccount?.credentials?.region,
+            region: backblazeAccount?.credentials?.region,
+          }
+        : selectedOption.provider === 'local_fs'
+          ? { ...selectedOption, localFolderName: localFolderName.trim() || selectedOption.localFolderName || name.trim() }
+          : selectedOption;
       await onSubmit(buildWorkspaceCreateInput(name, description, option));
       onClose();
     } catch (reason) {
@@ -446,7 +513,7 @@ export function WorkspaceCreateDialog({
                 id="floks-workspace-storage"
                 aria-label="Workspace storage"
                 value={selectedStorageId}
-                onChange={(event) => setSelectedStorageId(event.target.value)}
+                onChange={(event) => { setBackblazeMode(false); setSelectedStorageId(event.target.value); }}
                 disabled={loadingStorage || submitting}
                 className="h-10 min-w-0 flex-1 border px-2 text-xs"
                 style={{ backgroundColor: background, borderColor: border }}
@@ -457,12 +524,61 @@ export function WorkspaceCreateDialog({
                   </option>
                 ))}
               </select>
+              <button
+                type="button"
+                onClick={handleSelectBackblaze}
+                disabled={submitting || loadingBackblazeAccounts}
+                aria-pressed={backblazeMode}
+                className="shrink-0 border px-3 text-[10px] font-black uppercase disabled:opacity-50"
+                style={{ borderColor: backblazeMode ? accent : border, color: backblazeMode ? accent : undefined }}
+              >
+                Backblaze B2 / SRKL
+              </button>
               {onManageStorage && (
                 <button type="button" onClick={onManageStorage} className="shrink-0 border px-3 text-[10px] font-black uppercase" style={{ borderColor: border }}>
                   Manage
                 </button>
               )}
             </div>
+            {backblazeMode && (
+              <div className="mt-3 space-y-2 border-t pt-3" style={{ borderColor: border }}>
+                <label className="block space-y-1">
+                  <span className="text-[10px] font-black uppercase">Backblaze account</span>
+                  <select
+                    aria-label="Backblaze account"
+                    value={backblazeAccountId}
+                    onChange={(event) => handleBackblazeAccountChange(event.target.value)}
+                    disabled={loadingBackblazeAccounts || submitting}
+                    className="h-9 w-full border px-2 text-xs"
+                    style={{ backgroundColor: background, borderColor: border }}
+                  >
+                    <option value="">Select SRKL Backblaze account</option>
+                    {backblazeAccounts.map((account) => (
+                      <option key={account.id} value={account.id}>{account.name}</option>
+                    ))}
+                  </select>
+                  {loadingBackblazeAccounts && <span className="text-[10px]" style={{ color: muted }}>Loading SRKL accounts…</span>}
+                </label>
+                <label className="block space-y-1">
+                  <span className="text-[10px] font-black uppercase">Backblaze bucket</span>
+                  <select
+                    aria-label="Backblaze bucket"
+                    value={backblazeBucketName}
+                    onChange={(event) => setBackblazeBucketName(event.target.value)}
+                    disabled={!backblazeAccountId || loadingBackblazeBuckets || submitting}
+                    className="h-9 w-full border px-2 text-xs"
+                    style={{ backgroundColor: background, borderColor: border }}
+                  >
+                    <option value="">Select bucket</option>
+                    {backblazeBuckets.map((bucket) => {
+                      const bucketName = bucket.bucketName || bucket.name || '';
+                      return <option key={bucket.bucketId || bucket.id || bucketName} value={bucketName}>{bucketName}</option>;
+                    })}
+                  </select>
+                  {loadingBackblazeBuckets && <span className="text-[10px]" style={{ color: muted }}>Loading buckets…</span>}
+                </label>
+              </div>
+            )}
             {loadingStorage ? (
               <p className="flex items-center gap-2 text-[10px]" style={{ color: muted }}><Loader2 size={12} className="animate-spin" /> Loading storage connections…</p>
             ) : availableOptions.length === 1 && availableOptions[0].provider === 'local_fs' ? (
@@ -497,7 +613,7 @@ export function WorkspaceCreateDialog({
 
         <div className="mt-5 flex justify-end gap-2 border-t pt-3" style={{ borderColor: border }}>
           <button type="button" onClick={onClose} disabled={submitting} className="h-9 border px-3 text-xs" style={{ borderColor: border }}>Cancel</button>
-          <button type="submit" disabled={submitting || loadingStorage || !name.trim()} className="h-9 px-4 text-xs font-black uppercase text-black disabled:opacity-50" style={{ backgroundColor: accent }}>
+          <button type="submit" disabled={submitting || loadingStorage || loadingBackblazeAccounts || loadingBackblazeBuckets || !name.trim()} className="h-9 px-4 text-xs font-black uppercase text-black disabled:opacity-50" style={{ backgroundColor: accent }}>
             {submitting ? 'Creating…' : 'Create Workspace'}
           </button>
         </div>
