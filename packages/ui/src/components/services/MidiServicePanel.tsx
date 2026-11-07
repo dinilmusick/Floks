@@ -38,7 +38,7 @@ export function MidiServicePanel({devices,messages,onRefresh,onConnect,onDisconn
     <div><h4>Send note</h4><label>Note<input type="number" min="0" max="127" value={note} onChange={event=>setNote(Number(event.currentTarget.value))}/></label>
       <label>Velocity<input type="number" min="0" max="127" value={velocity} onChange={event=>setVelocity(Number(event.currentTarget.value))}/></label>
       <BaseButton disabled={!selectedDevice?.capabilities.output||!outputConnected} onClick={()=>selected&&onSend(selected,{type:'noteOn',channel:0,noteOrController:note,value:velocity})}>Send Note On</BaseButton>
-      <BaseButton disabled={!selectedDevice?.capabilities.output} onClick={()=>selected&&onSend(selected,{type:'noteOff',channel:0,noteOrController:note,value:0})}>Send Note Off</BaseButton>
+      <BaseButton disabled={!selectedDevice?.capabilities.output||!outputConnected} onClick={()=>selected&&onSend(selected,{type:'noteOff',channel:0,noteOrController:note,value:0})}>Send Note Off</BaseButton>
     </div>
     <div><h4>Send Control Change</h4>
       <label>Channel<input type="number" min="0" max="15" value={channel} onChange={event=>setChannel(Number(event.currentTarget.value))}/></label>
