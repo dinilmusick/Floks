@@ -218,7 +218,7 @@ async function fetchDefaultStorageOptions(userId: string): Promise<WorkspaceStor
     fetchBackblazeAccounts(userId),
     fetch('/api/srkl/accounts?service=google_drive&userId=' + encodeURIComponent(userId))
       .then((response) => response.ok ? response.json() : {})
-      .then((data) => Array.isArray(data?.accounts) ? data.accounts : [])
+      .then((data: any) => Array.isArray(data?.accounts) ? data.accounts : [])
       .catch(() => []),
   ]);
   return [...backblaze, ...googleDrive].map((account: any) => {

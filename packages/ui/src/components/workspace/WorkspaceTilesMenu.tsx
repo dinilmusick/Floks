@@ -61,7 +61,6 @@ export function WorkspaceTilesMenu({
   workspaces,
   userId,
   currentUser,
-  userId,
   storageOptions,
   onManageStorage,
   activeWorkspaceId = null,
