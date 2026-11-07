@@ -17,7 +17,7 @@ export function MidiServicePanel({devices,messages,onRefresh,onConnect,onDisconn
   const [name,setName]=useState('Internal MIDI');
   const [selected,setSelected]=useState('');
   const [note,setNote]=useState(60);
-  const [velocity,setVelocity]=useState(100);const [channel,setChannel]=useState(0);const [controller,setController]=useState(1);const [controlValue,setControlValue]=useState(64);
+  const [velocity,setVelocity]=useState(100);const [channel,setChannel]=useState(0);const [controller,setController]=useState(1);const [controlValue,setControlValue]=useState(64);const [program,setProgram]=useState(0);const [pitchBend,setPitchBend]=useState(8192);
   const selectedDevice=devices.find(device=>device.id===selected);
   const outputConnected=Boolean(selectedDevice?.capabilities.output&&(selectedDevice.origin==='logical'||selectedDevice.outputState==='connected'));
   return <section className="floks-service-panel floks-midi-panel" aria-label="MIDI Service">
@@ -45,6 +45,12 @@ export function MidiServicePanel({devices,messages,onRefresh,onConnect,onDisconn
       <label>Controller<input type="number" min="0" max="127" value={controller} onChange={event=>setController(Number(event.currentTarget.value))}/></label>
       <label>Value<input type="number" min="0" max="127" value={controlValue} onChange={event=>setControlValue(Number(event.currentTarget.value))}/></label>
       <BaseButton disabled={!selectedDevice?.capabilities.output||!outputConnected} onClick={()=>selected&&onSend(selected,{type:'controlChange',channel,noteOrController:controller,value:controlValue})}>Send Control Change</BaseButton>
+    </div>
+    <div><h4>Program Change</h4><label>Program<input type="number" min="0" max="127" value={program} onChange={event=>setProgram(Number(event.currentTarget.value))}/></label>
+      <BaseButton disabled={!selectedDevice?.capabilities.output||!outputConnected} onClick={()=>selected&&onSend(selected,{type:'programChange',channel,value:program})}>Send Program Change</BaseButton>
+    </div>
+    <div><h4>Pitch Bend</h4><label>14-bit value<input type="number" min="0" max="16383" value={pitchBend} onChange={event=>setPitchBend(Number(event.currentTarget.value))}/></label>
+      <BaseButton disabled={!selectedDevice?.capabilities.output||!outputConnected} onClick={()=>selected&&onSend(selected,{type:'pitchBend',channel,value:pitchBend})}>Send Pitch Bend</BaseButton>
     </div>
     <div aria-label="MIDI receive monitor"><h4>Received MIDI</h4><ol>{messages.slice(-20).map((message,index)=><li key={index}>{message.type} · ch {message.channel??'—'} · {message.noteOrController??''} · {message.value??''}</li>)}</ol></div>
   </section>;
