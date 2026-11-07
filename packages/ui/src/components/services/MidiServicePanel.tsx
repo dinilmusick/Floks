@@ -19,7 +19,7 @@ export function MidiServicePanel({devices,messages,onRefresh,onConnect,onDisconn
   const [note,setNote]=useState(60);
   const [velocity,setVelocity]=useState(100);const [channel,setChannel]=useState(0);const [controller,setController]=useState(1);const [controlValue,setControlValue]=useState(64);
   const selectedDevice=devices.find(device=>device.id===selected);
-  const outputConnected=selectedDevice?.origin==='logical'||selectedDevice?.outputState==='connected'||(!selectedDevice?.outputState&&selectedDevice?.state==='connected');
+  const outputConnected=Boolean(selectedDevice?.capabilities.output&&(selectedDevice.origin==='logical'||selectedDevice.outputState==='connected'));
   return <section className="floks-service-panel floks-midi-panel" aria-label="MIDI Service">
     <header><h3>MIDI Devices</h3><BaseButton onClick={onRefresh}>Discover devices</BaseButton></header>
     <p>Physical devices are discovered from the runtime. Logical endpoints are in-process routes and are not OS virtual MIDI ports.</p>
