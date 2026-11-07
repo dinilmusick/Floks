@@ -17,3 +17,5 @@ The service UI is split into independent reusable surfaces exported from `@ultrs
 ## Composition
 
 All panels use injected props/callbacks. Floks does not import Kloks backend service implementations, open device handles, bind UDP sockets or create application-specific service state. Skipo applications connect panel callbacks to their own service instances.
+
+The panel contracts intentionally remain transport-agnostic: browser, Node, WebContainer and desktop adapters are composed by the application and passed as callbacks/state. The panels never infer that an endpoint is reachable merely because it is configured.
