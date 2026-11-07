@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { BaseButton } from '../base/BaseButton.js';
 
-export interface OscUiEndpoint { id:string; host:string; port:number; transport:'udp'|'websocket'|'custom'; }
+export interface OscUiEndpoint { id:string; host:string; port:number; transport:'udp'|'websocket'|'custom'; state?:'configured'|'listening'|'stopped'|'error'; }
 export interface OscUiMessage { address:string; args:Array<string|number|boolean|null>; }
 export interface OscServicePanelProps {
   clients:OscUiEndpoint[]; servers:OscUiEndpoint[]; messages:OscUiMessage[];
@@ -22,8 +22,8 @@ export function OscServicePanel({clients,servers,messages,onAddClient,onStartSer
       <BaseButton onClick={()=>{onAddClient(configure());setClient(id);}}>Add OSC client</BaseButton>
       <BaseButton onClick={()=>onStartServer(configure())}>Start OSC server</BaseButton>
     </div>
-    <div><h4>Clients</h4><ul>{clients.map(item=><li key={item.id}>{item.id} · {item.host}:{item.port} <button onClick={()=>setClient(item.id)}>Select</button></li>)}</ul></div>
-    <div><h4>Servers</h4><ul>{servers.map(item=><li key={item.id}>{item.id} · {item.host}:{item.port}<BaseButton onClick={()=>onStopServer(item.id)}>Stop server</BaseButton></li>)}</ul></div>
+    <div><h4>Clients</h4><ul>{clients.map(item=><li key={item.id}>{item.id} · {item.host}:{item.port} · {item.state??'configured'} <button onClick={()=>setClient(item.id)}>Select</button></li>)}</ul></div>
+    <div><h4>Servers</h4><ul>{servers.map(item=><li key={item.id}>{item.id} · {item.host}:{item.port} · {item.state??'listening'}<BaseButton onClick={()=>onStopServer(item.id)}>Stop server</BaseButton></li>)}</ul></div>
     <form onSubmit={event=>{event.preventDefault();try{const parsed=JSON.parse(args) as OscUiMessage['args'];onSend(client,{address,args:parsed});}catch{/* invalid JSON is not sent */}}}>
       <h4>Send OSC message</h4><label>Address<input value={address} onChange={event=>setAddress(event.currentTarget.value)}/></label>
       <label>Arguments (JSON array)<input value={args} onChange={event=>setArgs(event.currentTarget.value)}/></label>
