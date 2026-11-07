@@ -33,7 +33,6 @@ export interface WorkspaceTilesMenuProps {
   workspaces: WorkspaceRecord[];
   userId?: string;
   currentUser?: { id: string; email: string; name?: string; username?: string } | null;
-  userId?: string;
   storageOptions?: WorkspaceStorageOption[];
   onManageStorage?: () => void;
   activeWorkspaceId?: string | null;
