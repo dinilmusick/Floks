@@ -7,7 +7,8 @@ describe('timeline components', () => {
     expect(MusicalTimeline).toBeDefined();
   });
 
-  it('accepts musical bar/beat geometry without requiring app-specific state', () => {
+  it('keeps timeline components app-agnostic', () => {
     expect(typeof MusicalTimeline).toBe('function');
+    expect(typeof MidiTimeline).toBe('function');
   });
 });
