@@ -1,7 +1,7 @@
 import React from 'react';
 import {describe,expect,it,vi} from 'vitest';
 import {fireEvent,render,screen} from '@testing-library/react';
-import {ClockServicePanel,MidiServicePanel,OscServicePanel} from '../packages/ui/src/serviceUIComponents/index.js';
+import {ClockServicePanel,MidiServicePanel,OscServicePanel} from '@ultrst-armada/floks/ui/services';
 describe('independent service UI surfaces',()=>{
  it('renders clock position and dispatches timing controls',()=>{
   const start=vi.fn(),tempo=vi.fn();
