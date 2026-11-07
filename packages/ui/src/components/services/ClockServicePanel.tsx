@@ -16,11 +16,13 @@ export interface ClockServicePanelProps {
 }
 export function ClockServicePanel({snapshot,onStart,onStop,onPause,onResume,onReset,onTempoChange,onResolutionChange,onTimeSignatureChange,title='Application Clock'}:ClockServicePanelProps){
   const running=snapshot.state==='running';
+  const beatProgress=((snapshot.beat%1)+1)%1;
   return <section className="floks-service-panel floks-clock-panel" aria-label={title}>
     <header><h3>{title}</h3><span role="status" data-state={snapshot.state}>{snapshot.state}</span></header>
     <div className="floks-clock-position" aria-live="polite">
       <strong>{snapshot.bar}:{snapshot.beatInBar.toFixed(2)}</strong>
       <span>Beat {snapshot.beat.toFixed(3)} · Tick {snapshot.tick}</span>
+      <progress aria-label="Beat progress" max={1} value={beatProgress}/>
       <span>{Math.floor(snapshot.elapsedMs/1000)}s elapsed</span>
     </div>
     <label>Tempo (BPM)
