@@ -69,6 +69,11 @@
       "types": "./packages/ui/dist/components/auth/index.d.ts",
       "import": "./packages/ui/dist/components/auth/index.js",
       "default": "./packages/ui/dist/components/auth/index.js"
+    },
+    "./ui/services": {
+      "types": "./packages/ui/dist/serviceUIComponents/index.d.ts",
+      "import": "./packages/ui/dist/serviceUIComponents/index.js",
+      "default": "./packages/ui/dist/serviceUIComponents/index.js"
     }
   },
   "scripts": {
