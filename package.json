@@ -74,6 +74,11 @@
       "types": "./packages/ui/dist/serviceUIComponents/index.d.ts",
       "import": "./packages/ui/dist/serviceUIComponents/index.js",
       "default": "./packages/ui/dist/serviceUIComponents/index.js"
+    },
+    "./ui/timeline": {
+      "types": "./packages/ui/dist/components/timeline/index.d.ts",
+      "import": "./packages/ui/dist/components/timeline/index.js",
+      "default": "./packages/ui/dist/components/timeline/index.js"
     }
   },
   "scripts": {

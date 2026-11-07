@@ -7,6 +7,7 @@ export * from './components/bottom-strip/index.js';
 export * from './components/settings/index.js';
 export * from './components/auth/index.js';
 export * from './components/tiles/index.js';
+export * from './components/timeline/index.js';
 export * from './components/graph/index.js';
 export * from './components/workspace/index.js';
 export * from './components/ai/index.js';
