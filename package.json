@@ -77,7 +77,7 @@
     }
   },
   "scripts": {
-    "build": "pnpm -r run build",
+    "build": "pnpm -r run build && pnpm --filter @floks/ui run build:types",
     "postbuild": "node -e \"import('fs').then(fs => { for (const pkg of fs.readdirSync('packages')) { const d = 'packages/' + pkg + '/dist'; if (!fs.existsSync(d)) continue; for (const f of fs.readdirSync(d, { recursive: true })) { const p = d + '/' + f; if (fs.statSync(p).isFile() && (p.endsWith('.js') || p.endsWith('.d.ts'))) { const c = fs.readFileSync(p, 'utf8'); const n = c.replaceAll('@kloks/', '@ultrst-armada/kloks/').replaceAll('@floks/', '@ultrst-armada/floks/').replaceAll('@ultrst/kloks/', '@ultrst-armada/kloks/').replaceAll('@ultrst/floks/', '@ultrst-armada/floks/').replaceAll('\\\"kloks/', '\\\"@ultrst-armada/kloks/').replaceAll('\\'kloks/', '\\'@ultrst-armada/kloks/').replaceAll('\\\"floks/', '\\\"@ultrst-armada/floks/').replaceAll('\\'floks/', '\\'@ultrst-armada/floks/'); if (c !== n) fs.writeFileSync(p, n); } } } })\"",
     "test": "vitest run",
     "typecheck": "pnpm -r run typecheck",
