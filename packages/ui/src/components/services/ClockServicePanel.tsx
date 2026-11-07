@@ -34,11 +34,13 @@ export function ClockServicePanel({snapshot,onStart,onStop,onPause,onResume,onRe
     {snapshot.timeSignature&&<fieldset><legend>Time signature</legend>
       <label>Numerator<input aria-label="Time signature numerator" type="number" min="1" max="32" value={snapshot.timeSignature[0]}
         disabled={!onTimeSignatureChange} onChange={event=>onTimeSignatureChange?.(Number(event.currentTarget.value),snapshot.timeSignature![1])}/></label>
-      <label>Denominator<input aria-label="Time signature denominator" type="number" min="1" max="64" value={snapshot.timeSignature[1]}
-        disabled={!onTimeSignatureChange} onChange={event=>onTimeSignatureChange?.(snapshot.timeSignature![0],Number(event.currentTarget.value))}/></label>
+      <label>Denominator<select aria-label="Time signature denominator" value={snapshot.timeSignature[1]}
+        disabled={!onTimeSignatureChange} onChange={event=>onTimeSignatureChange?.(snapshot.timeSignature![0],Number(event.currentTarget.value))}>
+        {[1,2,4,8,16,32].map(value=><option key={value} value={value}>{value}</option>)}
+      </select></label>
     </fieldset>}
     <div className="floks-clock-controls">
-      <BaseButton variant="accent" onClick={onStart} disabled={running}>Start</BaseButton>
+      <BaseButton variant="accent" onClick={onStart} disabled={snapshot.state!=='stopped'}>Start</BaseButton>
       <BaseButton onClick={onPause} disabled={!running}>Pause</BaseButton>
       <BaseButton onClick={onResume} disabled={snapshot.state!=='paused'}>Resume</BaseButton>
       <BaseButton onClick={onStop} disabled={snapshot.state==='stopped'}>Stop</BaseButton>
