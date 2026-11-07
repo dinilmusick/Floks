@@ -81,4 +81,3 @@ export {
 
 // Canonical FrnlTS-backed Components (frnl* prefix standard)
 export * from './frnl/index.js';
-export * from './serviceUIComponents/index.js';
