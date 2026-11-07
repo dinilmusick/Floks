@@ -6,7 +6,7 @@ describe('independent service UI surfaces',()=>{
  it('renders clock position and dispatches timing controls',()=>{
   const start=vi.fn(),tempo=vi.fn(),resolution=vi.fn(),signature=vi.fn();
   render(<ClockServicePanel snapshot={{state:'stopped',tempo:120,beat:0,bar:1,beatInBar:1,tick:0,subdivision:0,elapsedMs:0,resolution:24,timeSignature:[4,4]}} onStart={start} onStop={()=>{}} onPause={()=>{}} onResume={()=>{}} onReset={()=>{}} onTempoChange={tempo} onResolutionChange={resolution} onTimeSignatureChange={signature}/>);
-  fireEvent.click(screen.getByRole('button',{name:'Start'}));expect(start).toHaveBeenCalled();
+  expect(screen.getByLabelText('Beat progress')).toBeInTheDocument();fireEvent.click(screen.getByRole('button',{name:'Start'}));expect(start).toHaveBeenCalled();
   fireEvent.change(screen.getByLabelText('Tempo BPM'),{target:{value:'128'}});expect(tempo).toHaveBeenCalledWith(128);fireEvent.change(screen.getByLabelText('Clock resolution'),{target:{value:'48'}});expect(resolution).toHaveBeenCalledWith(48);fireEvent.change(screen.getByLabelText('Time signature numerator'),{target:{value:'3'}});expect(signature).toHaveBeenCalledWith(3,4);fireEvent.change(screen.getByLabelText('Time signature denominator'),{target:{value:'8'}});expect(signature).toHaveBeenLastCalledWith(4,8);
  });
  it('distinguishes physical MIDI hardware from logical endpoints',()=>{
