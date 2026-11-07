@@ -9,6 +9,7 @@ import {
   type WorkspaceCreateInput,
   type WorkspaceStorageService,
   defaultWorkspaceStorageService,
+  type WorkspaceStorageOption,
 } from './WorkspaceCreateDialog.js';
 
 export const WORKSPACE_TILES_MENU_REQUIRED_SERVICES = ['auth', 'workspace', 'storage', 'srkl'] as const;
@@ -31,7 +32,10 @@ export interface WorkspaceRecord {
 export interface WorkspaceTilesMenuProps {
   workspaces: WorkspaceRecord[];
   userId?: string;
-  currentUser?: { id: string; email: string; name?: string } | null;
+  currentUser?: { id: string; email: string; name?: string; username?: string } | null;
+  userId?: string;
+  storageOptions?: WorkspaceStorageOption[];
+  onManageStorage?: () => void;
   activeWorkspaceId?: string | null;
   appName?: string;
   storageService?: WorkspaceStorageService;
@@ -57,6 +61,9 @@ export function WorkspaceTilesMenu({
   workspaces,
   userId,
   currentUser,
+  userId,
+  storageOptions,
+  onManageStorage,
   activeWorkspaceId = null,
   appName = 'Workspaces',
   storageService = defaultWorkspaceStorageService,
@@ -110,7 +117,7 @@ export function WorkspaceTilesMenu({
           </>
         )}
       />
-      <WorkspaceCreateDialog open={creating} userId={effectiveUserId} currentUser={currentUser} storageService={storageService} onClose={() => setCreating(false)} onSubmit={onCreateWorkspace} />
+      <WorkspaceCreateDialog open={creating} userId={effectiveUserId} currentUser={currentUser} appName={appName} storageOptions={storageOptions} storageService={storageService} onManageStorage={onManageStorage} onClose={() => setCreating(false)} onSubmit={onCreateWorkspace} />
     </section>
   );
 }
