@@ -40,7 +40,9 @@ function getErrorCode(error: unknown): string {
 
 export function describeGoogleDriveError(error: unknown): string {
   const code = getErrorCode(error);
-  if (code.includes('CANCEL') || code.includes('ACCESS_DENIED')) return 'Google Drive authorization was cancelled or declined. No connection was added.';
+  if (code.includes('CANCEL') || code === 'ACCESS_DENIED' || code === 'OAUTH_ACCESS_DENIED') {
+    return 'Google Drive authorization was cancelled or declined. No connection was added.';
+  }
   if (code.includes('EXPIRED') || code === 'UNAUTHENTICATED') {
     return 'Your Google Drive authorization has expired. Reconnect your Google account to continue.';
   }
