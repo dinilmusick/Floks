@@ -158,7 +158,7 @@ describe('WorkspaceCreateDialog Google Drive integration', () => {
     const connections = await service.listStorageConnections?.('user-1');
 
     expect(invoke).toHaveBeenCalledWith('kloks.service.storage', 'getConnections', {});
-    expect(invoke.mock.calls.every(([serviceId]) => serviceId !== 'srkl')).toBe(true);
+    expect(invoke).toHaveBeenCalledTimes(1);
     expect(connections).toEqual(expect.arrayContaining([
       expect.objectContaining({ id: 'local-1', provider: 'local_fs' }),
       expect.objectContaining({ id: 'drive-1', provider: 'google_drive' }),
