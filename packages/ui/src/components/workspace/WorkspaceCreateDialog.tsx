@@ -254,8 +254,8 @@ async function fetchBackblazeBuckets(accountId: string, userId?: string): Promis
 async function fetchDefaultStorageOptions(userId: string): Promise<WorkspaceStorageOption[]> {
   const stored = await fetchStorageConnections(userId);
   if (stored.length > 0) return stored;
-  // SRKL remains the legacy Backblaze account source only. Google Drive authorization
-  // and user Drive data must never be discovered through SRKL account credentials.
+  // The consumer injects its own authorized Backblaze account source. This shared
+  // component never assumes a particular application or account-management API.
   const backblaze = await fetchBackblazeAccounts(userId);
   return backblaze.map((account: any) => {
     const credentials = account.credentials || {};
@@ -465,7 +465,7 @@ export function WorkspaceCreateDialog({
 
   const handleSelectBackblaze = async () => {
     setBackblazeMode(true);
-    setSelectedStorageId('backblaze_srkl');
+    setSelectedStorageId('backblaze_external');
     setBackblazeAccountId('');
     setBackblazeBuckets([]);
     setBackblazeBucketName('');
@@ -508,7 +508,7 @@ export function WorkspaceCreateDialog({
       return;
     }
     if (backblazeMode && (!backblazeAccountId || !backblazeBucketName)) {
-      setError('Select an SRKL Backblaze account and bucket.');
+      setError('Select a Backblaze account and bucket.');
       return;
     }
     if (!backblazeMode && !availableOptions.some((option) => option.id === selectedStorageId)) {
@@ -528,7 +528,7 @@ export function WorkspaceCreateDialog({
         ? {
             id: backblazeAccountId,
             provider: 'backblaze_b2',
-            label: backblazeAccount?.name || 'SRKL Backblaze B2',
+            label: backblazeAccount?.name || 'Backblaze B2',
             b2BucketName: backblazeBucketName,
             bucketName: backblazeBucketName,
             b2Endpoint: backblazeAccount?.credentials?.endpoint,
@@ -661,7 +661,7 @@ export function WorkspaceCreateDialog({
                       <option key={account.id} value={account.id}>{account.name}</option>
                     ))}
                   </select>
-                  {loadingBackblazeAccounts && <span className="text-[10px]" style={{ color: muted }}>Loading SRKL accounts…</span>}
+                  {loadingBackblazeAccounts && <span className="text-[10px]" style={{ color: muted }}>Loading Backblaze accounts…</span>}
                 </label>
                 <label className="block space-y-1">
                   <span className="text-[10px] font-black uppercase">Backblaze bucket</span>
