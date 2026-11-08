@@ -92,14 +92,24 @@ export interface WorkspaceStorageService {
 export type WorkspaceCreateDialogHiddenField =
   | 'description'
   | 'localFolderName'
-  | 'manageStorage'
   | 'backblaze'
   | 'canonicalFolderPreview';
 
+export interface WorkspaceStoragePolicy {
+  /** Ordered allow-list of providers an application permits for new workspaces. */
+  providers: WorkspaceStorageProvider[];
+}
+
+export const DEFAULT_WORKSPACE_STORAGE_POLICY: WorkspaceStoragePolicy = {
+  providers: ['local_fs', 'google_drive', 'backblaze_b2'],
+};
+
 export interface WorkspaceCreateDialogVisibility {
-  /** Whitelist of storage providers to render. Unspecified means all providers. */
+  /** Canonical application-level provider policy. */
+  storagePolicy?: WorkspaceStoragePolicy;
+  /** Backwards-compatible provider allow-list. Prefer storagePolicy.providers. */
   availableStorageProviders?: WorkspaceStorageProvider[];
-  /** Providers hidden even when included in availableStorageProviders. */
+  /** Providers hidden even when included in the application policy. */
   hiddenStorageProviders?: WorkspaceStorageProvider[];
   /** Optional generic fields/sections to hide from the shared dialog. */
   hiddenFields?: WorkspaceCreateDialogHiddenField[];
@@ -113,7 +123,6 @@ export interface WorkspaceCreateDialogProps {
   storageOptions?: WorkspaceStorageOption[];
   storageService?: WorkspaceStorageService;
   visibility?: WorkspaceCreateDialogVisibility;
-  onManageStorage?: () => void;
   onClose: () => void;
   onSubmit: (input: WorkspaceCreateInput) => Promise<void> | void;
 }
@@ -346,7 +355,6 @@ export function WorkspaceCreateDialog({
   storageOptions,
   storageService = defaultWorkspaceStorageService,
   visibility,
-  onManageStorage,
   onClose,
   onSubmit,
 }: WorkspaceCreateDialogProps) {
@@ -405,38 +413,47 @@ export function WorkspaceCreateDialog({
 
   const availableOptions = useMemo(() => {
     const supplied = storageOptions ?? loadedOptions;
-    const providers = visibility?.availableStorageProviders;
+    const providerOrder = visibility?.storagePolicy?.providers
+      || visibility?.availableStorageProviders
+      || DEFAULT_WORKSPACE_STORAGE_POLICY.providers;
     const hidden = new Set(visibility?.hiddenStorageProviders || []);
-    const isVisible = (provider: WorkspaceStorageProvider) =>
-      !hidden.has(provider) && (!providers || providers.includes(provider));
     const enabled = supplied.filter((option) =>
       option
       && option.enabled !== false
       && typeof option.id === 'string'
-      && isVisible(option.provider),
+      && !hidden.has(option.provider),
     );
-    const local = enabled.find((option) => option.provider === 'local_fs');
-    const external = enabled.filter((option) => option.provider !== 'local_fs');
-    const driveConnections = [
-      ...external.filter((option) => option.provider === 'google_drive'),
-      ...(connectedDriveOption && connectedDriveOption.enabled !== false ? [connectedDriveOption] : []),
-    ].filter((option, index, items) => items.findIndex((candidate) => candidate.id === option.id) === index);
-    const connectDriveOption: WorkspaceStorageOption[] = isVisible('google_drive')
-      && !driveConnections.some((option) => option.id === 'google_drive')
-      ? [{ id: 'google_drive', provider: 'google_drive', label: driveConnections.length ? 'Connect another account' : 'Connect Google Drive' }]
-      : [];
-    return [
-      ...(local ? [local] : isVisible('local_fs') ? [LOCAL_STORAGE_OPTION] : []),
-      ...external.filter((option) => option.provider !== 'google_drive'),
-      ...driveConnections,
-      ...connectDriveOption,
-    ];
+    const forProvider = (provider: WorkspaceStorageProvider) =>
+      enabled.filter((option) => option.provider === provider);
+
+    return providerOrder
+      .filter((provider, index) => providerOrder.indexOf(provider) === index && !hidden.has(provider))
+      .flatMap((provider): WorkspaceStorageOption[] => {
+        if (provider === 'local_fs') {
+          return [forProvider(provider)[0] || LOCAL_STORAGE_OPTION];
+        }
+        if (provider === 'google_drive') {
+          const connections = [
+            ...forProvider(provider),
+            ...(connectedDriveOption && connectedDriveOption.enabled !== false ? [connectedDriveOption] : []),
+          ].filter((option, index, items) => items.findIndex((candidate) => candidate.id === option.id) === index);
+          return connections.length > 0
+            ? connections
+            : [{ id: 'google_drive', provider: 'google_drive', label: 'Connect Google Drive' }];
+        }
+        if (provider === 'backblaze_b2') {
+          const connections = forProvider(provider);
+          return connections.length > 0
+            ? connections
+            : [{ id: 'backblaze_external', provider: 'backblaze_b2', label: 'Choose Backblaze account and bucket' }];
+        }
+        return forProvider(provider);
+      });
   }, [storageOptions, loadedOptions, connectedDriveOption, visibility]);
 
   useEffect(() => {
     if (!open || loadingStorage || defaultStorageApplied) return;
-    const primary = availableOptions.find((option) => option.role === 'primary')
-      || availableOptions.find((option) => option.provider !== 'local_fs' && option.id !== 'google_drive');
+    const primary = availableOptions.find((option) => option.role === 'primary');
     const preferred = primary || availableOptions[0];
     if (preferred) setSelectedStorageId(preferred.id);
     setDefaultStorageApplied(true);
@@ -615,7 +632,15 @@ export function WorkspaceCreateDialog({
                 id="floks-workspace-storage"
                 aria-label="Workspace storage"
                 value={selectedStorageId}
-                onChange={(event) => { setBackblazeMode(false); setSelectedStorageId(event.target.value); }}
+                onChange={(event) => {
+                  const nextId = event.target.value;
+                  if (nextId === 'backblaze_external') {
+                    void handleSelectBackblaze();
+                    return;
+                  }
+                  setBackblazeMode(false);
+                  setSelectedStorageId(nextId);
+                }}
                 disabled={loadingStorage || submitting}
                 className="h-10 min-w-0 flex-1 border px-2 text-xs"
                 style={{ backgroundColor: background, borderColor: border }}
@@ -626,23 +651,6 @@ export function WorkspaceCreateDialog({
                   </option>
                 ))}
               </select>
-              {!hiddenFields.has('backblaze') && (
-                <button
-                  type="button"
-                  onClick={handleSelectBackblaze}
-                  disabled={submitting || loadingBackblazeAccounts}
-                  aria-pressed={backblazeMode}
-                  className="shrink-0 border px-3 text-[10px] font-black uppercase disabled:opacity-50"
-                  style={{ borderColor: backblazeMode ? accent : border, color: backblazeMode ? accent : undefined }}
-                >
-                  Backblaze B2
-                </button>
-              )}
-              {!hiddenFields.has('manageStorage') && onManageStorage && (
-                <button type="button" onClick={onManageStorage} className="shrink-0 border px-3 text-[10px] font-black uppercase" style={{ borderColor: border }}>
-                  Manage
-                </button>
-              )}
             </div>
             {!hiddenFields.has('backblaze') && backblazeMode && (
               <div className="mt-3 space-y-2 border-t pt-3" style={{ borderColor: border }}>
@@ -685,10 +693,8 @@ export function WorkspaceCreateDialog({
             )}
             {loadingStorage ? (
               <p className="flex items-center gap-2 text-[10px]" style={{ color: muted }}><Loader2 size={12} className="animate-spin" /> Loading storage connections…</p>
-            ) : availableOptions.length === 1 && availableOptions[0].provider === 'local_fs' ? (
-              <p className="text-[10px]" style={{ color: muted }}>No external storage connection is available yet. Connect an external provider or choose an available connection.</p>
             ) : (
-              <p className="text-[10px]" style={{ color: muted }}>Cloud storage is selected from connections already authorized for this account.</p>
+              <p className="text-[10px]" style={{ color: muted }}>Choose a provider. Cloud providers will guide you through authorization or bucket selection here.</p>
             )}
           </div>
 
