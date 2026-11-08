@@ -523,6 +523,10 @@ export function WorkspaceCreateDialog({
       setError('Select an SRKL Backblaze account and bucket.');
       return;
     }
+    if (!backblazeMode && !availableOptions.some((option) => option.id === selectedStorageId)) {
+      setError('No visible storage provider is available for this workspace.');
+      return;
+    }
     if (selectedOption.provider === 'google_drive' && (!googleDriveConnection || !googleDriveFolder)) {
       setError('Connect Google Drive and select a folder for this workspace.');
       return;
