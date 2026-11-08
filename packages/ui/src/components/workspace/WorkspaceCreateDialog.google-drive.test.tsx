@@ -108,7 +108,7 @@ describe('WorkspaceCreateDialog Google Drive integration', () => {
     expect(options[0]).toHaveTextContent('Google Drive');
     expect(screen.getByRole('form', { name: 'Create workspace' })).toBeInTheDocument();
     expect(screen.queryByLabelText('Workspace description')).not.toBeInTheDocument();
-    expect(screen.queryByText('Backblaze B2 / SRKL')).not.toBeInTheDocument();
+    expect(screen.queryByText('Backblaze B2')).not.toBeInTheDocument();
     expect(screen.queryByText('Canonical Workspace Folder')).not.toBeInTheDocument();
     expect(container.textContent).not.toContain('Archive bucket');
   });
@@ -134,26 +134,18 @@ describe('WorkspaceCreateDialog Google Drive integration', () => {
     expect(options.map((option) => option.textContent).join(' ')).not.toContain('Google Drive');
   });
 
-  it('uses Kloks StorageClientService for canonical connections and keeps SRKL limited to Backblaze', async () => {
+  it('uses Kloks StorageClientService for canonical connections without application-specific account coupling', async () => {
     const invoke = vi.fn(async (serviceId: string, operation: string) => {
       if (serviceId === 'kloks.service.storage' && operation === 'getConnections') {
-        return [{ id: 'local-1', provider: 'local_fs', label: 'Local Workstation' }];
+        return [
+          { id: 'local-1', provider: 'local_fs', label: 'Local Workstation' },
+          { id: 'drive-1', provider: 'google_drive', label: 'Google Drive', googleEmail: 'artist@example.test' },
+        ];
       }
-      if (serviceId === 'srkl' && operation === 'getAccounts') {
-        return {
-          accounts: [{
-            id: 'b2-account-1',
-            name: 'Backblaze Archive',
-            provider: 'backblaze_b2',
-            credentials: { bucketName: 'archive', endpoint: 's3.eu-central-003.backblazeb2.com', region: 'eu-central-003' },
-          }],
-        };
-      }
-      if (serviceId === 'srkl' && operation === 'listBackblazeBuckets') return { buckets: [{ bucketName: 'archive' }] };
       return {};
     });
     const connectGoogleDrive = vi.fn().mockResolvedValue({
-      id: 'drive-1',
+      id: 'drive-2',
       provider: 'google_drive',
       googleEmail: 'artist@example.test',
     });
@@ -166,13 +158,12 @@ describe('WorkspaceCreateDialog Google Drive integration', () => {
     const connections = await service.listStorageConnections?.('user-1');
 
     expect(invoke).toHaveBeenCalledWith('kloks.service.storage', 'getConnections', {});
-    expect(invoke).toHaveBeenCalledWith('srkl', 'getAccounts', { userId: 'user-1', service: 'backblaze' });
-    expect(invoke).not.toHaveBeenCalledWith('srkl', 'getAccounts', { userId: 'user-1', service: 'google_drive' });
+    expect(invoke.mock.calls.every(([serviceId]) => serviceId !== 'srkl')).toBe(true);
     expect(connections).toEqual(expect.arrayContaining([
       expect.objectContaining({ id: 'local-1', provider: 'local_fs' }),
-      expect.objectContaining({ id: 'b2-account-1', provider: 'backblaze_b2', b2BucketName: 'archive' }),
+      expect.objectContaining({ id: 'drive-1', provider: 'google_drive' }),
     ]));
-    await expect(service.connectGoogleDrive?.('user-1')).resolves.toMatchObject({ id: 'drive-1', provider: 'google_drive' });
-    await expect(service.listGoogleDriveFolders?.('drive-1')).resolves.toEqual([]);
+    await expect(service.connectGoogleDrive?.('user-1')).resolves.toMatchObject({ id: 'drive-2', provider: 'google_drive' });
+    await expect(service.listGoogleDriveFolders?.('drive-2')).resolves.toEqual([]);
   });
 });
