@@ -449,7 +449,8 @@ export function WorkspaceCreateDialog({
     if (!open || loadingStorage || defaultStorageApplied) return;
     const primary = availableOptions.find((option) => option.role === 'primary')
       || availableOptions.find((option) => option.provider !== 'local_fs' && option.id !== 'google_drive');
-    if (primary) setSelectedStorageId(primary.id);
+    const preferred = primary || availableOptions[0];
+    if (preferred) setSelectedStorageId(preferred.id);
     setDefaultStorageApplied(true);
   }, [open, loadingStorage, availableOptions, defaultStorageApplied]);
 
@@ -458,7 +459,7 @@ export function WorkspaceCreateDialog({
     const selectedStillExists = backblazeMode || availableOptions.some((option) => option.id === selectedStorageId);
     if (!selectedStillExists) {
       const primary = availableOptions.find((option) => option.role === 'primary');
-      setSelectedStorageId(primary?.id || 'local_fs');
+      setSelectedStorageId(primary?.id || availableOptions[0]?.id || '');
     }
   }, [open, availableOptions, selectedStorageId, backblazeMode]);
 
@@ -711,7 +712,7 @@ export function WorkspaceCreateDialog({
                   setError('The storage service returned a non-Google Drive connection.');
                   return;
                 }
-                setConnectedDriveOption(connection);
+                setConnectedDriveOption(connection as WorkspaceStorageOption);
                 setSelectedStorageId(connection.id);
                 setGoogleDriveFolder(null);
                 setError(null);
