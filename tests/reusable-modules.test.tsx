@@ -57,7 +57,7 @@ describe('reusable application modules', () => {
   it('loads injected external-provider accounts then buckets in the workspace creation dialog', async () => {
     const calls: string[] = [];
     const storageService = {
-      listBackblazeAccounts: async (userId: string) => { calls.push('accounts:' + userId); return [{ id: 'acct-1', name: 'SRKL B2' }]; },
+      listBackblazeAccounts: async (userId: string) => { calls.push('accounts:' + userId); return [{ id: 'acct-1', name: 'Archive B2' }]; },
       listBackblazeBuckets: async (accountId: string) => { calls.push('buckets:' + accountId); return [{ bucketId: 'b1', bucketName: 'workspace-bucket' }]; },
     };
     render(
@@ -70,7 +70,7 @@ describe('reusable application modules', () => {
       />,
     );
     fireEvent.click(screen.getByRole('button', { name: /backblaze b2/i }));
-    expect(await screen.findByText('SRKL B2')).toBeInTheDocument();
+    expect(await screen.findByText('Archive B2')).toBeInTheDocument();
     fireEvent.change(screen.getByLabelText('Backblaze account'), { target: { value: 'acct-1' } });
     expect(await screen.findByText('workspace-bucket')).toBeInTheDocument();
     expect(calls).toEqual(['accounts:user-1', 'buckets:acct-1']);
