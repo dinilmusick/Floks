@@ -229,7 +229,7 @@ async function fetchStorageConnections(userId: string): Promise<WorkspaceStorage
 
 async function fetchBackblazeAccounts(userId: string): Promise<BackblazeAccount[]> {
   try {
-    const response = await fetch('/api/srkl/accounts?service=backblaze&userId=' + encodeURIComponent(userId));
+    const response = await fetch('/api/storage/backblaze/accounts?userId=' + encodeURIComponent(userId));
     const data = await response.json().catch(() => ({}));
     return Array.isArray(data?.accounts) ? data.accounts : [];
   } catch {
@@ -239,7 +239,7 @@ async function fetchBackblazeAccounts(userId: string): Promise<BackblazeAccount[
 
 async function fetchBackblazeBuckets(accountId: string, userId?: string): Promise<BackblazeBucket[]> {
   try {
-    const response = await fetch('/api/srkl/backblaze/buckets', {
+    const response = await fetch('/api/storage/backblaze/buckets', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ accountId, userId }),
@@ -297,11 +297,6 @@ export function createKloksWorkspaceStorageService(
   invoker: KloksServiceInvoker,
   googleDrive?: KloksGoogleDriveWorkspaceApi,
 ): WorkspaceStorageService {
-  const listSrklAccounts = async (userId: string, service?: string): Promise<BackblazeAccount[]> => {
-    const result = await invoker.invoke('srkl', 'getAccounts', { userId, service });
-    return Array.isArray((result as any)?.accounts) ? (result as any).accounts : [];
-  };
-
   const mapStorageConnection = (connection: any): WorkspaceStorageOption | null => {
     if (!connection || typeof connection.id !== 'string' || typeof connection.provider !== 'string') return null;
     return {
@@ -323,39 +318,16 @@ export function createKloksWorkspaceStorageService(
   };
 
   return {
-    listStorageConnections: async (userId) => {
-      const [kloksResult, backblazeAccounts] = await Promise.all([
-        invoker.invoke('kloks.service.storage', 'getConnections', {}),
-        listSrklAccounts(userId, 'backblaze'),
-      ]);
-      const storedConnections = Array.isArray(kloksResult)
-        ? kloksResult
-        : Array.isArray((kloksResult as any)?.connections)
-          ? (kloksResult as any).connections
+    listStorageConnections: async () => {
+      const result = await invoker.invoke('kloks.service.storage', 'getConnections', {});
+      const storedConnections = Array.isArray(result)
+        ? result
+        : Array.isArray((result as any)?.connections)
+          ? (result as any).connections
           : [];
-      const canonical = storedConnections.map(mapStorageConnection).filter((item): item is WorkspaceStorageOption => Boolean(item));
-      const backblaze = backblazeAccounts.map((account: any) => {
-        const credentials = (account.credentials || {}) as Record<string, unknown>;
-        const value = (key: string, alternate?: string) => {
-          const item = credentials[key] ?? (alternate ? credentials[alternate] : undefined);
-          return typeof item === 'string' && item.length > 0 ? item : undefined;
-        };
-        return {
-          id: String(account.id),
-          provider: 'backblaze_b2' as const,
-          label: String(account.name || account.label || account.id),
-          b2BucketName: value('bucketName', 'b2BucketName'),
-          b2Endpoint: value('endpoint', 'b2Endpoint'),
-          b2Region: value('region', 'b2Region'),
-        };
-      });
-      const seen = new Set(canonical.map((item) => item.id));
-      return [...canonical, ...backblaze.filter((item) => !seen.has(item.id))];
-    },
-    listBackblazeAccounts: (userId) => listSrklAccounts(userId, 'backblaze'),
-    listBackblazeBuckets: async (accountId, userId) => {
-      const result = await invoker.invoke('srkl', 'listBackblazeBuckets', { accountId, userId });
-      return Array.isArray((result as any)?.buckets) ? (result as any).buckets : [];
+      return storedConnections
+        .map(mapStorageConnection)
+        .filter((item): item is WorkspaceStorageOption => Boolean(item));
     },
     ...(googleDrive
       ? {
@@ -507,7 +479,7 @@ export function WorkspaceCreateDialog({
       const accounts = await storageService.listBackblazeAccounts(effectiveUserId);
       setBackblazeAccounts(Array.isArray(accounts) ? accounts : []);
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : 'Failed to load SRKL Backblaze accounts.');
+      setError(reason instanceof Error ? reason.message : 'Failed to load Backblaze accounts.');
     } finally {
       setLoadingBackblazeAccounts(false);
     }
@@ -663,7 +635,7 @@ export function WorkspaceCreateDialog({
                   className="shrink-0 border px-3 text-[10px] font-black uppercase disabled:opacity-50"
                   style={{ borderColor: backblazeMode ? accent : border, color: backblazeMode ? accent : undefined }}
                 >
-                  Backblaze B2 / SRKL
+                  Backblaze B2
                 </button>
               )}
               {!hiddenFields.has('manageStorage') && onManageStorage && (
@@ -684,7 +656,7 @@ export function WorkspaceCreateDialog({
                     className="h-9 w-full border px-2 text-xs"
                     style={{ backgroundColor: background, borderColor: border }}
                   >
-                    <option value="">Select SRKL Backblaze account</option>
+                    <option value="">Select Backblaze account</option>
                     {backblazeAccounts.map((account) => (
                       <option key={account.id} value={account.id}>{account.name}</option>
                     ))}
@@ -714,7 +686,7 @@ export function WorkspaceCreateDialog({
             {loadingStorage ? (
               <p className="flex items-center gap-2 text-[10px]" style={{ color: muted }}><Loader2 size={12} className="animate-spin" /> Loading storage connections…</p>
             ) : availableOptions.length === 1 && availableOptions[0].provider === 'local_fs' ? (
-              <p className="text-[10px]" style={{ color: muted }}>No cloud storage connection is available yet. You can create a local workspace or manage storage connections.</p>
+              <p className="text-[10px]" style={{ color: muted }}>No external storage connection is available yet. Connect an external provider or choose an available connection.</p>
             ) : (
               <p className="text-[10px]" style={{ color: muted }}>Cloud storage is selected from connections already authorized for this account.</p>
             )}
