@@ -53,4 +53,41 @@ describe('canonical Floks workspace creation', () => {
     expect(formatWorkspaceFolderPreview('DocuStack', 'Dinil James', 'Research Lab'))
       .toBe('ultrst_docustack_dinil_james_research_lab');
   });
+  it('renders the default Skipo provider policy from the canonical provider dropdown', () => {
+    const markup = renderToStaticMarkup(
+      React.createElement(WorkspaceCreateDialog, {
+        open: true,
+        appName: 'Skipo',
+        storageOptions: [],
+        onClose: () => undefined,
+        onSubmit: () => undefined,
+      }),
+    );
+
+    expect(markup).toContain('Local Folder');
+    expect(markup).toContain('Connect Google Drive');
+    expect(markup).toContain('Backblaze B2');
+    expect(markup).not.toContain('Manage');
+    expect(markup).not.toContain('Add Storage');
+  });
+
+  it('respects an application provider policy without rendering Local Directory for SRKL', () => {
+    const markup = renderToStaticMarkup(
+      React.createElement(WorkspaceCreateDialog, {
+        open: true,
+        appName: 'SRKL',
+        storageOptions: [],
+        visibility: { storagePolicy: { providers: ['google_drive', 'backblaze_b2'] } },
+        onClose: () => undefined,
+        onSubmit: () => undefined,
+      }),
+    );
+
+    expect(markup).toContain('Connect Google Drive');
+    expect(markup).toContain('Backblaze B2');
+    expect(markup).not.toContain('Local Folder');
+    expect(markup).not.toContain('Manage');
+    expect(markup).not.toContain('Add Storage');
+  });
+
 });
