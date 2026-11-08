@@ -54,7 +54,7 @@ describe('reusable application modules', () => {
     expect(selected).toBe('one');
   });
 
-  it('loads SRKL accounts then buckets in the workspace creation dialog', async () => {
+  it('loads injected external-provider accounts then buckets in the workspace creation dialog', async () => {
     const calls: string[] = [];
     const storageService = {
       listBackblazeAccounts: async (userId: string) => { calls.push('accounts:' + userId); return [{ id: 'acct-1', name: 'SRKL B2' }]; },
@@ -76,19 +76,20 @@ describe('reusable application modules', () => {
     expect(calls).toEqual(['accounts:user-1', 'buckets:acct-1']);
   });
 
-  it('adapts the canonical Kloks SRKL service into the workspace storage contract', async () => {
+  it('adapts canonical Kloks connections without coupling provider account management to SRKL', async () => {
     const calls: unknown[] = [];
     const service = createKloksWorkspaceStorageService({
       invoke: async (...args) => {
         calls.push(args);
-        return args[1] === 'getAccounts'
-          ? { accounts: [{ id: 'acct-1', name: 'B2' }] }
-          : { buckets: [{ bucketName: 'workspace-bucket' }] };
+        return [{ id: 'drive-1', provider: 'google_drive', label: 'Google Drive' }];
       },
     });
-    expect(await service.listBackblazeAccounts('user-1')).toHaveLength(1);
-    expect(await service.listBackblazeBuckets('acct-1', 'user-1')).toHaveLength(1);
-    expect(calls[1]).toEqual(['srkl', 'listBackblazeBuckets', { accountId: 'acct-1', userId: 'user-1' }]);
+    expect(await service.listStorageConnections?.('user-1')).toEqual([
+      expect.objectContaining({ id: 'drive-1', provider: 'google_drive' }),
+    ]);
+    expect(calls).toEqual([['kloks.service.storage', 'getConnections', {}]]);
+    expect(service.listBackblazeAccounts).toBeUndefined();
+    expect(service.listBackblazeBuckets).toBeUndefined();
   });
 
   it('renders the workspace menu with the reusable creation flow', () => {
