@@ -14,6 +14,11 @@ describe('WorkspaceCreateDialog Google Drive integration', () => {
       provider: 'google_drive',
       label: 'Drive — artist@example.test',
       googleEmail: 'artist@example.test',
+      credentials: {
+        accessToken: 'must-not-enter-workspace-payload',
+        refreshToken: 'must-not-enter-workspace-payload',
+        clientSecret: 'must-not-enter-workspace-payload',
+      },
     };
     const folder = { id: 'drive-folder-1', name: 'Studio Archive', mimeType: 'application/vnd.google-apps.folder' };
     const connectGoogleDrive = vi.fn().mockResolvedValue(driveConnection);
@@ -55,6 +60,8 @@ describe('WorkspaceCreateDialog Google Drive integration', () => {
       id: 'drive-auth-1',
       provider: 'google_drive',
     });
+    expect(input.storageConnection).not.toHaveProperty('credentials');
+    expect(JSON.stringify(input)).not.toContain('must-not-enter-workspace-payload');
   });
 
   it('requires a connected Drive account and selected folder before workspace creation', async () => {
