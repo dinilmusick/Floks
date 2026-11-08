@@ -171,6 +171,22 @@ export function buildWorkspaceCreateInput(
     googleRootFolderName: option.googleRootFolderName,
   };
 
+  const storageConnection = !connectionId
+    ? undefined
+    : provider === 'google_drive'
+      ? {
+          id: option.id,
+          provider,
+          label: option.label,
+          name: option.name,
+          role: option.role,
+          enabled: option.enabled,
+          googleEmail: option.googleEmail,
+          googleRootFolderId: option.googleRootFolderId,
+          googleRootFolderName: option.googleRootFolderName,
+        }
+      : option;
+
   return {
     name: name.trim(),
     description: description.trim() || undefined,
@@ -185,7 +201,7 @@ export function buildWorkspaceCreateInput(
     googleEmail: option.googleEmail,
     googleRootFolderId: option.googleRootFolderId,
     googleRootFolderName: option.googleRootFolderName,
-    storageConnection: connectionId ? option : undefined,
+    storageConnection,
   };
 }
 
