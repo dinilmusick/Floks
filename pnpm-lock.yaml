@@ -88,8 +88,8 @@ importers:
         specifier: ^0.5.5
         version: 0.5.5(@types/node@22.20.5)(@types/react@19.3.0)(react@19.3.0)(use-sync-external-store@1.7.0(react@19.3.0))
       '@ultrst-armada/kloks':
-        specifier: ^1.26.1
-        version: 1.26.1(@types/node@22.20.5)(@types/react@19.3.0)(@ultrst-armada/krnl@1.0.13(@types/node@22.20.5))(react@19.3.0)(use-sync-external-store@1.7.0(react@19.3.0))
+        specifier: ^1.26.2
+        version: 1.26.2(@types/node@22.20.5)(@types/react@19.3.0)(@ultrst-armada/krnl@1.0.13(@types/node@22.20.5))(react@19.3.0)(use-sync-external-store@1.7.0(react@19.3.0))
       monaco-editor:
         specifier: ^0.50.0
         version: 0.50.0
@@ -109,8 +109,8 @@ importers:
         specifier: ^0.5.5
         version: 0.5.5(@types/node@22.20.5)(@types/react@19.3.0)(react@19.3.0)(use-sync-external-store@1.7.0(react@19.3.0))
       '@ultrst-armada/kloks':
-        specifier: ^1.26.1
-        version: 1.26.1(@types/node@22.20.5)(@types/react@19.3.0)(@ultrst-armada/krnl@1.0.13(@types/node@22.20.5))(react@19.3.0)(use-sync-external-store@1.7.0(react@19.3.0))
+        specifier: ^1.26.2
+        version: 1.26.2(@types/node@22.20.5)(@types/react@19.3.0)(@ultrst-armada/krnl@1.0.13(@types/node@22.20.5))(react@19.3.0)(use-sync-external-store@1.7.0(react@19.3.0))
       '@xyflow/react':
         specifier: ^12.8.6
         version: 12.12.0(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
@@ -1058,23 +1058,6 @@ packages:
     hasBin: true
     peerDependencies:
       react: ^18.0.0 || ^19.0.0
-
-  '@ultrst-armada/kloks@1.26.1':
-    resolution: {integrity: sha512-3j7bnH2wY7JGxI1/hF5L2RLYIHi9tY/I+Ft5bQTCEk65/egRnBaiUayANWI2ImpuIObhITq2aEfgwX38/Lfg4A==}
-    peerDependencies:
-      '@neondatabase/serverless': ^0.10.0 || ^1.0.0
-      '@supabase/supabase-js': ^2.45.0
-      '@ultrst-armada/krnl': ^1.0.11
-      react: ^18.0.0 || ^19.0.0
-    peerDependenciesMeta:
-      '@neondatabase/serverless':
-        optional: true
-      '@supabase/supabase-js':
-        optional: true
-      '@ultrst-armada/krnl':
-        optional: true
-      react:
-        optional: true
 
   '@ultrst-armada/kloks@1.26.2':
     resolution: {integrity: sha512-y6BMTr/7n1k0QuznA8vvS4hNjnU6XU8UcUHG6alKbHfLCVb5d/FseGgvDDckLfDOmzp3pxmP6TinyU7LytfXag==}
@@ -2829,26 +2812,6 @@ snapshots:
       - immer
       - supports-color
       - use-sync-external-store
-
-  '@ultrst-armada/kloks@1.26.1(@types/node@22.20.5)(@types/react@19.3.0)(@ultrst-armada/krnl@1.0.13(@types/node@22.20.5))(react@19.3.0)(use-sync-external-store@1.7.0(react@19.3.0))':
-    dependencies:
-      '@dinilmusick/gutts': 1.6.0(@types/node@22.20.5)
-      '@webcontainer/api': 1.6.4
-      ws: 8.22.0
-      zod: 3.25.76
-      zustand: 5.0.15(@types/react@19.3.0)(react@19.3.0)(use-sync-external-store@1.7.0(react@19.3.0))
-    optionalDependencies:
-      '@ultrst-armada/krnl': 1.0.13(@types/node@22.20.5)
-      react: 19.3.0
-    transitivePeerDependencies:
-      - '@types/node'
-      - '@types/react'
-      - ai
-      - bufferutil
-      - immer
-      - supports-color
-      - use-sync-external-store
-      - utf-8-validate
 
   '@ultrst-armada/kloks@1.26.2(@types/node@22.20.5)(@types/react@19.3.0)(@ultrst-armada/krnl@1.0.13(@types/node@22.20.5))(react@19.3.0)(use-sync-external-store@1.7.0(react@19.3.0))':
     dependencies:
