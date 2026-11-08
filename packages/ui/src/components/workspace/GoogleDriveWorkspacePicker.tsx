@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 
 export interface GoogleDriveConnection {
   id: string;
+  provider?: string;
   label?: string;
   name?: string;
   googleEmail?: string;
@@ -32,13 +33,14 @@ function getErrorCode(error: unknown): string {
   if (!error || typeof error !== 'object') return '';
   const candidate = error as { code?: unknown; status?: unknown; response?: { status?: unknown } };
   if (typeof candidate.code === 'string') return candidate.code.toUpperCase();
+  if ((error as { name?: unknown }).name === 'AbortError') return 'GOOGLE_DRIVE_CANCELLED';
   const status = candidate.status ?? candidate.response?.status;
   return status === 401 ? 'GOOGLE_DRIVE_AUTH_EXPIRED' : status === 403 ? 'GOOGLE_DRIVE_ACCESS_DENIED' : '';
 }
 
 export function describeGoogleDriveError(error: unknown): string {
   const code = getErrorCode(error);
-  if (code.includes('CANCEL')) return 'Google Drive authorization was cancelled. No connection was added.';
+  if (code.includes('CANCEL') || code.includes('ACCESS_DENIED')) return 'Google Drive authorization was cancelled or declined. No connection was added.';
   if (code.includes('EXPIRED') || code === 'UNAUTHENTICATED') {
     return 'Your Google Drive authorization has expired. Reconnect your Google account to continue.';
   }
