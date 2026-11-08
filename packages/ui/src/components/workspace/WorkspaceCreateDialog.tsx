@@ -1,5 +1,10 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { HardDrive, Loader2 } from 'lucide-react';
+import {
+  GoogleDriveWorkspacePicker,
+  type GoogleDriveConnection,
+  type GoogleDriveFolder,
+} from './GoogleDriveWorkspacePicker.js';
 
 export type WorkspaceStorageProvider =
   | 'local_fs'
@@ -80,6 +85,24 @@ export interface WorkspaceStorageService {
   listStorageConnections?: (userId: string) => Promise<WorkspaceStorageOption[]>;
   listBackblazeAccounts?: (userId: string) => Promise<BackblazeAccount[]>;
   listBackblazeBuckets?: (accountId: string, userId?: string) => Promise<BackblazeBucket[]>;
+  connectGoogleDrive?: (userId: string) => Promise<WorkspaceStorageOption>;
+  listGoogleDriveFolders?: (connectionId: string, parentFolderId?: string) => Promise<GoogleDriveFolder[]>;
+}
+
+export type WorkspaceCreateDialogHiddenField =
+  | 'description'
+  | 'localFolderName'
+  | 'manageStorage'
+  | 'backblaze'
+  | 'canonicalFolderPreview';
+
+export interface WorkspaceCreateDialogVisibility {
+  /** Whitelist of storage providers to render. Unspecified means all providers. */
+  availableStorageProviders?: WorkspaceStorageProvider[];
+  /** Providers hidden even when included in availableStorageProviders. */
+  hiddenStorageProviders?: WorkspaceStorageProvider[];
+  /** Optional generic fields/sections to hide from the shared dialog. */
+  hiddenFields?: WorkspaceCreateDialogHiddenField[];
 }
 
 export interface WorkspaceCreateDialogProps {
@@ -89,6 +112,7 @@ export interface WorkspaceCreateDialogProps {
   appName?: string;
   storageOptions?: WorkspaceStorageOption[];
   storageService?: WorkspaceStorageService;
+  visibility?: WorkspaceCreateDialogVisibility;
   onManageStorage?: () => void;
   onClose: () => void;
   onSubmit: (input: WorkspaceCreateInput) => Promise<void> | void;
@@ -147,6 +171,22 @@ export function buildWorkspaceCreateInput(
     googleRootFolderName: option.googleRootFolderName,
   };
 
+  const storageConnection = !connectionId
+    ? undefined
+    : provider === 'google_drive'
+      ? {
+          id: option.id,
+          provider,
+          label: option.label,
+          name: option.name,
+          role: option.role,
+          enabled: option.enabled,
+          googleEmail: option.googleEmail,
+          googleRootFolderId: option.googleRootFolderId,
+          googleRootFolderName: option.googleRootFolderName,
+        }
+      : option;
+
   return {
     name: name.trim(),
     description: description.trim() || undefined,
@@ -161,7 +201,7 @@ export function buildWorkspaceCreateInput(
     googleEmail: option.googleEmail,
     googleRootFolderId: option.googleRootFolderId,
     googleRootFolderName: option.googleRootFolderName,
-    storageConnection: connectionId ? option : undefined,
+    storageConnection,
   };
 }
 
@@ -189,7 +229,7 @@ async function fetchStorageConnections(userId: string): Promise<WorkspaceStorage
 
 async function fetchBackblazeAccounts(userId: string): Promise<BackblazeAccount[]> {
   try {
-    const response = await fetch('/api/srkl/accounts?service=backblaze&userId=' + encodeURIComponent(userId));
+    const response = await fetch('/api/storage/backblaze/accounts?userId=' + encodeURIComponent(userId));
     const data = await response.json().catch(() => ({}));
     return Array.isArray(data?.accounts) ? data.accounts : [];
   } catch {
@@ -199,7 +239,7 @@ async function fetchBackblazeAccounts(userId: string): Promise<BackblazeAccount[
 
 async function fetchBackblazeBuckets(accountId: string, userId?: string): Promise<BackblazeBucket[]> {
   try {
-    const response = await fetch('/api/srkl/backblaze/buckets', {
+    const response = await fetch('/api/storage/backblaze/buckets', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ accountId, userId }),
@@ -214,14 +254,10 @@ async function fetchBackblazeBuckets(accountId: string, userId?: string): Promis
 async function fetchDefaultStorageOptions(userId: string): Promise<WorkspaceStorageOption[]> {
   const stored = await fetchStorageConnections(userId);
   if (stored.length > 0) return stored;
-  const [backblaze, googleDrive] = await Promise.all([
-    fetchBackblazeAccounts(userId),
-    fetch('/api/srkl/accounts?service=google_drive&userId=' + encodeURIComponent(userId))
-      .then((response) => response.ok ? response.json() : {})
-      .then((data: any) => Array.isArray(data?.accounts) ? data.accounts : [])
-      .catch(() => []),
-  ]);
-  return [...backblaze, ...googleDrive].map((account: any) => {
+  // The consumer injects its own authorized Backblaze account source. This shared
+  // component never assumes a particular application or account-management API.
+  const backblaze = await fetchBackblazeAccounts(userId);
+  return backblaze.map((account: any) => {
     const credentials = account.credentials || {};
     const value = (key: string, alternate?: string) => {
       const item = credentials[key] ?? (alternate ? credentials[alternate] : undefined);
@@ -234,9 +270,6 @@ async function fetchDefaultStorageOptions(userId: string): Promise<WorkspaceStor
       b2BucketName: value('bucketName', 'b2BucketName'),
       b2Endpoint: value('endpoint', 'b2Endpoint'),
       b2Region: value('region', 'b2Region'),
-      googleEmail: value('email', 'googleEmail'),
-      googleRootFolderId: value('rootFolderId', 'googleRootFolderId'),
-      googleRootFolderName: value('rootFolderName', 'googleRootFolderName'),
     };
   });
 }
@@ -251,38 +284,57 @@ export interface KloksServiceInvoker {
   invoke: (serviceId: string, operation: string, input: Record<string, unknown>) => Promise<unknown>;
 }
 
-export function createKloksWorkspaceStorageService(invoker: KloksServiceInvoker): WorkspaceStorageService {
-  const listSrklAccounts = async (userId: string, service?: string): Promise<BackblazeAccount[]> => {
-    const result = await invoker.invoke('srkl', 'getAccounts', { userId, service });
-    return Array.isArray((result as any)?.accounts) ? (result as any).accounts : [];
+/**
+ * Drive operations are intentionally supplied by the canonical Kloks storage
+ * service. Floks does not implement OAuth, exchange codes, or store Drive tokens.
+ */
+export interface KloksGoogleDriveWorkspaceApi {
+  connectGoogleDrive: (userId: string) => Promise<WorkspaceStorageOption>;
+  listGoogleDriveFolders: (connectionId: string, parentFolderId?: string) => Promise<GoogleDriveFolder[]>;
+}
+
+export function createKloksWorkspaceStorageService(
+  invoker: KloksServiceInvoker,
+  googleDrive?: KloksGoogleDriveWorkspaceApi,
+): WorkspaceStorageService {
+  const mapStorageConnection = (connection: any): WorkspaceStorageOption | null => {
+    if (!connection || typeof connection.id !== 'string' || typeof connection.provider !== 'string') return null;
+    return {
+      id: connection.id,
+      provider: connection.provider as WorkspaceStorageProvider,
+      label: String(connection.label || connection.name || connection.id),
+      role: connection.role,
+      enabled: connection.enabled,
+      localFolderName: connection.localFolderName,
+      localFolderKey: connection.localFolderKey,
+      localFolderPathHint: connection.localFolderPathHint,
+      b2BucketName: connection.b2BucketName,
+      b2Endpoint: connection.b2Endpoint,
+      b2Region: connection.b2Region,
+      googleEmail: connection.googleEmail,
+      googleRootFolderId: connection.googleRootFolderId,
+      googleRootFolderName: connection.googleRootFolderName,
+    };
   };
+
   return {
-    listStorageConnections: async (userId) => {
-      const accounts = await listSrklAccounts(userId);
-      return accounts.map((account: any) => {
-        const credentials = (account.credentials || {}) as Record<string, unknown>;
-        const value = (key: string, alternate?: string) => {
-          const item = credentials[key] ?? (alternate ? credentials[alternate] : undefined);
-          return typeof item === 'string' && item.length > 0 ? item : undefined;
-        };
-        return {
-          id: String(account.id),
-          provider: String(account.provider || account.serviceId || 'backblaze_b2') as WorkspaceStorageProvider,
-          label: String(account.name || account.label || account.id),
-          b2BucketName: value('bucketName', 'b2BucketName'),
-          b2Endpoint: value('endpoint', 'b2Endpoint'),
-          b2Region: value('region', 'b2Region'),
-          googleEmail: value('email', 'googleEmail'),
-          googleRootFolderId: value('rootFolderId', 'googleRootFolderId'),
-          googleRootFolderName: value('rootFolderName', 'googleRootFolderName'),
-        };
-      });
+    listStorageConnections: async () => {
+      const result = await invoker.invoke('kloks.service.storage', 'getConnections', {});
+      const storedConnections = Array.isArray(result)
+        ? result
+        : Array.isArray((result as any)?.connections)
+          ? (result as any).connections
+          : [];
+      return storedConnections
+        .map(mapStorageConnection)
+        .filter((item): item is WorkspaceStorageOption => Boolean(item));
     },
-    listBackblazeAccounts: (userId) => listSrklAccounts(userId, 'backblaze'),
-    listBackblazeBuckets: async (accountId, userId) => {
-      const result = await invoker.invoke('srkl', 'listBackblazeBuckets', { accountId, userId });
-      return Array.isArray((result as any)?.buckets) ? (result as any).buckets : [];
-    },
+    ...(googleDrive
+      ? {
+          connectGoogleDrive: googleDrive.connectGoogleDrive,
+          listGoogleDriveFolders: googleDrive.listGoogleDriveFolders,
+        }
+      : {}),
   };
 }
 
@@ -293,11 +345,14 @@ export function WorkspaceCreateDialog({
   appName = 'app',
   storageOptions,
   storageService = defaultWorkspaceStorageService,
+  visibility,
   onManageStorage,
   onClose,
   onSubmit,
 }: WorkspaceCreateDialogProps) {
   const [loadedOptions, setLoadedOptions] = useState<WorkspaceStorageOption[]>([]);
+  const [connectedDriveOption, setConnectedDriveOption] = useState<WorkspaceStorageOption | null>(null);
+  const [googleDriveFolder, setGoogleDriveFolder] = useState<GoogleDriveFolder | null>(null);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [localFolderName, setLocalFolderName] = useState('');
@@ -328,6 +383,8 @@ export function WorkspaceCreateDialog({
     setBackblazeAccountId('');
     setBackblazeBuckets([]);
     setBackblazeBucketName('');
+    setConnectedDriveOption(null);
+    setGoogleDriveFolder(null);
   }, [open]);
 
   useEffect(() => {
@@ -348,17 +405,40 @@ export function WorkspaceCreateDialog({
 
   const availableOptions = useMemo(() => {
     const supplied = storageOptions ?? loadedOptions;
-    const enabled = supplied.filter((option) => option && option.enabled !== false && typeof option.id === 'string');
-    const local = enabled.find((option) => option.provider === 'local_fs') || LOCAL_STORAGE_OPTION;
+    const providers = visibility?.availableStorageProviders;
+    const hidden = new Set(visibility?.hiddenStorageProviders || []);
+    const isVisible = (provider: WorkspaceStorageProvider) =>
+      !hidden.has(provider) && (!providers || providers.includes(provider));
+    const enabled = supplied.filter((option) =>
+      option
+      && option.enabled !== false
+      && typeof option.id === 'string'
+      && isVisible(option.provider),
+    );
+    const local = enabled.find((option) => option.provider === 'local_fs');
     const external = enabled.filter((option) => option.provider !== 'local_fs');
-    return [local, ...external];
-  }, [storageOptions, loadedOptions]);
+    const driveConnections = [
+      ...external.filter((option) => option.provider === 'google_drive'),
+      ...(connectedDriveOption && connectedDriveOption.enabled !== false ? [connectedDriveOption] : []),
+    ].filter((option, index, items) => items.findIndex((candidate) => candidate.id === option.id) === index);
+    const connectDriveOption: WorkspaceStorageOption[] = isVisible('google_drive')
+      && !driveConnections.some((option) => option.id === 'google_drive')
+      ? [{ id: 'google_drive', provider: 'google_drive', label: driveConnections.length ? 'Connect another account' : 'Connect Google Drive' }]
+      : [];
+    return [
+      ...(local ? [local] : isVisible('local_fs') ? [LOCAL_STORAGE_OPTION] : []),
+      ...external.filter((option) => option.provider !== 'google_drive'),
+      ...driveConnections,
+      ...connectDriveOption,
+    ];
+  }, [storageOptions, loadedOptions, connectedDriveOption, visibility]);
 
   useEffect(() => {
     if (!open || loadingStorage || defaultStorageApplied) return;
     const primary = availableOptions.find((option) => option.role === 'primary')
-      || availableOptions.find((option) => option.provider !== 'local_fs');
-    if (primary) setSelectedStorageId(primary.id);
+      || availableOptions.find((option) => option.provider !== 'local_fs' && option.id !== 'google_drive');
+    const preferred = primary || availableOptions[0];
+    if (preferred) setSelectedStorageId(preferred.id);
     setDefaultStorageApplied(true);
   }, [open, loadingStorage, availableOptions, defaultStorageApplied]);
 
@@ -367,19 +447,25 @@ export function WorkspaceCreateDialog({
     const selectedStillExists = backblazeMode || availableOptions.some((option) => option.id === selectedStorageId);
     if (!selectedStillExists) {
       const primary = availableOptions.find((option) => option.role === 'primary');
-      setSelectedStorageId(primary?.id || 'local_fs');
+      setSelectedStorageId(primary?.id || availableOptions[0]?.id || '');
     }
   }, [open, availableOptions, selectedStorageId, backblazeMode]);
 
   if (!open) return null;
 
-  const selectedOption = availableOptions.find((option) => option.id === selectedStorageId) || LOCAL_STORAGE_OPTION;
+  const selectedOption = availableOptions.find((option) => option.id === selectedStorageId)
+    || availableOptions[0]
+    || LOCAL_STORAGE_OPTION;
+  const googleDriveConnection = selectedOption.provider === 'google_drive' && selectedOption.id !== 'google_drive'
+    ? selectedOption as WorkspaceStorageOption & GoogleDriveConnection
+    : undefined;
+  const hiddenFields = new Set(visibility?.hiddenFields || []);
   const userName = currentUser?.username || currentUser?.name || currentUser?.email?.split('@')[0] || 'user';
   const folderPreview = formatWorkspaceFolderPreview(appName, userName, name || 'workspace');
 
   const handleSelectBackblaze = async () => {
     setBackblazeMode(true);
-    setSelectedStorageId('backblaze_srkl');
+    setSelectedStorageId('backblaze_external');
     setBackblazeAccountId('');
     setBackblazeBuckets([]);
     setBackblazeBucketName('');
@@ -393,7 +479,7 @@ export function WorkspaceCreateDialog({
       const accounts = await storageService.listBackblazeAccounts(effectiveUserId);
       setBackblazeAccounts(Array.isArray(accounts) ? accounts : []);
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : 'Failed to load SRKL Backblaze accounts.');
+      setError(reason instanceof Error ? reason.message : 'Failed to load Backblaze accounts.');
     } finally {
       setLoadingBackblazeAccounts(false);
     }
@@ -422,7 +508,15 @@ export function WorkspaceCreateDialog({
       return;
     }
     if (backblazeMode && (!backblazeAccountId || !backblazeBucketName)) {
-      setError('Select an SRKL Backblaze account and bucket.');
+      setError('Select a Backblaze account and bucket.');
+      return;
+    }
+    if (!backblazeMode && !availableOptions.some((option) => option.id === selectedStorageId)) {
+      setError('No visible storage provider is available for this workspace.');
+      return;
+    }
+    if (selectedOption.provider === 'google_drive' && (!googleDriveConnection || !googleDriveFolder)) {
+      setError('Connect Google Drive and select a folder for this workspace.');
       return;
     }
     if (loadingStorage || loadingBackblazeAccounts || loadingBackblazeBuckets || submitting) return;
@@ -434,7 +528,7 @@ export function WorkspaceCreateDialog({
         ? {
             id: backblazeAccountId,
             provider: 'backblaze_b2',
-            label: backblazeAccount?.name || 'SRKL Backblaze B2',
+            label: backblazeAccount?.name || 'Backblaze B2',
             b2BucketName: backblazeBucketName,
             bucketName: backblazeBucketName,
             b2Endpoint: backblazeAccount?.credentials?.endpoint,
@@ -444,7 +538,13 @@ export function WorkspaceCreateDialog({
           }
         : selectedOption.provider === 'local_fs'
           ? { ...selectedOption, localFolderName: localFolderName.trim() || selectedOption.localFolderName || name.trim() }
-          : selectedOption;
+          : selectedOption.provider === 'google_drive' && googleDriveFolder
+            ? {
+                ...selectedOption,
+                googleRootFolderId: googleDriveFolder.id,
+                googleRootFolderName: googleDriveFolder.name,
+              }
+            : selectedOption;
       await onSubmit(buildWorkspaceCreateInput(name, description, option));
       onClose();
     } catch (reason) {
@@ -493,18 +593,20 @@ export function WorkspaceCreateDialog({
             />
           </label>
 
-          <label className="block space-y-1">
-            <span className="text-[10px] font-black uppercase">Description</span>
-            <textarea
-              aria-label="Workspace description"
-              value={description}
-              onChange={(event) => setDescription(event.target.value)}
-              placeholder="What is this workspace for?"
-              rows={2}
-              className="w-full border p-3 text-xs"
-              style={{ backgroundColor: background, borderColor: border }}
-            />
-          </label>
+          {!hiddenFields.has('description') && (
+            <label className="block space-y-1">
+              <span className="text-[10px] font-black uppercase">Description</span>
+              <textarea
+                aria-label="Workspace description"
+                value={description}
+                onChange={(event) => setDescription(event.target.value)}
+                placeholder="What is this workspace for?"
+                rows={2}
+                className="w-full border p-3 text-xs"
+                style={{ backgroundColor: background, borderColor: border }}
+              />
+            </label>
+          )}
 
           <div className="space-y-1">
             <label htmlFor="floks-workspace-storage" className="block text-[10px] font-black uppercase">Persistent Storage</label>
@@ -524,23 +626,25 @@ export function WorkspaceCreateDialog({
                   </option>
                 ))}
               </select>
-              <button
-                type="button"
-                onClick={handleSelectBackblaze}
-                disabled={submitting || loadingBackblazeAccounts}
-                aria-pressed={backblazeMode}
-                className="shrink-0 border px-3 text-[10px] font-black uppercase disabled:opacity-50"
-                style={{ borderColor: backblazeMode ? accent : border, color: backblazeMode ? accent : undefined }}
-              >
-                Backblaze B2 / SRKL
-              </button>
-              {onManageStorage && (
+              {!hiddenFields.has('backblaze') && (
+                <button
+                  type="button"
+                  onClick={handleSelectBackblaze}
+                  disabled={submitting || loadingBackblazeAccounts}
+                  aria-pressed={backblazeMode}
+                  className="shrink-0 border px-3 text-[10px] font-black uppercase disabled:opacity-50"
+                  style={{ borderColor: backblazeMode ? accent : border, color: backblazeMode ? accent : undefined }}
+                >
+                  Backblaze B2
+                </button>
+              )}
+              {!hiddenFields.has('manageStorage') && onManageStorage && (
                 <button type="button" onClick={onManageStorage} className="shrink-0 border px-3 text-[10px] font-black uppercase" style={{ borderColor: border }}>
                   Manage
                 </button>
               )}
             </div>
-            {backblazeMode && (
+            {!hiddenFields.has('backblaze') && backblazeMode && (
               <div className="mt-3 space-y-2 border-t pt-3" style={{ borderColor: border }}>
                 <label className="block space-y-1">
                   <span className="text-[10px] font-black uppercase">Backblaze account</span>
@@ -552,12 +656,12 @@ export function WorkspaceCreateDialog({
                     className="h-9 w-full border px-2 text-xs"
                     style={{ backgroundColor: background, borderColor: border }}
                   >
-                    <option value="">Select SRKL Backblaze account</option>
+                    <option value="">Select Backblaze account</option>
                     {backblazeAccounts.map((account) => (
                       <option key={account.id} value={account.id}>{account.name}</option>
                     ))}
                   </select>
-                  {loadingBackblazeAccounts && <span className="text-[10px]" style={{ color: muted }}>Loading SRKL accounts…</span>}
+                  {loadingBackblazeAccounts && <span className="text-[10px]" style={{ color: muted }}>Loading Backblaze accounts…</span>}
                 </label>
                 <label className="block space-y-1">
                   <span className="text-[10px] font-black uppercase">Backblaze bucket</span>
@@ -582,13 +686,34 @@ export function WorkspaceCreateDialog({
             {loadingStorage ? (
               <p className="flex items-center gap-2 text-[10px]" style={{ color: muted }}><Loader2 size={12} className="animate-spin" /> Loading storage connections…</p>
             ) : availableOptions.length === 1 && availableOptions[0].provider === 'local_fs' ? (
-              <p className="text-[10px]" style={{ color: muted }}>No cloud storage connection is available yet. You can create a local workspace or manage storage connections.</p>
+              <p className="text-[10px]" style={{ color: muted }}>No external storage connection is available yet. Connect an external provider or choose an available connection.</p>
             ) : (
               <p className="text-[10px]" style={{ color: muted }}>Cloud storage is selected from connections already authorized for this account.</p>
             )}
           </div>
 
-          {selectedOption.provider === 'local_fs' && (
+          {selectedOption.provider === 'google_drive' && (
+            <GoogleDriveWorkspacePicker
+              userId={effectiveUserId}
+              connection={googleDriveConnection}
+              connectGoogleDrive={storageService.connectGoogleDrive}
+              listGoogleDriveFolders={storageService.listGoogleDriveFolders}
+              selectedFolder={googleDriveFolder}
+              onConnected={(connection) => {
+                if (connection.provider !== 'google_drive') {
+                  setError('The storage service returned a non-Google Drive connection.');
+                  return;
+                }
+                setConnectedDriveOption(connection as WorkspaceStorageOption);
+                setSelectedStorageId(connection.id);
+                setGoogleDriveFolder(null);
+                setError(null);
+              }}
+              onSelectFolder={setGoogleDriveFolder}
+            />
+          )}
+
+          {selectedOption.provider === 'local_fs' && !hiddenFields.has('localFolderName') && (
             <label className="block space-y-1">
               <span className="text-[10px] font-black uppercase">Local Folder Name</span>
               <input
@@ -602,6 +727,7 @@ export function WorkspaceCreateDialog({
             </label>
           )}
 
+          {!hiddenFields.has('canonicalFolderPreview') && (
           <div className="border p-3" style={{ borderColor: border, backgroundColor: background }}>
             <div className="flex items-center justify-between gap-2">
               <span className="text-[10px] font-black uppercase" style={{ color: accent }}>Canonical Workspace Folder</span>
@@ -609,6 +735,7 @@ export function WorkspaceCreateDialog({
             </div>
             <code className="mt-1 block truncate text-xs font-bold text-emerald-400">{folderPreview}</code>
           </div>
+          )}
         </div>
 
         <div className="mt-5 flex justify-end gap-2 border-t pt-3" style={{ borderColor: border }}>
