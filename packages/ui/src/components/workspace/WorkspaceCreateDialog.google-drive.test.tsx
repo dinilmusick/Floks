@@ -96,7 +96,6 @@ describe('WorkspaceCreateDialog Google Drive integration', () => {
           availableStorageProviders: ['google_drive'],
           hiddenFields: ['description', 'localFolderName', 'manageStorage', 'backblaze', 'canonicalFolderPreview'],
         }}
-        onManageStorage={() => undefined}
         onClose={() => undefined}
         onSubmit={() => undefined}
       />,
