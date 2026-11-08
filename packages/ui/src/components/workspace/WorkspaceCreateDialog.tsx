@@ -92,6 +92,7 @@ export interface WorkspaceStorageService {
 export type WorkspaceCreateDialogHiddenField =
   | 'description'
   | 'localFolderName'
+  | 'manageStorage'
   | 'backblaze'
   | 'canonicalFolderPreview';
 
