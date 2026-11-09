@@ -144,7 +144,15 @@ describe('WorkspaceCreateDialog Google Drive integration', () => {
       if (serviceId === 'kloks.service.storage' && operation === 'getConnections') {
         return [
           { id: 'local-1', provider: 'local_fs', label: 'Local Workstation' },
-          { id: 'drive-1', provider: 'google_drive', label: 'Google Drive', googleEmail: 'artist@example.test' },
+          {
+            id: 'drive-1',
+            provider: 'google_drive',
+            label: 'Google Drive',
+            googleEmail: 'artist@example.test',
+            credentials: { accessToken: 'server-secret' },
+            endpoint: 'https://provider.internal',
+            region: 'private-region',
+          },
         ];
       }
       return {};
@@ -168,6 +176,10 @@ describe('WorkspaceCreateDialog Google Drive integration', () => {
       expect.objectContaining({ id: 'local-1', provider: 'local_fs' }),
       expect.objectContaining({ id: 'drive-1', provider: 'google_drive' }),
     ]));
+    const drive = connections?.find((connection) => connection.id === 'drive-1');
+    expect(drive).not.toHaveProperty('credentials');
+    expect(drive).not.toHaveProperty('endpoint');
+    expect(drive).not.toHaveProperty('region');
     await expect(service.connectGoogleDrive?.('user-1')).resolves.toMatchObject({ id: 'drive-2', provider: 'google_drive' });
     await expect(service.listGoogleDriveFolders?.('drive-2')).resolves.toEqual([]);
   });
