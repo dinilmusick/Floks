@@ -33,7 +33,7 @@ describe("Floks browser/server dependency boundary", () => {
     expect(source).not.toContain("@ultrst-armada/krnl");
   });
 
-  it("keeps service UI components adapter-driven", () => {
+  it("keeps service UI components and editor UI adapter-driven", () => {
     const serviceFiles = [
       "packages/ui/src/components/services/ClockServicePanel.tsx",
       "packages/ui/src/components/services/MidiServicePanel.tsx",
@@ -44,6 +44,9 @@ describe("Floks browser/server dependency boundary", () => {
       expect(source).not.toContain("@ultrst-armada/kloks");
       expect(source).not.toContain("@ultrst-armada/krnl");
     }
+    const editor = fs.readFileSync(path.join(root, "packages/canvas-ui/src/editor/MonacoEditor.tsx"), "utf8");
+    expect(editor).not.toContain("@ultrst-armada/kloks");
+    expect(editor).not.toContain("@ultrst-armada/krnl");
   });
 
   it("keeps the built auth surface free of backend implementation imports", () => {
