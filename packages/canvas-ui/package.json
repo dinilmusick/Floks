@@ -76,7 +76,8 @@
   },
   "dependencies": {
     "@floks/ui": "workspace:*",
-    "@ultrst-armada/frnlts": "^0.5.6"
+    "@ultrst-armada/frnlts": "^0.5.6",
+    "@floks/contracts": "workspace:*"
   },
   "peerDependencies": {
     "@dnd-kit/core": "^6.0.0",
