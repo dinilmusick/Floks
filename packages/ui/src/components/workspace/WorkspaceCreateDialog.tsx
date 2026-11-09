@@ -120,6 +120,12 @@ const LOCAL_STORAGE_OPTION: WorkspaceStorageOption = {
   label: 'Local Folder',
 };
 
+const NO_STORAGE_OPTION: WorkspaceStorageOption = {
+  id: '',
+  provider: '__none__',
+  label: 'No storage provider enabled',
+};
+
 const PROVIDER_LABELS: Record<string, string> = {
   local_fs: 'Local Folder',
   backblaze_b2: 'Backblaze B2',
@@ -380,7 +386,7 @@ export function WorkspaceCreateDialog({
 
   const selectedOption = availableOptions.find((option) => option.id === selectedStorageId)
     || availableOptions[0]
-    || LOCAL_STORAGE_OPTION;
+    || NO_STORAGE_OPTION;
   const googleDriveConnection = selectedOption.provider === 'google_drive' && selectedOption.id !== 'google_drive'
     ? selectedOption as WorkspaceStorageOption & GoogleDriveConnection
     : undefined;
