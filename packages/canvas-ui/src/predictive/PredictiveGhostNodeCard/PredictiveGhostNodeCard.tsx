@@ -2,7 +2,6 @@ export * from './types.js';
 import type {PredictiveGhostNodeCardProps} from './types.js';
 import React from 'react';
 import {Zap} from 'lucide-react';
-import {getSocketLocalOffset} from '../../graph-2d/socketCoordinates.js';
 
 export const PredictiveGhostNodeCard: React.FC<PredictiveGhostNodeCardProps> = ({
   ghost, screenPos, zoom, onSolidify, isHovered = false, onHoverChange,
@@ -32,11 +31,11 @@ export const PredictiveGhostNodeCard: React.FC<PredictiveGhostNodeCardProps> = (
         <span className="text-[8px] font-mono text-cyan-400/60">{ghost.badge} · {node.type}</span>
 
         {inputs.map((socket, idx) => {
-          const local = getSocketLocalOffset(node, socket.id, false, idx, inputs.length);
+          const local = {x: -82, y: ((idx + 1) * 56) / (inputs.length + 1) - 28};
           return <span key={socket.id} style={{left: `calc(50% + ${local.x}px)`, top: `calc(50% + ${local.y}px)`}} className="absolute w-2.5 h-2.5 rounded-full border bg-cyan-950 border-cyan-500/60" title={`Input: ${socket.label}`} />;
         })}
         {outputs.map((socket, idx) => {
-          const local = getSocketLocalOffset(node, socket.id, true, idx, outputs.length);
+          const local = {x: 82, y: ((idx + 1) * 56) / (outputs.length + 1) - 28};
           return <span key={socket.id} style={{left: `calc(50% + ${local.x}px)`, top: `calc(50% + ${local.y}px)`}} className="absolute w-2.5 h-2.5 rounded-full border bg-cyan-950 border-cyan-500/60" title={`Output: ${socket.label}`} />;
         })}
 
