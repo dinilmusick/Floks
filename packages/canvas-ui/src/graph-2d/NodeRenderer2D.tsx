@@ -2,9 +2,9 @@
 // 1. IMPORTS & EXTERNAL DEPENDENCIES
 // ══════════════════════════════════════════════════════════════════════════════════════════
 import React from 'react';
-import { SpaceNode, ContainerNode, ModuleNode, TriggerNode, EffectNode } from '@kloks/state-graph';
-import { NodeSocketDescriptor, NodeSocketsResult } from '@kloks/state-graph';
-import { Node2DSpriteSetting } from '@kloks/state-graph';
+import { SpaceNode, ContainerNode, ModuleNode, TriggerNode, EffectNode } from '@kloks/state-graph/browser';
+import { NodeSocketDescriptor, NodeSocketsResult } from '@kloks/state-graph/browser';
+import { Node2DSpriteSetting } from '@kloks/state-graph/browser';
 import { Node2DBase } from './Node2DBase';
 
 export interface NodeRenderer2DProps {
