@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { SpaceNode } from '@kloks/state-graph';
+import { SpaceNode } from '@kloks/state-graph/browser';
 import { CameraState, BIOME_CONFIGS, COORD_SCALE } from './types.js';
 
 interface CanvasBackground2DProps {
