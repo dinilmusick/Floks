@@ -1,0 +1,101 @@
+{
+  "version": 1,
+  "levels": {
+    "@dinilmusick/gutts": 0,
+    "@ultrst-armada/krnl": 1,
+    "@ultrst-armada/frnlts": 1,
+    "@ultrst-armada/kloks": 2,
+    "@ultrst-armada/floks": 2,
+    "skipo": 3
+  },
+  "edges": [
+    [
+      "@ultrst-armada/krnl",
+      "@dinilmusick/gutts"
+    ],
+    [
+      "@ultrst-armada/frnlts",
+      "@dinilmusick/gutts"
+    ],
+    [
+      "@ultrst-armada/kloks",
+      "@dinilmusick/gutts"
+    ],
+    [
+      "@ultrst-armada/kloks",
+      "@ultrst-armada/krnl"
+    ],
+    [
+      "@ultrst-armada/floks",
+      "@dinilmusick/gutts"
+    ],
+    [
+      "@ultrst-armada/floks",
+      "@ultrst-armada/frnlts"
+    ],
+    [
+      "skipo",
+      "@dinilmusick/gutts"
+    ],
+    [
+      "skipo",
+      "@ultrst-armada/krnl"
+    ],
+    [
+      "skipo",
+      "@ultrst-armada/frnlts"
+    ],
+    [
+      "skipo",
+      "@ultrst-armada/kloks"
+    ],
+    [
+      "skipo",
+      "@ultrst-armada/floks"
+    ]
+  ],
+  "invariants": [
+    "No dependency may point to an equal or higher architectural layer.",
+    "No undeclared ecosystem dependency is permitted.",
+    "No wildcard public export is permitted.",
+    "Published declaration dependencies must obey the same graph.",
+    "Published tarballs must reject internal module paths.",
+    "Transitive ecosystem dependencies must obey the graph."
+  ],
+  "edgeKinds": {
+    "@ultrst-armada/krnl": {
+      "@dinilmusick/gutts": "runtime"
+    },
+    "@ultrst-armada/frnlts": {
+      "@dinilmusick/gutts": "runtime"
+    },
+    "@ultrst-armada/kloks": {
+      "@dinilmusick/gutts": "runtime",
+      "@ultrst-armada/krnl": "peer"
+    },
+    "@ultrst-armada/floks": {
+      "@dinilmusick/gutts": "runtime",
+      "@ultrst-armada/frnlts": "runtime"
+    },
+    "skipo": {
+      "@dinilmusick/gutts": "runtime",
+      "@ultrst-armada/krnl": "runtime",
+      "@ultrst-armada/frnlts": "runtime",
+      "@ultrst-armada/kloks": "runtime",
+      "@ultrst-armada/floks": "runtime"
+    }
+  },
+  "exportExceptions": [
+    {
+      "repository": "@ultrst-armada/floks",
+      "key": "./ui/theme/tokens.css",
+      "target": "./packages/ui/src/theme/tokens.css"
+    },
+    {
+      "repository": "@ultrst-armada/floks",
+      "key": "./ui/styles/*",
+      "target": "./packages/ui/src/styles/*",
+      "allowWildcard": true
+    }
+  ]
+}
