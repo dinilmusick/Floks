@@ -66,8 +66,6 @@ export interface WorkspaceCreateInput {
   localFolderName?: string;
   localFolderKey?: string;
   b2BucketName?: string;
-  b2Endpoint?: string;
-  b2Region?: string;
   googleEmail?: string;
   googleRootFolderId?: string;
   googleRootFolderName?: string;
