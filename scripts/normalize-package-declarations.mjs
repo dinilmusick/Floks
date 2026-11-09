@@ -55,6 +55,10 @@ for (const packageName of await readdir(packagesDirectory)) {
           return prefix + quote + specifier + ".js" + quote;
         }
       );
+      normalized = normalized.replace(
+        /(\\bfrom\\s+)(["'])(\\.{1,2}\\/[^"']+\\.json)\\2(?!\\s+with)/g,
+        '$1$2$3$2 with { type: "json" }'
+      );
     }
 
     if (normalized !== original) await writeFile(filePath, normalized);
