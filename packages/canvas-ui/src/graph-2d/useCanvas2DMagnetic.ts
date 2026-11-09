@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
-import { SpaceNode, NodeConnection } from '@kloks/state-graph';
-import { MagneticGraphManager, Landmark } from '@kloks/state-graph';
-import { Trace } from '@kloks/state-graph';
+import { SpaceNode, NodeConnection } from '@kloks/state-graph/browser';
+import { MagneticGraphManager, Landmark } from '@kloks/state-graph/browser';
+import { Trace } from '@kloks/state-graph/browser';
 import { CameraState } from './types.js';
 
 interface UseViewer2DMagneticProps {
