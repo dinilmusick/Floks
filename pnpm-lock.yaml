@@ -66,6 +66,9 @@ importers:
 
   packages/canvas-ui:
     dependencies:
+      '@kloks/state-graph':
+        specifier: ^1.0.0
+        version: 1.0.0
       '@dnd-kit/core':
         specifier: ^6.0.0
         version: 6.3.1(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
