@@ -26,6 +26,28 @@ describe("Floks browser/server dependency boundary", () => {
     expect(rootPkg.dependencies["@ultrst-armada/frnlts"]).toBe("^0.5.7");
   });
 
+  it("keeps workspace storage as an injected Kloks boundary with no app-specific HTTP routes", () => {
+    const source = fs.readFileSync(
+      path.join(root, "packages/ui/src/components/workspace/WorkspaceCreateDialog.tsx"),
+      "utf8",
+    );
+    expect(source).not.toContain("/api/auth/storage/");
+    expect(source).not.toContain("/api/storage/");
+    expect(source).not.toMatch(/credentials\??\s*:/);
+    expect(source).toContain("Object.freeze({})");
+    expect(source).toContain("storagePolicy?.providers");
+    expect(source).toContain("?? []");
+  });
+
+  it("uses the Krusbl canonical ecosystem policy snapshot for Floks boundary checks", () => {
+    const policy = readJson("policies/ecosystem-architecture.json");
+    expect(policy.levels["@ultrst-armada/floks"]).toBe(2);
+    expect(policy.edges).toContainEqual(["@ultrst-armada/floks", "@dinilmusick/gutts"]);
+    expect(policy.edges).toContainEqual(["@ultrst-armada/floks", "@ultrst-armada/frnlts"]);
+    expect(policy.edges).not.toContainEqual(["@ultrst-armada/floks", "@ultrst-armada/kloks"]);
+    expect(fs.existsSync(path.join(root, "architecture-boundary.json"))).toBe(false);
+  });
+
   it("routes Luth authentication through GutTS instead of Kloks", () => {
     const source = fs.readFileSync(path.join(root, "packages/ui/src/components/auth/LuthAuthClient.ts"), "utf8");
     expect(source).toContain("@dinilmusick/gutts/auth");
