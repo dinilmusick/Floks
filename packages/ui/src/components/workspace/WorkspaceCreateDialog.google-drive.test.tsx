@@ -9,7 +9,7 @@ import {
 
 describe('WorkspaceCreateDialog Google Drive integration', () => {
   it('connects through the injected OAuth service and returns the selected Drive folder in the canonical workspace contract', async () => {
-    const driveConnection: WorkspaceStorageOption = {
+    const driveConnection = {
       id: 'drive-auth-1',
       provider: 'google_drive',
       label: 'Drive — artist@example.test',
@@ -19,7 +19,7 @@ describe('WorkspaceCreateDialog Google Drive integration', () => {
         refreshToken: 'must-not-enter-workspace-payload',
         clientSecret: 'must-not-enter-workspace-payload',
       },
-    };
+    } as unknown as WorkspaceStorageOption;
     const folder = { id: 'drive-folder-1', name: 'Studio Archive', mimeType: 'application/vnd.google-apps.folder' };
     const connectGoogleDrive = vi.fn().mockResolvedValue(driveConnection);
     const listGoogleDriveFolders = vi.fn().mockResolvedValue([folder]);
@@ -31,6 +31,7 @@ describe('WorkspaceCreateDialog Google Drive integration', () => {
         userId="user-1"
         storageOptions={[{ id: 'local_fs', provider: 'local_fs', label: 'Local Folder' }]}
         storageService={{ connectGoogleDrive, listGoogleDriveFolders }}
+        visibility={{ storagePolicy: { providers: ['local_fs', 'google_drive'] } }}
         onClose={() => undefined}
         onSubmit={onSubmit}
       />,
@@ -62,6 +63,9 @@ describe('WorkspaceCreateDialog Google Drive integration', () => {
     });
     expect(input.storageConnection).not.toHaveProperty('credentials');
     expect(JSON.stringify(input)).not.toContain('must-not-enter-workspace-payload');
+    expect(input.storageConnection).not.toHaveProperty('credentials');
+    expect(input.storageConnection).not.toHaveProperty('endpoint');
+    expect(input.storageConnection).not.toHaveProperty('region');
   });
 
   it('requires a connected Drive account and selected folder before workspace creation', async () => {
@@ -70,7 +74,9 @@ describe('WorkspaceCreateDialog Google Drive integration', () => {
     render(
       <WorkspaceCreateDialog
         open
-        storageOptions={[{ id: 'local_fs', provider: 'local_fs' }]}
+        storageOptions={[]}
+        visibility={{ storagePolicy: { providers: ['google_drive'] } }}
+        storageService={{ connectGoogleDrive: vi.fn(), listGoogleDriveFolders: vi.fn() }}
         onClose={() => undefined}
         onSubmit={onSubmit}
       />,
@@ -93,7 +99,7 @@ describe('WorkspaceCreateDialog Google Drive integration', () => {
           { id: 'b2-1', provider: 'backblaze_b2', label: 'Archive bucket' },
         ]}
         visibility={{
-          availableStorageProviders: ['google_drive'],
+          storagePolicy: { providers: ['google_drive'] },
           hiddenFields: ['description', 'localFolderName', 'manageStorage', 'backblaze', 'canonicalFolderPreview'],
         }}
         onManageStorage={() => undefined}
@@ -122,7 +128,7 @@ describe('WorkspaceCreateDialog Google Drive integration', () => {
           { id: 'drive-1', provider: 'google_drive', label: 'Existing Drive' },
           { id: 'b2-1', provider: 'backblaze_b2', label: 'Archive' },
         ]}
-        visibility={{ hiddenStorageProviders: ['google_drive'] }}
+        visibility={{ storagePolicy: { providers: ['local_fs', 'google_drive', 'backblaze_b2'] }, hiddenStorageProviders: ['google_drive'] }}
         onClose={() => undefined}
         onSubmit={() => undefined}
       />,
