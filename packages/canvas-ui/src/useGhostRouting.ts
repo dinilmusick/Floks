@@ -7,14 +7,14 @@ import type {
   NodeDefinition,
   GhostNodeRecord,
   GhostTraceRecord,
-} from './state-graph/index.js';
+} from '@kloks/state-graph/browser';
 import {
   ConnectionRuleStore,
   GhostStore,
   inferGhostNodes,
   resolveGhostLayout,
   buildGhostTraces,
-} from './state-graph/index.js';
+} from '@kloks/state-graph/browser';
 
 export interface UseGhostRoutingParams {
   nodes: GraphNode[];
