@@ -50,8 +50,13 @@ describe("Floks browser/server dependency boundary", () => {
   });
 
   it("keeps the built auth surface free of backend implementation imports", () => {
-    const built = fs.readFileSync(path.join(root, "packages/ui/dist/components/auth/index.js"), "utf8");
-    expect(built).toContain("@dinilmusick/gutts/auth");
+    const authDir = path.join(root, "packages/ui/dist/components/auth");
+    const files = fs.readdirSync(path.join(root, "packages/ui/dist"), {recursive: true})
+      .filter((file) => String(file).endsWith(".js"))
+      .map((file) => path.join(root, "packages/ui/dist", String(file)));
+    const built = files.map((file) => fs.readFileSync(file, "utf8")).join("\n");
+    expect(fs.existsSync(path.join(authDir, "index.js"))).toBe(true);
+    expect(built).toContain("LuthAuthClient");
     expect(built).not.toContain("@ultrst-armada/kloks");
     expect(built).not.toContain("@ultrst-armada/krnl");
     expect(built).not.toMatch(/node:/);
