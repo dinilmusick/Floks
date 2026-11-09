@@ -71,5 +71,16 @@
         "@ultrst-armada/floks"
       ]
     }
-  }
+  },
+  "exportExceptions": [
+    {
+      "key": "./ui/theme/tokens.css",
+      "target": "./packages/ui/src/theme/tokens.css"
+    },
+    {
+      "key": "./ui/styles/*",
+      "target": "./packages/ui/src/styles/*",
+      "allowWildcard": true
+    }
+  ]
 }
