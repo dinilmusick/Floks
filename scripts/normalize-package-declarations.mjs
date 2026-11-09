@@ -1,4 +1,4 @@
-import { readdir, readFile, writeFile, stat } from "node:fs/promises";
+import { readdir, readFile, writeFile, stat, copyFile, mkdir } from "node:fs/promises";
 import path from "node:path";
 
 async function walk(directory) {
@@ -16,6 +16,18 @@ for (const packageName of await readdir(packagesDirectory)) {
   const packageDirectory = path.join(packagesDirectory, packageName);
   if (!(await stat(packageDirectory)).isDirectory()) continue;
   const distDirectory = path.join(packageDirectory, "dist");
+  const sourceDirectory = path.join(packageDirectory, "src");
+  try {
+    await stat(sourceDirectory);
+    for (const sourceFile of await walk(sourceDirectory)) {
+      if (path.extname(sourceFile) !== ".json") continue;
+      const targetFile = path.join(distDirectory, path.relative(sourceDirectory, sourceFile));
+      await mkdir(path.dirname(targetFile), { recursive: true });
+      await copyFile(sourceFile, targetFile);
+    }
+  } catch {
+    // Workspace package has no source directory or JSON assets.
+  }
   try {
     await stat(distDirectory);
   } catch {
