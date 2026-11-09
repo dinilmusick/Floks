@@ -8,6 +8,7 @@ import {
   WorkspaceCreateDialog,
   type WorkspaceCreateInput,
   type WorkspaceStorageService,
+  type WorkspaceCreateDialogVisibility,
   defaultWorkspaceStorageService,
   type WorkspaceStorageOption,
 } from './WorkspaceCreateDialog.js';
@@ -23,8 +24,6 @@ export interface WorkspaceRecord {
   storageProvider?: string;
   storageConnectionId?: string;
   b2BucketName?: string;
-  b2Endpoint?: string;
-  b2Region?: string;
   localFolderName?: string;
   metadata?: React.ReactNode;
 }
@@ -34,7 +33,7 @@ export interface WorkspaceTilesMenuProps {
   userId?: string;
   currentUser?: { id: string; email: string; name?: string; username?: string } | null;
   storageOptions?: WorkspaceStorageOption[];
-  onManageStorage?: () => void;
+  visibility?: WorkspaceCreateDialogVisibility;
   activeWorkspaceId?: string | null;
   appName?: string;
   storageService?: WorkspaceStorageService;
@@ -61,7 +60,7 @@ export function WorkspaceTilesMenu({
   userId,
   currentUser,
   storageOptions,
-  onManageStorage,
+  visibility,
   activeWorkspaceId = null,
   appName = 'Workspaces',
   storageService = defaultWorkspaceStorageService,
@@ -115,7 +114,7 @@ export function WorkspaceTilesMenu({
           </>
         )}
       />
-      <WorkspaceCreateDialog open={creating} userId={effectiveUserId} currentUser={currentUser} appName={appName} storageOptions={storageOptions} storageService={storageService} onManageStorage={onManageStorage} onClose={() => setCreating(false)} onSubmit={onCreateWorkspace} />
+      <WorkspaceCreateDialog open={creating} userId={effectiveUserId} currentUser={currentUser} appName={appName} storageOptions={storageOptions} storageService={storageService} visibility={visibility} onClose={() => setCreating(false)} onSubmit={onCreateWorkspace} />
     </section>
   );
 }
