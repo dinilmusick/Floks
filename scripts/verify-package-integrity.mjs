@@ -72,7 +72,7 @@ try {
   run("node", ["--input-type=module", "-e", resolveProgram], consumer);
   const consumerTypeSmoke = publicSpecifiers.map((specifier, index) => "import * as surface" + index + " from " + JSON.stringify(specifier) + "; void surface" + index + ";").join("\n") + "\n";
   await writeFile(path.join(consumer, "consumer-smoke.ts"), consumerTypeSmoke);
-  run(path.join(consumer, "node_modules", ".bin", "tsc"), ["--noEmit", "--module", "NodeNext", "--moduleResolution", "NodeNext", "--target", "ES2022", "consumer-smoke.ts"], consumer);
+  run(path.join(consumer, "node_modules", ".bin", "tsc"), ["--noEmit", "--module", "NodeNext", "--moduleResolution", "NodeNext", "--target", "ES2022", "--resolveJsonModule", "--esModuleInterop", "consumer-smoke.ts"], consumer);
   const rootImport = `import(${JSON.stringify(packedManifest.name)}).then(() => console.log("root import ok"))`;
   run("node", ["--input-type=module", "-e", rootImport], consumer);
   if (packedManifest.exports) {
