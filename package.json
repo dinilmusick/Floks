@@ -82,7 +82,7 @@
     }
   },
   "scripts": {
-    "build": "NODE_OPTIONS=--max-old-space-size=4096 pnpm -r --workspace-concurrency=1 run build && NODE_OPTIONS=--max-old-space-size=4096 pnpm --filter @floks/ui run build:types && NODE_OPTIONS=--max-old-space-size=4096 pnpm --filter @floks/canvas-ui run build:types",
+    "build": "NODE_OPTIONS=--max-old-space-size=4096 pnpm -r --workspace-concurrency=1 run build && NODE_OPTIONS=--max-old-space-size=4096 pnpm --filter @floks/ui run build:types && NODE_OPTIONS=--max-old-space-size=4096 pnpm --filter @floks/canvas-ui run build:types && node scripts/normalize-package-declarations.mjs",
     "postbuild": "node scripts/normalize-package-declarations.mjs",
     "test": "vitest run",
     "typecheck": "pnpm -r run typecheck",
