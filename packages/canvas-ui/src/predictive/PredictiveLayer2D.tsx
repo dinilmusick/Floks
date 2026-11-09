@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-import { SpaceNode } from '@kloks/state-graph';
-import { PredictiveGhostNode, PredictiveTrace } from '@kloks/state-graph';
+import type {SpaceNode, PredictiveGhostNode, PredictiveTrace} from '../state-graph/index.js';
 import { CameraState } from '../graph-2d/types.js';
 import { getSocketScreenPosition } from '../graph-2d/socketCoordinates.js';
 import { PredictiveGhostNodeCard } from './PredictiveGhostNodeCard.js';
