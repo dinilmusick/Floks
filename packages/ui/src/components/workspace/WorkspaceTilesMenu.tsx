@@ -23,8 +23,6 @@ export interface WorkspaceRecord {
   storageProvider?: string;
   storageConnectionId?: string;
   b2BucketName?: string;
-  b2Endpoint?: string;
-  b2Region?: string;
   localFolderName?: string;
   metadata?: React.ReactNode;
 }
