@@ -1,8 +1,8 @@
 'use client';
 import type React from 'react';
 import { useState, useRef } from 'react';
-import type { GraphNode, Socket } from '@kloks/state-graph/browser';
-import { getBeamPoints, calculateSocketCoordinates } from '@kloks/state-graph/browser';
+import type { GraphNode, Socket } from '@kloks/state-graph/browser/browser';
+import { getBeamPoints, calculateSocketCoordinates } from '@kloks/state-graph/browser/browser';
 
 export interface Viewer2DNodesProps {
   key?: React.Key;
