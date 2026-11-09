@@ -18,6 +18,7 @@ describe('canonical Floks workspace creation', () => {
           { id: 'drive-1', provider: 'google_drive' as const, label: 'Google Drive — user@example.test' },
           { id: 'b2-1', provider: 'backblaze_b2', label: 'Production Bucket' },
         ],
+        visibility: { storagePolicy: { providers: ['google_drive', 'backblaze_b2', 'local_fs'] } },
         onClose: () => undefined,
         onSubmit: () => undefined,
       }),
@@ -47,6 +48,25 @@ describe('canonical Floks workspace creation', () => {
     expect(input.storageConnectionId).toBe('drive-1');
     expect(input.storage.googleRootFolderId).toBe('folder-1');
     expect(input.storageConnection?.id).toBe('drive-1');
+  });
+
+  it('does not expose any storage provider when the application declares no policy', () => {
+    const markup = renderToStaticMarkup(
+      React.createElement(WorkspaceCreateDialog, {
+        open: true,
+        storageOptions: [
+          { id: 'drive-1', provider: 'google_drive', label: 'Drive' },
+          { id: 'b2-1', provider: 'backblaze_b2', label: 'Archive' },
+          { id: 'local_fs', provider: 'local_fs', label: 'Local' },
+        ],
+        onClose: () => undefined,
+        onSubmit: () => undefined,
+      }),
+    );
+    expect(markup).not.toContain('Google Drive');
+    expect(markup).not.toContain('Backblaze B2');
+    expect(markup).not.toContain('Local Folder');
+    expect(markup).toContain('has not enabled a workspace storage provider');
   });
 
   it('generates the same deterministic folder preview for every app using the component', () => {
