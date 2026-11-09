@@ -23,7 +23,7 @@ describe("Floks browser/server dependency boundary", () => {
     }
     expect(rootPkg.dependencies["@dinilmusick/gutts"]).toBe("^2.0.2");
     expect(uiPkg.dependencies["@dinilmusick/gutts"]).toBe("^2.0.2");
-    expect(rootPkg.dependencies["@ultrst-armada/frnlts"]).toBe("^0.5.6");
+    expect(rootPkg.dependencies["@ultrst-armada/frnlts"]).toBe("^0.5.7");
   });
 
   it("routes Luth authentication through GutTS instead of Kloks", () => {
