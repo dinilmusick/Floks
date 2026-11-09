@@ -11,10 +11,10 @@ import type {
 import {
   ConnectionRuleStore,
   GhostStore,
-  GhostInferenceEngine,
-  GhostLayoutResolver,
-  GhostTracePathBuilder,
-} from '@kloks/state-graph';
+  inferGhostNodes,
+  resolveGhostLayout,
+  buildGhostTraces,
+} from './state-graph/index.js';
 
 export interface UseGhostRoutingParams {
   nodes: GraphNode[];
