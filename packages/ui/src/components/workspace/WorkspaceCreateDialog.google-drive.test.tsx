@@ -100,9 +100,8 @@ describe('WorkspaceCreateDialog Google Drive integration', () => {
         ]}
         visibility={{
           storagePolicy: { providers: ['google_drive'] },
-          hiddenFields: ['description', 'localFolderName', 'manageStorage', 'backblaze', 'canonicalFolderPreview'],
+          hiddenFields: ['description', 'localFolderName', 'backblaze', 'canonicalFolderPreview'],
         }}
-        onManageStorage={() => undefined}
         onClose={() => undefined}
         onSubmit={() => undefined}
       />,
