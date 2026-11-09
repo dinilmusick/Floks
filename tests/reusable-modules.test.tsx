@@ -111,6 +111,20 @@ describe('reusable application modules', () => {
     expect(screen.getByRole('button', { name: /docs/i })).toBeInTheDocument();
   });
 
+  it('forwards an explicit application storage policy through WorkspaceTilesMenu', () => {
+    render(
+      <WorkspaceTilesMenu
+        workspaces={[]}
+        visibility={{ storagePolicy: { providers: ['local_fs'] } }}
+        onSelectWorkspace={() => {}}
+        onCreateWorkspace={async () => {}}
+      />,
+    );
+    fireEvent.click(screen.getByRole('button', { name: /new workspace/i }));
+    expect(screen.getByLabelText('Workspace storage')).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: /local folder/i })).toBeInTheDocument();
+  });
+
   it('renders an empty reusable graphs menu without requiring a domain implementation', () => {
     render(<GraphsMenu graphs={[]} onSelectGraph={() => {}} />);
     expect(screen.getByText('Graphs')).toBeInTheDocument();
