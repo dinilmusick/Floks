@@ -23,10 +23,10 @@ export interface BackblazeBucket {
 }
 
 export interface BackblazeAccount {
+  /** Opaque account/connection identifier; provider credentials remain server-side. */
   id: string;
   name: string;
   provider?: string;
-  credentials?: { region?: string; endpoint?: string; [key: string]: unknown };
 }
 
 export interface WorkspaceStorageOption {
@@ -41,14 +41,9 @@ export interface WorkspaceStorageOption {
   localFolderPathHint?: string;
   bucketName?: string;
   b2BucketName?: string;
-  b2Endpoint?: string;
-  b2Region?: string;
-  endpoint?: string;
-  region?: string;
   googleEmail?: string;
   googleRootFolderId?: string;
   googleRootFolderName?: string;
-  credentials?: Record<string, unknown>;
 }
 
 export interface WorkspaceStorageSelection {
@@ -57,8 +52,6 @@ export interface WorkspaceStorageSelection {
   localFolderName?: string;
   localFolderKey?: string;
   b2BucketName?: string;
-  b2Endpoint?: string;
-  b2Region?: string;
   googleEmail?: string;
   googleRootFolderId?: string;
   googleRootFolderName?: string;
@@ -96,8 +89,15 @@ export type WorkspaceCreateDialogHiddenField =
   | 'backblaze'
   | 'canonicalFolderPreview';
 
+export interface WorkspaceStoragePolicy {
+  /** Ordered allow-list declared by the consuming application. No implicit providers are enabled. */
+  providers: WorkspaceStorageProvider[];
+}
+
 export interface WorkspaceCreateDialogVisibility {
-  /** Whitelist of storage providers to render. Unspecified means all providers. */
+  /** Canonical application-level storage policy. */
+  storagePolicy?: WorkspaceStoragePolicy;
+  /** Backwards-compatible explicit allow-list. Prefer storagePolicy.providers. */
   availableStorageProviders?: WorkspaceStorageProvider[];
   /** Providers hidden even when included in availableStorageProviders. */
   hiddenStorageProviders?: WorkspaceStorageProvider[];
@@ -156,36 +156,35 @@ export function buildWorkspaceCreateInput(
     ? (option.localFolderName || name.trim())
     : undefined;
   const b2BucketName = option.b2BucketName || option.bucketName;
-  const b2Endpoint = option.b2Endpoint || option.endpoint;
-  const b2Region = option.b2Region || option.region;
   const storage: WorkspaceStorageSelection = {
     provider,
     connectionId,
     localFolderName,
     localFolderKey: provider === 'local_fs' ? option.localFolderKey : undefined,
     b2BucketName,
-    b2Endpoint,
-    b2Region,
     googleEmail: option.googleEmail,
     googleRootFolderId: option.googleRootFolderId,
     googleRootFolderName: option.googleRootFolderName,
   };
 
+  // Never echo arbitrary provider objects into a workspace payload. Credentials,
+  // tokens, endpoints, and provider configuration remain inside Kloks.
   const storageConnection = !connectionId
     ? undefined
-    : provider === 'google_drive'
-      ? {
-          id: option.id,
-          provider,
-          label: option.label,
-          name: option.name,
-          role: option.role,
-          enabled: option.enabled,
+    : {
+        id: option.id,
+        provider,
+        label: option.label,
+        name: option.name,
+        role: option.role,
+        enabled: option.enabled,
+        ...(provider === 'backblaze_b2' && b2BucketName ? { b2BucketName } : {}),
+        ...(provider === 'google_drive' ? {
           googleEmail: option.googleEmail,
           googleRootFolderId: option.googleRootFolderId,
           googleRootFolderName: option.googleRootFolderName,
-        }
-      : option;
+        } : {}),
+      };
 
   return {
     name: name.trim(),
@@ -196,8 +195,6 @@ export function buildWorkspaceCreateInput(
     localFolderName,
     localFolderKey: storage.localFolderKey,
     b2BucketName,
-    b2Endpoint,
-    b2Region,
     googleEmail: option.googleEmail,
     googleRootFolderId: option.googleRootFolderId,
     googleRootFolderName: option.googleRootFolderName,
@@ -205,80 +202,12 @@ export function buildWorkspaceCreateInput(
   };
 }
 
-async function fetchStorageConnections(userId: string): Promise<WorkspaceStorageOption[]> {
-  const headers = new Headers({ 'Content-Type': 'application/json', 'X-User-Id': userId });
-  for (const endpoint of ['/api/auth/storage/connections', '/api/storage/connections']) {
-    try {
-      const response = await fetch(endpoint, { headers, credentials: 'include' });
-      if (!response.ok) continue;
-      const data = await response.json();
-      const connections = Array.isArray(data?.connections)
-        ? data.connections
-        : Array.isArray(data?.storage_connections)
-          ? data.storage_connections
-          : [];
-      if (connections.length > 0) {
-        return connections.filter((item: any) => item && typeof item.id === 'string' && typeof item.provider === 'string');
-      }
-    } catch {
-      // Try the other canonical app route before reporting an empty list.
-    }
-  }
-  return [];
-}
-
-async function fetchBackblazeAccounts(userId: string): Promise<BackblazeAccount[]> {
-  try {
-    const response = await fetch('/api/storage/backblaze/accounts?userId=' + encodeURIComponent(userId));
-    const data = await response.json().catch(() => ({}));
-    return Array.isArray(data?.accounts) ? data.accounts : [];
-  } catch {
-    return [];
-  }
-}
-
-async function fetchBackblazeBuckets(accountId: string, userId?: string): Promise<BackblazeBucket[]> {
-  try {
-    const response = await fetch('/api/storage/backblaze/buckets', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ accountId, userId }),
-    });
-    const data = await response.json().catch(() => ({}));
-    return Array.isArray(data?.buckets) ? data.buckets : [];
-  } catch {
-    return [];
-  }
-}
-
-async function fetchDefaultStorageOptions(userId: string): Promise<WorkspaceStorageOption[]> {
-  const stored = await fetchStorageConnections(userId);
-  if (stored.length > 0) return stored;
-  // The consumer injects its own authorized Backblaze account source. This shared
-  // component never assumes a particular application or account-management API.
-  const backblaze = await fetchBackblazeAccounts(userId);
-  return backblaze.map((account: any) => {
-    const credentials = account.credentials || {};
-    const value = (key: string, alternate?: string) => {
-      const item = credentials[key] ?? (alternate ? credentials[alternate] : undefined);
-      return typeof item === 'string' && item.length > 0 ? item : undefined;
-    };
-    return {
-      id: String(account.id),
-      provider: String(account.provider || account.serviceId || 'backblaze_b2') as WorkspaceStorageProvider,
-      label: String(account.label || account.name || account.id),
-      b2BucketName: value('bucketName', 'b2BucketName'),
-      b2Endpoint: value('endpoint', 'b2Endpoint'),
-      b2Region: value('region', 'b2Region'),
-    };
-  });
-}
-
-export const defaultWorkspaceStorageService: WorkspaceStorageService = {
-  listStorageConnections: fetchDefaultStorageOptions,
-  listBackblazeAccounts: fetchBackblazeAccounts,
-  listBackblazeBuckets: fetchBackblazeBuckets,
-};
+/**
+ * Floks is a browser UI boundary, not an application backend.
+ * Consumers inject a browser-safe Kloks client/service adapter.
+ * This compatibility default is intentionally inert and performs no network I/O.
+ */
+export const defaultWorkspaceStorageService: WorkspaceStorageService = Object.freeze({});
 
 export interface KloksServiceInvoker {
   invoke: (serviceId: string, operation: string, input: Record<string, unknown>) => Promise<unknown>;
@@ -306,11 +235,7 @@ export function createKloksWorkspaceStorageService(
       role: connection.role,
       enabled: connection.enabled,
       localFolderName: connection.localFolderName,
-      localFolderKey: connection.localFolderKey,
-      localFolderPathHint: connection.localFolderPathHint,
       b2BucketName: connection.b2BucketName,
-      b2Endpoint: connection.b2Endpoint,
-      b2Region: connection.b2Region,
       googleEmail: connection.googleEmail,
       googleRootFolderId: connection.googleRootFolderId,
       googleRootFolderName: connection.googleRootFolderName,
@@ -405,32 +330,37 @@ export function WorkspaceCreateDialog({
 
   const availableOptions = useMemo(() => {
     const supplied = storageOptions ?? loadedOptions;
-    const providers = visibility?.availableStorageProviders;
+    const providerOrder = visibility?.storagePolicy?.providers
+      ?? visibility?.availableStorageProviders
+      ?? [];
     const hidden = new Set(visibility?.hiddenStorageProviders || []);
-    const isVisible = (provider: WorkspaceStorageProvider) =>
-      !hidden.has(provider) && (!providers || providers.includes(provider));
     const enabled = supplied.filter((option) =>
       option
       && option.enabled !== false
       && typeof option.id === 'string'
-      && isVisible(option.provider),
+      && !hidden.has(option.provider),
     );
-    const local = enabled.find((option) => option.provider === 'local_fs');
-    const external = enabled.filter((option) => option.provider !== 'local_fs');
-    const driveConnections = [
-      ...external.filter((option) => option.provider === 'google_drive'),
-      ...(connectedDriveOption && connectedDriveOption.enabled !== false ? [connectedDriveOption] : []),
-    ].filter((option, index, items) => items.findIndex((candidate) => candidate.id === option.id) === index);
-    const connectDriveOption: WorkspaceStorageOption[] = isVisible('google_drive')
-      && !driveConnections.some((option) => option.id === 'google_drive')
-      ? [{ id: 'google_drive', provider: 'google_drive', label: driveConnections.length ? 'Connect another account' : 'Connect Google Drive' }]
-      : [];
-    return [
-      ...(local ? [local] : isVisible('local_fs') ? [LOCAL_STORAGE_OPTION] : []),
-      ...external.filter((option) => option.provider !== 'google_drive'),
-      ...driveConnections,
-      ...connectDriveOption,
-    ];
+    const forProvider = (provider: WorkspaceStorageProvider) =>
+      enabled.filter((option) => option.provider === provider);
+
+    // Provider availability is opt-in per consuming application; no shared defaults.
+    return providerOrder
+      .filter((provider, index) => providerOrder.indexOf(provider) === index && !hidden.has(provider))
+      .flatMap((provider): WorkspaceStorageOption[] => {
+        if (provider === 'local_fs') return [forProvider(provider)[0] || LOCAL_STORAGE_OPTION];
+        if (provider === 'google_drive') {
+          const connections = [
+            ...forProvider(provider),
+            ...(connectedDriveOption && connectedDriveOption.enabled !== false ? [connectedDriveOption] : []),
+          ].filter((option, index, items) => items.findIndex((candidate) => candidate.id === option.id) === index);
+          return connections.length > 0 ? connections : [{ id: 'google_drive', provider: 'google_drive', label: 'Connect Google Drive' }];
+        }
+        if (provider === 'backblaze_b2') {
+          const connections = forProvider(provider);
+          return connections.length > 0 ? connections : [{ id: 'backblaze_external', provider: 'backblaze_b2', label: 'Choose Backblaze account and bucket' }];
+        }
+        return forProvider(provider);
+      });
   }, [storageOptions, loadedOptions, connectedDriveOption, visibility]);
 
   useEffect(() => {
@@ -531,10 +461,6 @@ export function WorkspaceCreateDialog({
             label: backblazeAccount?.name || 'Backblaze B2',
             b2BucketName: backblazeBucketName,
             bucketName: backblazeBucketName,
-            b2Endpoint: backblazeAccount?.credentials?.endpoint,
-            endpoint: backblazeAccount?.credentials?.endpoint,
-            b2Region: backblazeAccount?.credentials?.region,
-            region: backblazeAccount?.credentials?.region,
           }
         : selectedOption.provider === 'local_fs'
           ? { ...selectedOption, localFolderName: localFolderName.trim() || selectedOption.localFolderName || name.trim() }
@@ -615,7 +541,15 @@ export function WorkspaceCreateDialog({
                 id="floks-workspace-storage"
                 aria-label="Workspace storage"
                 value={selectedStorageId}
-                onChange={(event) => { setBackblazeMode(false); setSelectedStorageId(event.target.value); }}
+                onChange={(event) => {
+                  const nextId = event.target.value;
+                  if (nextId === 'backblaze_external') {
+                    void handleSelectBackblaze();
+                    return;
+                  }
+                  setBackblazeMode(false);
+                  setSelectedStorageId(nextId);
+                }}
                 disabled={loadingStorage || submitting}
                 className="h-10 min-w-0 flex-1 border px-2 text-xs"
                 style={{ backgroundColor: background, borderColor: border }}
@@ -685,10 +619,10 @@ export function WorkspaceCreateDialog({
             )}
             {loadingStorage ? (
               <p className="flex items-center gap-2 text-[10px]" style={{ color: muted }}><Loader2 size={12} className="animate-spin" /> Loading storage connections…</p>
-            ) : availableOptions.length === 1 && availableOptions[0].provider === 'local_fs' ? (
-              <p className="text-[10px]" style={{ color: muted }}>No external storage connection is available yet. Connect an external provider or choose an available connection.</p>
+            ) : availableOptions.length === 0 ? (
+              <p className="text-[10px]" style={{ color: muted }}>This application has not enabled a workspace storage provider.</p>
             ) : (
-              <p className="text-[10px]" style={{ color: muted }}>Cloud storage is selected from connections already authorized for this account.</p>
+              <p className="text-[10px]" style={{ color: muted }}>Choose from the storage providers explicitly enabled by this application.</p>
             )}
           </div>
 
@@ -740,7 +674,7 @@ export function WorkspaceCreateDialog({
 
         <div className="mt-5 flex justify-end gap-2 border-t pt-3" style={{ borderColor: border }}>
           <button type="button" onClick={onClose} disabled={submitting} className="h-9 border px-3 text-xs" style={{ borderColor: border }}>Cancel</button>
-          <button type="submit" disabled={submitting || loadingStorage || loadingBackblazeAccounts || loadingBackblazeBuckets || !name.trim()} className="h-9 px-4 text-xs font-black uppercase text-black disabled:opacity-50" style={{ backgroundColor: accent }}>
+          <button type="submit" disabled={submitting || loadingStorage || loadingBackblazeAccounts || loadingBackblazeBuckets || !availableOptions.length || !name.trim()} className="h-9 px-4 text-xs font-black uppercase text-black disabled:opacity-50" style={{ backgroundColor: accent }}>
             {submitting ? 'Creating…' : 'Create Workspace'}
           </button>
         </div>
