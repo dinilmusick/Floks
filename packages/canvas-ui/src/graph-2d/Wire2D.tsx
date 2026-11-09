@@ -2,8 +2,8 @@
 // 1. IMPORTS & EXTERNAL DEPENDENCIES
 // ══════════════════════════════════════════════════════════════════════════════════════════
 import React from 'react';
-import { GraphWireParent } from '@kloks/state-graph';
-import { SIGNAL_TYPES } from '@kloks/state-graph';
+import { GraphWireParent } from '@kloks/state-graph/browser';
+import { SIGNAL_TYPES } from '@kloks/state-graph/browser';
 
 export interface Wire2DProps {
   wire: GraphWireParent;
