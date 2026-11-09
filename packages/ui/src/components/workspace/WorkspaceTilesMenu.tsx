@@ -8,6 +8,7 @@ import {
   WorkspaceCreateDialog,
   type WorkspaceCreateInput,
   type WorkspaceStorageService,
+  type WorkspaceCreateDialogVisibility,
   defaultWorkspaceStorageService,
   type WorkspaceStorageOption,
 } from './WorkspaceCreateDialog.js';
@@ -32,6 +33,7 @@ export interface WorkspaceTilesMenuProps {
   userId?: string;
   currentUser?: { id: string; email: string; name?: string; username?: string } | null;
   storageOptions?: WorkspaceStorageOption[];
+  visibility?: WorkspaceCreateDialogVisibility;
   activeWorkspaceId?: string | null;
   appName?: string;
   storageService?: WorkspaceStorageService;
@@ -58,6 +60,7 @@ export function WorkspaceTilesMenu({
   userId,
   currentUser,
   storageOptions,
+  visibility,
   activeWorkspaceId = null,
   appName = 'Workspaces',
   storageService = defaultWorkspaceStorageService,
@@ -111,7 +114,7 @@ export function WorkspaceTilesMenu({
           </>
         )}
       />
-      <WorkspaceCreateDialog open={creating} userId={effectiveUserId} currentUser={currentUser} appName={appName} storageOptions={storageOptions} storageService={storageService} onClose={() => setCreating(false)} onSubmit={onCreateWorkspace} />
+      <WorkspaceCreateDialog open={creating} userId={effectiveUserId} currentUser={currentUser} appName={appName} storageOptions={storageOptions} storageService={storageService} visibility={visibility} onClose={() => setCreating(false)} onSubmit={onCreateWorkspace} />
     </section>
   );
 }
