@@ -21,9 +21,9 @@ describe("Floks browser/server dependency boundary", () => {
       expect(pkg.peerDependencies ?? {}).not.toHaveProperty("@ultrst-armada/kloks");
       expect(pkg.peerDependencies ?? {}).not.toHaveProperty("@ultrst-armada/krnl");
     }
-    expect(rootPkg.dependencies["@dinilmusick/gutts"]).toBe("^2.0.0");
-    expect(uiPkg.dependencies["@dinilmusick/gutts"]).toBe("^2.0.0");
-    expect(rootPkg.dependencies["@ultrst-armada/frnlts"]).toBe("^0.5.6");
+    expect(rootPkg.dependencies["@dinilmusick/gutts"]).toBe("^2.0.2");
+    expect(uiPkg.dependencies["@dinilmusick/gutts"]).toBe("^2.0.2");
+    expect(rootPkg.dependencies["@ultrst-armada/frnlts"]).toBe("^0.5.7");
   });
 
   it("routes Luth authentication through GutTS instead of Kloks", () => {

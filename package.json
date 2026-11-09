@@ -86,7 +86,10 @@
     "postbuild": "node -e \"import('fs').then(fs => { for (const pkg of fs.readdirSync('packages')) { const d = 'packages/' + pkg + '/dist'; if (!fs.existsSync(d)) continue; for (const f of fs.readdirSync(d, { recursive: true })) { const p = d + '/' + f; if (fs.statSync(p).isFile() && (p.endsWith('.js') || p.endsWith('.d.ts'))) { const c = fs.readFileSync(p, 'utf8'); const n = c.replaceAll('@kloks/', '@ultrst-armada/kloks/').replaceAll('@floks/', '@ultrst-armada/floks/').replaceAll('@ultrst/kloks/', '@ultrst-armada/kloks/').replaceAll('@ultrst/floks/', '@ultrst-armada/floks/').replaceAll('\\\"kloks/', '\\\"@ultrst-armada/kloks/').replaceAll('\\'kloks/', '\\'@ultrst-armada/kloks/').replaceAll('\\\"floks/', '\\\"@ultrst-armada/floks/').replaceAll('\\'floks/', '\\'@ultrst-armada/floks/'); if (c !== n) fs.writeFileSync(p, n); } } } })\"",
     "test": "vitest run",
     "typecheck": "pnpm -r run typecheck",
-    "clean": "pnpm -r run clean"
+    "clean": "pnpm -r run clean",
+    "boundary": "node scripts/architecture-boundary.mjs",
+    "boundary:clean-room": "node scripts/clean-room-boundary.mjs",
+    "boundary:relative": "node scripts/relative-package-boundary.mjs"
   },
   "dependencies": {
     "@ultrst-armada/frnlts": "^0.5.7",
@@ -94,7 +97,7 @@
     "d3-force": "^3.0.0",
     "zod": "^3.24.1",
     "zustand": "^5.0.3",
-    "@dinilmusick/gutts": "^2.0.1"
+    "@dinilmusick/gutts": "^2.0.2"
   },
   "peerDependencies": {
     "lucide-react": ">=0.300.0",
