@@ -3,7 +3,7 @@
 // ══════════════════════════════════════════════════════════════════════════════════════════
 // @role component
 import React, { useRef, useCallback, useState } from 'react';
-import { describeSvgArc } from '@kloks/state-graph';
+import { describeSvgArc } from '@floks/contracts';
 import { usePalette } from '@floks/ui';
 
 export interface RotaryKnobProps {

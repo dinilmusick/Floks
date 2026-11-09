@@ -17,10 +17,15 @@
       "import": "./dist/index.js",
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
+    },
+    "./state-graph": {
+      "import": "./dist/state-graph.js",
+      "types": "./dist/state-graph.d.ts",
+      "default": "./dist/state-graph.js"
     }
   },
   "scripts": {
-    "build": "tsup src/index.ts --format esm --dts --clean --external zod",
+    "build": "tsup src/index.ts src/state-graph.ts --format esm --dts --clean --external zod",
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist"
   },

@@ -7,14 +7,14 @@ import type {
   NodeDefinition,
   GhostNodeRecord,
   GhostTraceRecord,
-} from '@kloks/state-graph';
+} from '@floks/contracts';
 import {
   ConnectionRuleStore,
   GhostStore,
-  GhostInferenceEngine,
-  GhostLayoutResolver,
-  GhostTracePathBuilder,
-} from '@kloks/state-graph';
+  inferGhostNodes,
+  resolveGhostLayout,
+  buildGhostTraces,
+} from '@floks/contracts';
 
 export interface UseGhostRoutingParams {
   nodes: GraphNode[];
@@ -75,12 +75,12 @@ export function useGhostRouting({
         ? availableNodeTypes
         : ConnectionRuleStore.listNodeTypes();
 
-      const candidates = GhostInferenceEngine.inferNextNodes(selected, defs, {
+      const candidates = inferGhostNodes(selected, defs, {
         scenarioCount: config?.ghostScenarioCount ?? 3
       });
 
-      const layoutNodes = GhostLayoutResolver.resolveLayout(candidates, nodes, defs);
-      const traces = GhostTracePathBuilder.buildGhostTraces(layoutNodes, nodes);
+      const layoutNodes = resolveGhostLayout(candidates, nodes, defs);
+      const traces = buildGhostTraces(layoutNodes, nodes);
 
       ghostStore.setPredictions(layoutNodes, traces, Array.from(selectedNodeIds));
     }, 250);

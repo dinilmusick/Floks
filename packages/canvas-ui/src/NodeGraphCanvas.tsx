@@ -1,10 +1,10 @@
 'use client';
 import type React from 'react';
 import { useRef, useState, useEffect, useCallback } from 'react';
-import type { GraphNode, GraphEdge, NodeGraphConfig, ViewportState, Socket, NodeDefinition } from '@kloks/state-graph';
+import type { GraphNode, GraphEdge, NodeGraphConfig, ViewportState, Socket, NodeDefinition } from '@floks/contracts';
 import { NodeCard } from './NodeCard.js';
 import { WireRenderer } from './WireRenderer.js';
-import { canvasToScreen, isNodeInCenterDeadZone, getCenterPanForNode, getNodesInSelection, ConnectionRuleStore } from '@kloks/state-graph';
+import { canvasToScreen, isNodeInCenterDeadZone, getCenterPanForNode, getNodesInSelection, ConnectionRuleStore } from '@floks/contracts';
 import { CompatibleNodePicker } from './node-graph-ui/widgets/CompatibleNodePicker.js';
 import { NodeSearchPalette } from './node-graph-ui/widgets/NodeSearchPalette.js';
 import { CanvasContextMenu } from './node-graph-ui/widgets/CanvasContextMenu.js';

@@ -2,11 +2,11 @@
 // 1. IMPORTS & EXTERNAL DEPENDENCIES
 // ══════════════════════════════════════════════════════════════════════════════════════════
 import React from 'react';
-import { SpaceNode } from '@kloks/state-graph';
-import { NodeSocketDescriptor, NodeSocketsResult } from '@kloks/state-graph';
-import { Node2DSpriteSetting } from '@kloks/state-graph';
+import { SpaceNode } from '@floks/contracts';
+import { NodeSocketDescriptor, NodeSocketsResult } from '@floks/contracts';
+import { Node2DSpriteSetting } from '@floks/contracts';
 import { Socket2D } from './Socket2D.js';
-import { RecorderNode } from '@kloks/state-graph';
+import { RecorderNode } from '@floks/contracts';
 import { RecorderWaveformDisplay } from './RecorderWaveformDisplay.js';
 import {
   Castle,

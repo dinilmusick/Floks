@@ -1,13 +1,13 @@
 import {
   resolveClientOrigin,
   resolveClientEnvironment,
-} from '@ultrst-armada/kloks/auth';
+} from '@dinilmusick/gutts/auth';
 
 export {
   DEFAULT_LUTH_URL,
   LuthAuthClient,
   createLuthAuthClient,
-} from '@ultrst-armada/kloks/auth';
+} from '@dinilmusick/gutts/auth';
 
 export type {
   DeploymentEnvironment,
@@ -20,9 +20,9 @@ export type {
   LuthUser,
   LuthSessionResult,
   RegisterApplicationResult,
-} from '@ultrst-armada/kloks/auth';
+} from '@dinilmusick/gutts/auth';
 
-export { LuthAuthError } from '@ultrst-armada/kloks/auth';
+export { LuthAuthError } from '@dinilmusick/gutts/auth';
 
 export const resolveLuthOrigin = resolveClientOrigin;
 export const resolveLuthEnvironment = resolveClientEnvironment;

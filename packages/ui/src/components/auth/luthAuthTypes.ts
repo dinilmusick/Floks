@@ -9,6 +9,6 @@ export type {
   EmailSignInCredentials,
   EmailSignUpData,
   GoogleSignInOptions,
-} from '@ultrst-armada/kloks/auth';
+} from '@dinilmusick/gutts/auth';
 
-export { LuthAuthError } from '@ultrst-armada/kloks/auth';
+export { LuthAuthError } from '@dinilmusick/gutts/auth';

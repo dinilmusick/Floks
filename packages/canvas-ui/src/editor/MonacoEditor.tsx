@@ -1,9 +1,13 @@
 'use client';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import type { MonacoCompletionItem, MonacoCompletionProvider, MonacoDiagnostic, MonacoDocument } from '@ultrst-armada/kloks/contracts';
+import type {
+  MonacoCompletionItem,
+  MonacoCompletionProvider,
+  MonacoDiagnostic,
+  MonacoDocument,
+} from '@floks/contracts';
 import { useMonaco } from './useMonaco.js';
 import type { EditorConfig } from './types.js';
-import { MonacoIdeServiceFacade } from '@ultrst-armada/kloks/services';
 
 export interface MonacoIdeServicePort {
   execute<TIn = unknown, TOut = unknown>(operation: string, input?: TIn): Promise<TOut>;
@@ -31,7 +35,7 @@ export function MonacoEditor({
   const sessionRef = useRef<string | undefined>(sessionId);
   const sessionReadyRef = useRef<Promise<unknown>>(Promise.resolve());
   const monaco = useMonaco();
-  const service = ideService || MonacoIdeServiceFacade;
+  const service = ideService;
   const [validationDiagnostics, setValidationDiagnostics] = useState<MonacoDiagnostic[]>([]);
   const validationRunRef = useRef(0);
   const completionProviderRef = useRef(completionProvider);
@@ -41,20 +45,27 @@ export function MonacoEditor({
   validateRef.current = onValidate;
   errorRef.current = onServiceError;
   const activeDiagnostics = useMemo(() => [...diagnostics, ...validationDiagnostics], [diagnostics, validationDiagnostics]);
-  const executeForSession = (operation: string, input?: unknown) => sessionReadyRef.current
-    .then(() => service.execute(operation, input))
-    .catch((error) => { errorRef.current?.(error); });
 
+  const executeForSession = (operation: string, input?: unknown) => {
+    if (!service) return Promise.resolve();
+    return sessionReadyRef.current
+      .then(() => service.execute(operation, input))
+      .catch((error) => { errorRef.current?.(error); });
+  };
 
   useEffect(() => {
     if (!sessionRef.current) sessionRef.current = sessionId || `editor-${Date.now().toString(36)}`;
-    sessionReadyRef.current = service.execute('createSession', {
-      sessionId: sessionRef.current, uri: uri || `inmemory://${sessionRef.current}`, language, value,
-      options: { readOnly, minimap, fontSize },
-    });
-    void sessionReadyRef.current.catch((error) => errorRef.current?.(error));
+    if (service) {
+      sessionReadyRef.current = service.execute('createSession', {
+        sessionId: sessionRef.current, uri: uri || `inmemory://${sessionRef.current}`, language, value,
+        options: { readOnly, minimap, fontSize },
+      });
+      void sessionReadyRef.current.catch((error) => errorRef.current?.(error));
+    } else {
+      sessionReadyRef.current = Promise.resolve();
+    }
     return () => {
-      if (sessionRef.current) {
+      if (service && sessionRef.current) {
         void sessionReadyRef.current.then(() => service.execute('disposeSession', { sessionId: sessionRef.current }))
           .catch((error) => errorRef.current?.(error));
       }
@@ -113,13 +124,12 @@ export function MonacoEditor({
     }
   }, [language, readOnly, fontSize, minimap, theme, monaco]);
 
-
   useEffect(() => {
     if (!monaco || !editorRef.current) return;
     const model = editorRef.current.getModel();
     if (!model) return;
     const severity = monaco.MarkerSeverity || {};
-    monaco.editor.setModelMarkers(model, 'kloks', activeDiagnostics.map((diagnostic) => ({
+    monaco.editor.setModelMarkers(model, 'floks', activeDiagnostics.map((diagnostic) => ({
       message: diagnostic.message,
       severity: severity[diagnostic.severity === 'error' ? 'Error'
         : diagnostic.severity === 'warning' ? 'Warning'
@@ -129,7 +139,7 @@ export function MonacoEditor({
       endLineNumber: diagnostic.endLineNumber,
       endColumn: diagnostic.endColumn,
       code: diagnostic.code,
-      source: 'kloks',
+      source: 'floks',
     })));
     if (sessionRef.current) {
       void executeForSession('setDiagnostics', {

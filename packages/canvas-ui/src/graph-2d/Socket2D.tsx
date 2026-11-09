@@ -2,8 +2,8 @@
 // 1. IMPORTS & EXTERNAL DEPENDENCIES
 // ══════════════════════════════════════════════════════════════════════════════════════════
 import React from 'react';
-import { NodeSocketDescriptor } from '@kloks/state-graph';
-import { SIGNAL_TYPES } from '@kloks/state-graph';
+import { NodeSocketDescriptor } from '@floks/contracts';
+import { SIGNAL_TYPES } from '@floks/contracts';
 
 export interface Socket2DProps {
   nodeId: string;

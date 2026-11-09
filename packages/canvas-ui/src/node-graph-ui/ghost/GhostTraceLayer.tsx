@@ -1,5 +1,5 @@
 'use client';
-import type { GhostTraceRecord } from '@kloks/state-graph';
+import type { GhostTraceRecord } from '@floks/contracts';
 
 export interface GhostTraceLayerProps {
   traces: GhostTraceRecord[];

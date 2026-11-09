@@ -1,5 +1,5 @@
 'use client';
-import type { GhostNodeRecord } from '@kloks/state-graph';
+import type { GhostNodeRecord } from '@floks/contracts';
 
 export interface GhostNodeCardProps {
   ghostNode: GhostNodeRecord;

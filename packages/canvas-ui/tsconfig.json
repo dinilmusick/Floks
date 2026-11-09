@@ -9,12 +9,6 @@
     "paths": {
       "@floks/ui": [
         "../ui/dist/index.d.ts"
-      ],
-      "@kloks/state-graph": [
-        "../../node_modules/@ultrst-armada/kloks/packages/state-graph/dist/index.d.ts"
-      ],
-      "@kloks/audio-midi": [
-        "../../node_modules/@ultrst-armada/kloks/packages/audio-midi/dist/index.d.ts"
       ]
     }
   },
@@ -22,4 +16,3 @@
     "src"
   ]
 }
-
