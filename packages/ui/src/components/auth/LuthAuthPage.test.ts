@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_LUTH_URL } from '@ultrst-armada/kloks/auth';
+import { DEFAULT_LUTH_URL } from '@dinilmusick/gutts/auth';
 import { createLuthAuthClientForApplication } from './LuthAuthPage.js';
 
 describe('LuthAuthPage canonical client contract', () => {
