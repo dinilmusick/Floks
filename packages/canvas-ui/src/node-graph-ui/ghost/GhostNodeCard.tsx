@@ -1,5 +1,5 @@
 'use client';
-import type { GhostNodeRecord } from '@kloks/state-graph';
+import type { GhostNodeRecord } from '@kloks/state-graph/browser';
 
 export interface GhostNodeCardProps {
   ghostNode: GhostNodeRecord;
