@@ -3,11 +3,11 @@
 // ══════════════════════════════════════════════════════════════════════════════════════════
 // @role component
 import React, { useState, useEffect, useRef } from 'react';
-import { RecorderNode, SpaceNode, NodeConnection } from '@kloks/state-graph';
+import { RecorderNode, SpaceNode, NodeConnection } from '@kloks/state-graph/browser';
 import { retrospectiveBufferEngine } from '@kloks/audio-midi';
 import { sequencerEngine } from '@kloks/audio-midi';
 import { synthEngine } from '@kloks/audio-midi';
-import * as GraphConcepts from '@kloks/state-graph';
+import * as GraphConcepts from '@kloks/state-graph/browser';
 
 export interface RecorderWaveformDisplayProps {
   node: RecorderNode;
