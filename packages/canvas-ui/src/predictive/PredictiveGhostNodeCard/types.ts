@@ -1,4 +1,4 @@
-import type {PredictiveGhostNode} from '../../state-graph/index.js';
+import type {PredictiveGhostNode} from '@kloks/state-graph/browser';
 
 export interface PredictiveGhostNodeCardProps {
   ghost: PredictiveGhostNode;
