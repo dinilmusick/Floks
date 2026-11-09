@@ -10,3 +10,5 @@ export * from './snapshot.js';
 export * from './frnlThemeAdapter.js';
 export * from './krusbl-promotion.js';
 export * from './monaco.js';
+
+export * from './graph.js';
