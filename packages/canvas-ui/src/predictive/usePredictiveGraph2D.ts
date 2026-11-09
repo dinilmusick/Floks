@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import type {SpaceNode, NodeConnection, PredictiveGhostNode} from '../state-graph/index.js';
-import {computePredictiveGraph} from '../state-graph/index.js';
+import type {SpaceNode, NodeConnection, PredictiveGhostNode} from '@kloks/state-graph/browser';
+import {computePredictiveGraph} from '@kloks/state-graph/browser';
 
 export interface UsePredictiveGraph2DProps {
   nodes: SpaceNode[];
