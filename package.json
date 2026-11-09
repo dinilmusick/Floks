@@ -89,12 +89,12 @@
     "clean": "pnpm -r run clean"
   },
   "dependencies": {
-    "@ultrst-armada/frnlts": "^0.5.6",
+    "@ultrst-armada/frnlts": "^0.5.7",
     "@xyflow/react": "^12.8.6",
     "d3-force": "^3.0.0",
     "zod": "^3.24.1",
     "zustand": "^5.0.3",
-    "@dinilmusick/gutts": "^2.0.0"
+    "@dinilmusick/gutts": "^2.0.1"
   },
   "peerDependencies": {
     "lucide-react": ">=0.300.0",
@@ -107,7 +107,7 @@
     "@types/node": "^22.0.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
-    "@ultrst-armada/frnlts": "^0.5.6",
+    "@ultrst-armada/frnlts": "^0.5.7",
     "happy-dom": "^21.0.3",
     "lucide-react": "^1.55.0",
     "react": "^19.0.1",

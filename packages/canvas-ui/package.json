@@ -76,7 +76,7 @@
   },
   "dependencies": {
     "@floks/ui": "workspace:*",
-    "@ultrst-armada/frnlts": "^0.5.6",
+    "@ultrst-armada/frnlts": "^0.5.7",
     "@floks/contracts": "workspace:*"
   },
   "peerDependencies": {
