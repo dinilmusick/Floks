@@ -83,7 +83,7 @@
   },
   "scripts": {
     "build": "NODE_OPTIONS=--max-old-space-size=4096 pnpm -r --workspace-concurrency=1 run build && NODE_OPTIONS=--max-old-space-size=4096 pnpm --filter @floks/ui run build:types && NODE_OPTIONS=--max-old-space-size=4096 pnpm --filter @floks/canvas-ui run build:types",
-    "postbuild": "node -e \"import('fs').then(fs => { for (const pkg of fs.readdirSync('packages')) { const d = 'packages/' + pkg + '/dist'; if (!fs.existsSync(d)) continue; for (const f of fs.readdirSync(d, { recursive: true })) { const p = d + '/' + f; if (fs.statSync(p).isFile() && (p.endsWith('.js') || p.endsWith('.d.ts'))) { const c = fs.readFileSync(p, 'utf8'); const n = c.replaceAll('@kloks/', '@ultrst-armada/kloks/').replaceAll('@floks/', '@ultrst-armada/floks/').replaceAll('@ultrst/kloks/', '@ultrst-armada/kloks/').replaceAll('@ultrst/floks/', '@ultrst-armada/floks/').replaceAll('\\\"kloks/', '\\\"@ultrst-armada/kloks/').replaceAll('\\'kloks/', '\\'@ultrst-armada/kloks/').replaceAll('\\\"floks/', '\\\"@ultrst-armada/floks/').replaceAll('\\'floks/', '\\'@ultrst-armada/floks/'); if (c !== n) fs.writeFileSync(p, n); } } } })\"",
+    "postbuild": "node scripts/normalize-package-declarations.mjs",
     "test": "vitest run",
     "typecheck": "pnpm -r run typecheck",
     "clean": "pnpm -r run clean",
@@ -103,7 +103,8 @@
   "peerDependencies": {
     "lucide-react": ">=0.300.0",
     "react": "^18.0.0 || ^19.0.0",
-    "react-dom": "^18.0.0 || ^19.0.0"
+    "react-dom": "^18.0.0 || ^19.0.0",
+    "@types/react": "^18.0.0 || ^19.0.0"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^7.0.1",
