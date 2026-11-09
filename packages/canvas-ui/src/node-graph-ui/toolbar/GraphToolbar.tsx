@@ -1,6 +1,6 @@
 'use client';
 import type React from 'react';
-import type { GraphSettings } from '@kloks/state-graph/browser';
+import type { GraphSettings } from '@floks/contracts';
 
 export interface GraphToolbarProps {
   settings: GraphSettings;

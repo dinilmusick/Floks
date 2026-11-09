@@ -1,5 +1,5 @@
 'use client';
-import type { MagneticTraceRecord } from '@kloks/state-graph/browser';
+import type { MagneticTraceRecord } from '@floks/contracts';
 import { SolidifyWidget } from './SolidifyWidget.js';
 
 export interface MagneticTraceLayerProps {

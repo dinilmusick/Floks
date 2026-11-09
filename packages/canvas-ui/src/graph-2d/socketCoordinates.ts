@@ -1,6 +1,6 @@
-import { SpaceNode, UniversalSocketDefinition } from '@kloks/state-graph/browser';
-import { getNodeSockets } from '@kloks/state-graph/browser';
-import { GraphNodeParent } from '@kloks/state-graph/browser';
+import { SpaceNode, UniversalSocketDefinition } from '@floks/contracts';
+import { getNodeSockets } from '@floks/contracts';
+import { GraphNodeParent } from '@floks/contracts';
 import { CameraState } from './types.js';
 
 export interface SocketScreenPosition {

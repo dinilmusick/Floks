@@ -1,6 +1,6 @@
 'use client';
 import type React from 'react';
-import type { NodeDefinition } from '@kloks/state-graph/browser';
+import type { NodeDefinition } from '@floks/contracts';
 
 export interface CanvasContextMenuProps {
   x: number;

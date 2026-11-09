@@ -1,7 +1,7 @@
-import type { BaseNode } from '@kloks/state-graph/browser/browser';
-import type { SolidConnection, ViewLink } from '@kloks/state-graph/browser/browser';
-import type { Trace } from '@kloks/state-graph/browser/browser';
-import type { BaseViewWindow } from '@kloks/state-graph/browser/browser';
+import type { BaseNode } from '@floks/contracts';
+import type { SolidConnection, ViewLink } from '@floks/contracts';
+import type { Trace } from '@floks/contracts';
+import type { BaseViewWindow } from '@floks/contracts';
 
 export interface ReactFlowNodeData {
   nodeId: string;

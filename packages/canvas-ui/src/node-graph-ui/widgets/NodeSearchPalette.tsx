@@ -1,7 +1,7 @@
 'use client';
 import { useState, useMemo } from 'react';
-import type { NodeDefinition } from '@kloks/state-graph/browser';
-import { ConnectionRuleStore } from '@kloks/state-graph/browser';
+import type { NodeDefinition } from '@floks/contracts';
+import { ConnectionRuleStore } from '@floks/contracts';
 import { useSearchKeyboardNavigation, BaseButton, BaseInput } from '@floks/ui';
 
 export interface NodeSearchPaletteProps {

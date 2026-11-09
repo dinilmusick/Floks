@@ -1,6 +1,6 @@
 import React from 'react';
-import { SpaceNode, NodeConnection } from '@kloks/state-graph/browser';
-import { Trace } from '@kloks/state-graph/browser';
+import { SpaceNode, NodeConnection } from '@floks/contracts';
+import { Trace } from '@floks/contracts';
 import { CameraState } from './types.js';
 import { getSocketScreenPosition } from './socketCoordinates.js';
 import { Link2 } from 'lucide-react';

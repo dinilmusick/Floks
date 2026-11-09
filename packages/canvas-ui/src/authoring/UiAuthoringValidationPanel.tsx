@@ -1,5 +1,5 @@
 import React from 'react';
-import type { UIAuthoringValidation } from '@ultrst-armada/kloks/contracts';
+import type { UIAuthoringValidation } from '@floks/contracts';
 
 export function UiAuthoringValidationPanel(props: {
   validation?: UIAuthoringValidation;

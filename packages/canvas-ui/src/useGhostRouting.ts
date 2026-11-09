@@ -7,14 +7,14 @@ import type {
   NodeDefinition,
   GhostNodeRecord,
   GhostTraceRecord,
-} from '@kloks/state-graph/browser';
+} from '@floks/contracts';
 import {
   ConnectionRuleStore,
   GhostStore,
   inferGhostNodes,
   resolveGhostLayout,
   buildGhostTraces,
-} from '@kloks/state-graph/browser';
+} from '@floks/contracts';
 
 export interface UseGhostRoutingParams {
   nodes: GraphNode[];

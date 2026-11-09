@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
-import type { GraphEdge, GraphNode, NodeDefinition, Trace, ViewportState, SolidConnection, SpaceNode, NodeConnection } from '@kloks/state-graph/browser';
-import { ConnectionRuleStore, MagneticGraphManager } from '@kloks/state-graph/browser';
+import type { GraphEdge, GraphNode, NodeDefinition, Trace, ViewportState, SolidConnection, SpaceNode, NodeConnection } from '@floks/contracts';
+import { ConnectionRuleStore, MagneticGraphManager } from '@floks/contracts';
 import { defineFrnlComponent } from '@ultrst-armada/frnlts';
 import { useFrnlComponent } from '@ultrst-armada/frnlts/react';
 import { useFloksFrnlStore } from '@floks/ui';

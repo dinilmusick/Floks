@@ -1,4 +1,4 @@
-import type {PredictiveGhostNode} from '@kloks/state-graph/browser';
+import type {PredictiveGhostNode} from '@floks/contracts';
 
 export interface PredictiveGhostNodeCardProps {
   ghost: PredictiveGhostNode;

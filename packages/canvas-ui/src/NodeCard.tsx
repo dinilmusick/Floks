@@ -1,6 +1,6 @@
 'use client';
 import type React from 'react';
-import type { GraphNode } from '@kloks/state-graph/browser/browser';
+import type { GraphNode } from '@floks/contracts';
 import { MovableSocketView } from './MovableSocketView.js';
 
 export interface NodeCardProps {

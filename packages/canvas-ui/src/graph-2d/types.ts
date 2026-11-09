@@ -1,4 +1,4 @@
-import { SpaceNode, NodeConnection, UniversalSocketDefinition } from '@kloks/state-graph/browser';
+import { SpaceNode, NodeConnection, UniversalSocketDefinition } from '@floks/contracts';
 
 export interface CameraState {
   x: number;

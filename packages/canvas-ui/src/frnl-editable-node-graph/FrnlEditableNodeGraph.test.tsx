@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { ConnectionRuleStore, MagneticGraphManager } from '@kloks/state-graph';
-import type { GraphNode } from '@kloks/state-graph';
+import { ConnectionRuleStore, MagneticGraphManager } from '@floks/contracts';
+import type { GraphNode } from '@floks/contracts';
 import { frnlEditableNodeGraphDefinition } from './FrnlEditableNodeGraph.js';
 
 describe('FRNL Editable Node Graph', () => {

@@ -1,5 +1,5 @@
 import React, {useEffect, useRef, useState} from 'react';
-import type {RecorderNode, SpaceNode, NodeConnection} from '@kloks/state-graph/browser';
+import type {RecorderNode, SpaceNode, NodeConnection} from '@floks/contracts';
 
 export interface RecorderWaveformDisplayProps {
   node: RecorderNode;
