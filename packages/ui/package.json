@@ -114,11 +114,11 @@
   },
   "dependencies": {
     "zod": "^3.24.1",
-    "@ultrst-armada/frnlts": "^0.5.7",
+    "@ultrst-armada/frnlts": "^0.5.8",
     "zustand": "^5.0.3",
     "@xyflow/react": "^12.8.6",
     "d3-force": "^3.0.0",
-    "@dinilmusick/gutts": "^2.0.2"
+    "@dinilmusick/gutts": "^2.0.3"
   },
   "peerDependencies": {
     "lucide-react": ">=0.300.0",
