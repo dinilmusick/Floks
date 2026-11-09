@@ -83,7 +83,6 @@ export interface WorkspaceStorageService {
 export type WorkspaceCreateDialogHiddenField =
   | 'description'
   | 'localFolderName'
-  | 'manageStorage'
   | 'backblaze'
   | 'canonicalFolderPreview';
 
@@ -111,7 +110,6 @@ export interface WorkspaceCreateDialogProps {
   storageOptions?: WorkspaceStorageOption[];
   storageService?: WorkspaceStorageService;
   visibility?: WorkspaceCreateDialogVisibility;
-  onManageStorage?: () => void;
   onClose: () => void;
   onSubmit: (input: WorkspaceCreateInput) => Promise<void> | void;
 }
@@ -269,7 +267,6 @@ export function WorkspaceCreateDialog({
   storageOptions,
   storageService = defaultWorkspaceStorageService,
   visibility,
-  onManageStorage,
   onClose,
   onSubmit,
 }: WorkspaceCreateDialogProps) {
@@ -558,23 +555,7 @@ export function WorkspaceCreateDialog({
                   </option>
                 ))}
               </select>
-              {!hiddenFields.has('backblaze') && (
-                <button
-                  type="button"
-                  onClick={handleSelectBackblaze}
-                  disabled={submitting || loadingBackblazeAccounts}
-                  aria-pressed={backblazeMode}
-                  className="shrink-0 border px-3 text-[10px] font-black uppercase disabled:opacity-50"
-                  style={{ borderColor: backblazeMode ? accent : border, color: backblazeMode ? accent : undefined }}
-                >
-                  Backblaze B2
-                </button>
-              )}
-              {!hiddenFields.has('manageStorage') && onManageStorage && (
-                <button type="button" onClick={onManageStorage} className="shrink-0 border px-3 text-[10px] font-black uppercase" style={{ borderColor: border }}>
-                  Manage
-                </button>
-              )}
+
             </div>
             {!hiddenFields.has('backblaze') && backblazeMode && (
               <div className="mt-3 space-y-2 border-t pt-3" style={{ borderColor: border }}>
