@@ -65,11 +65,12 @@ describe('reusable application modules', () => {
         open
         userId="user-1"
         storageService={storageService}
+        visibility={{ storagePolicy: { providers: ['backblaze_b2'] } }}
         onClose={() => {}}
         onSubmit={async () => {}}
       />,
     );
-    fireEvent.click(screen.getByRole('button', { name: /backblaze b2/i }));
+    fireEvent.change(screen.getByLabelText('Workspace storage'), { target: { value: 'backblaze_external' } });
     expect(await screen.findByText('Archive B2')).toBeInTheDocument();
     fireEvent.change(screen.getByLabelText('Backblaze account'), { target: { value: 'acct-1' } });
     expect(await screen.findByText('workspace-bucket')).toBeInTheDocument();
@@ -108,6 +109,20 @@ describe('reusable application modules', () => {
     );
     expect(screen.getByText('Workspaces')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /docs/i })).toBeInTheDocument();
+  });
+
+  it('forwards an explicit application storage policy through WorkspaceTilesMenu', () => {
+    render(
+      <WorkspaceTilesMenu
+        workspaces={[]}
+        visibility={{ storagePolicy: { providers: ['local_fs'] } }}
+        onSelectWorkspace={() => {}}
+        onCreateWorkspace={async () => {}}
+      />,
+    );
+    fireEvent.click(screen.getByRole('button', { name: /new workspace/i }));
+    expect(screen.getByLabelText('Workspace storage')).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: /local folder/i })).toBeInTheDocument();
   });
 
   it('renders an empty reusable graphs menu without requiring a domain implementation', () => {
