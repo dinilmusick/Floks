@@ -21,9 +21,9 @@ describe("Floks browser/server dependency boundary", () => {
       expect(pkg.peerDependencies ?? {}).not.toHaveProperty("@ultrst-armada/kloks");
       expect(pkg.peerDependencies ?? {}).not.toHaveProperty("@ultrst-armada/krnl");
     }
-    expect(rootPkg.dependencies["@dinilmusick/gutts"]).toBe("^2.0.2");
-    expect(uiPkg.dependencies["@dinilmusick/gutts"]).toBe("^2.0.2");
-    expect(rootPkg.dependencies["@ultrst-armada/frnlts"]).toBe("^0.5.7");
+    expect(rootPkg.dependencies["@dinilmusick/gutts"]).toBe("^2.0.3");
+    expect(uiPkg.dependencies["@dinilmusick/gutts"]).toBe("^2.0.3");
+    expect(rootPkg.dependencies["@ultrst-armada/frnlts"]).toBe("^0.5.8");
   });
 
   it("keeps workspace storage as an injected Kloks boundary with no app-specific HTTP routes", () => {
@@ -41,10 +41,12 @@ describe("Floks browser/server dependency boundary", () => {
 
   it("uses the Krusbl canonical ecosystem policy snapshot for Floks boundary checks", () => {
     const policy = readJson("policies/ecosystem-architecture.json");
-    expect(policy.levels["@ultrst-armada/floks"]).toBe(2);
-    expect(policy.edges).toContainEqual(["@ultrst-armada/floks", "@dinilmusick/gutts"]);
-    expect(policy.edges).toContainEqual(["@ultrst-armada/floks", "@ultrst-armada/frnlts"]);
-    expect(policy.edges).not.toContainEqual(["@ultrst-armada/floks", "@ultrst-armada/kloks"]);
+    const levels = policy.levels ?? policy.legacy?.levels;
+    const edges = policy.edges ?? policy.legacy?.edges;
+    expect(levels["@ultrst-armada/floks"]).toBe(2);
+    expect(edges).toContainEqual(["@ultrst-armada/floks", "@dinilmusick/gutts"]);
+    expect(edges).toContainEqual(["@ultrst-armada/floks", "@ultrst-armada/frnlts"]);
+    expect(edges).not.toContainEqual(["@ultrst-armada/floks", "@ultrst-armada/kloks"]);
     expect(fs.existsSync(path.join(root, "architecture-boundary.json"))).toBe(false);
   });
 
