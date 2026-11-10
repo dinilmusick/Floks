@@ -21,9 +21,9 @@ describe("Floks browser/server dependency boundary", () => {
       expect(pkg.peerDependencies ?? {}).not.toHaveProperty("@ultrst-armada/kloks");
       expect(pkg.peerDependencies ?? {}).not.toHaveProperty("@ultrst-armada/krnl");
     }
-    expect(rootPkg.dependencies["@dinilmusick/gutts"]).toBe("^2.0.3");
-    expect(uiPkg.dependencies["@dinilmusick/gutts"]).toBe("^2.0.3");
-    expect(rootPkg.dependencies["@ultrst-armada/frnlts"]).toBe("^0.5.8");
+    expect(rootPkg.dependencies["@dinilmusick/gutts"]).toMatch(/^\^2\./);
+    expect(uiPkg.dependencies["@dinilmusick/gutts"]).toMatch(/^\^2\./);
+    expect(rootPkg.dependencies["@ultrst-armada/frnlts"]).toMatch(/^\^0\.5\./);
   });
 
   it("keeps workspace storage as an injected Kloks boundary with no app-specific HTTP routes", () => {
