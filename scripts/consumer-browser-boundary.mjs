@@ -34,11 +34,11 @@ const forbiddenBuiltins = [
   "zlib",
 ];
 const forbiddenImport = new RegExp(
-  String.raw`(?:from\\s*|import\\s*(?:\\(\\s*)?|require\\s*\\()\\s*["'](node:[^"']+|${forbiddenBuiltins.join("|")})(?:/[^"']*)?["']`,
+  String.raw`(?:from\s*|import\s*(?:\(\s*)?|require\s*\()\s*["'](node:[^"']+|${forbiddenBuiltins.join("|")})(?:/[^"']*)?["']`,
 );
 const forbiddenPackageImport = new RegExp(
-  String.raw`(?:from\\s*|import\\s*(?:\\(\\s*)?|require\\s*\\()\\s*["'](?:${forbiddenPackages
-    .map((name) => name.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\\\$&").replace(/\\\\\*/g, "[^/]+"))
+  String.raw`(?:from\s*|import\s*(?:\(\s*)?|require\s*\()\s*["'](?:${forbiddenPackages
+    .map((name) => name.replace(/[|\\{}()[\\]^$+?.]/g, "\\$&").replaceAll("*", "[^/]+"))
     .join("|")})(?:/[^"']*)?["']`,
 );
 
