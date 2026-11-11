@@ -23,5 +23,7 @@ jobs:
       - run: pnpm build
       - run: pnpm typecheck
       - run: pnpm test
+      - name: Build published UI, canvas and contracts as browser and Worker consumers
+        run: pnpm test:consumer-browser
       - name: Inspect published package contents
         run: npm pack --dry-run
