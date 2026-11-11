@@ -12,8 +12,8 @@ importers:
         specifier: ^2.0.3
         version: 2.0.3(@aws-sdk/client-s3@3.1164.0)(@huggingface/transformers@4.3.2(@types/node@22.20.5))(cactus-needle@0.3.0)(googleapis@189.0.0)
       '@ultrst-armada/frnlts':
-        specifier: ^0.5.21
-        version: 0.5.21(@aws-sdk/client-s3@3.1164.0)(@huggingface/transformers@4.3.2(@types/node@22.20.5))(@types/react@19.3.0)(cactus-needle@0.3.0)(googleapis@189.0.0)(react@19.3.0)(use-sync-external-store@1.7.0(react@19.3.0))
+        specifier: ^0.5.22
+        version: 0.5.22(@aws-sdk/client-s3@3.1164.0)(@huggingface/transformers@4.3.2(@types/node@22.20.5))(@types/react@19.3.0)(cactus-needle@0.3.0)(googleapis@189.0.0)(react@19.3.0)(use-sync-external-store@1.7.0(react@19.3.0))
       '@xyflow/react':
         specifier: ^12.8.6
         version: 12.12.0(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
@@ -82,8 +82,8 @@ importers:
         specifier: workspace:*
         version: link:../ui
       '@ultrst-armada/frnlts':
-        specifier: ^0.5.21
-        version: 0.5.21(@aws-sdk/client-s3@3.1164.0)(@huggingface/transformers@4.3.2(@types/node@22.20.5))(@types/react@19.3.0)(cactus-needle@0.3.0)(googleapis@189.0.0)(react@19.3.0)(use-sync-external-store@1.7.0(react@19.3.0))
+        specifier: ^0.5.22
+        version: 0.5.22(@aws-sdk/client-s3@3.1164.0)(@huggingface/transformers@4.3.2(@types/node@22.20.5))(@types/react@19.3.0)(cactus-needle@0.3.0)(googleapis@189.0.0)(react@19.3.0)(use-sync-external-store@1.7.0(react@19.3.0))
       monaco-editor:
         specifier: ^0.50.0
         version: 0.50.0
@@ -103,8 +103,8 @@ importers:
         specifier: ^2.0.3
         version: 2.0.3(@aws-sdk/client-s3@3.1164.0)(@huggingface/transformers@4.3.2(@types/node@22.20.5))(cactus-needle@0.3.0)(googleapis@189.0.0)
       '@ultrst-armada/frnlts':
-        specifier: ^0.5.21
-        version: 0.5.21(@aws-sdk/client-s3@3.1164.0)(@huggingface/transformers@4.3.2(@types/node@22.20.5))(@types/react@19.3.0)(cactus-needle@0.3.0)(googleapis@189.0.0)(react@19.3.0)(use-sync-external-store@1.7.0(react@19.3.0))
+        specifier: ^0.5.22
+        version: 0.5.22(@aws-sdk/client-s3@3.1164.0)(@huggingface/transformers@4.3.2(@types/node@22.20.5))(@types/react@19.3.0)(cactus-needle@0.3.0)(googleapis@189.0.0)(react@19.3.0)(use-sync-external-store@1.7.0(react@19.3.0))
       '@xyflow/react':
         specifier: ^12.8.6
         version: 12.12.0(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
@@ -1041,8 +1041,8 @@ packages:
   '@types/ws@8.18.2':
     resolution: {integrity: sha512-67MQl+fpWKVTT1NYdnmo3U4sc/xPo/zQBncVnI74qmQa0z/b+1g6iYqNmGCPbxO+zz2aklb08a0oHfegiVd0/w==}
 
-  '@ultrst-armada/frnlts@0.5.21':
-    resolution: {integrity: sha512-FdATiauI7BZuAO5F/W9UWFV6KRqt+UsfQyv5y+13J7MT9k69XP0b6S7tJ8Rx+BP4mGBI2orXrL9sDCT6srmH6w==}
+  '@ultrst-armada/frnlts@0.5.22':
+    resolution: {integrity: sha512-S5O3p2AJX4PVG6+uoayx3FSrNEgf/z0I+Ycf9k7J8QKN+FEOk8lUdGhyewslhr9mXZQ52u3fEKDw4aEqgJPZEw==}
     engines: {node: '>=20.0.0'}
     hasBin: true
     peerDependencies:
@@ -2701,7 +2701,7 @@ snapshots:
     dependencies:
       '@types/node': 22.20.5
 
-  '@ultrst-armada/frnlts@0.5.21(@aws-sdk/client-s3@3.1164.0)(@huggingface/transformers@4.3.2(@types/node@22.20.5))(@types/react@19.3.0)(cactus-needle@0.3.0)(googleapis@189.0.0)(react@19.3.0)(use-sync-external-store@1.7.0(react@19.3.0))':
+  '@ultrst-armada/frnlts@0.5.22(@aws-sdk/client-s3@3.1164.0)(@huggingface/transformers@4.3.2(@types/node@22.20.5))(@types/react@19.3.0)(cactus-needle@0.3.0)(googleapis@189.0.0)(react@19.3.0)(use-sync-external-store@1.7.0(react@19.3.0))':
     dependencies:
       '@dinilmusick/gutts': 2.0.3(@aws-sdk/client-s3@3.1164.0)(@huggingface/transformers@4.3.2(@types/node@22.20.5))(cactus-needle@0.3.0)(googleapis@189.0.0)
       react: 19.3.0
