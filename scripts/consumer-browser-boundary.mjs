@@ -75,6 +75,13 @@ try {
     fs.symlinkSync(target, path.join(floksScope, name), "dir");
   }
 
+  const declarationFiles = walk(packedPackage).filter((file) => file.endsWith(".d.ts"));
+  for (const file of declarationFiles) {
+    const declarations = fs.readFileSync(file, "utf8");
+    if (forbiddenImport.test(declarations)) failures.push(path.relative(root, file) + " contains a Node builtin type import");
+    if (forbiddenPackageImport.test(declarations)) failures.push(path.relative(root, file) + " contains a backend package type import");
+  }
+
   for (const [entryName, specifier] of entries) {
     const entry = path.join(consumerDir, entryName + ".mjs");
     fs.writeFileSync(entry, [
