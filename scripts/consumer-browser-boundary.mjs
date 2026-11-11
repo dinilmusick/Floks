@@ -102,15 +102,27 @@ try {
         ...forbiddenPackages,
         "node:*", ...forbiddenBuiltins,
       ];
-      const args = [
-        "exec", "tsup", entry,
-        "--format", "esm",
-        "--platform", platform,
-        "--target", "es2022",
-        "--out-dir", outDir,
-        ...external.flatMap((name) => ["--external", name]),
-      ];
-      run("pnpm", args);
+      const configPath = path.join(temp, "tsup-" + platform + "-" + entryName + ".config.mjs");
+      const configSource = `
+export default {
+  entry: [${JSON.stringify(entry)}],
+  format: ["esm"],
+  platform: ${JSON.stringify(platform)},
+  target: "es2022",
+  outDir: ${JSON.stringify(outDir)},
+  external: ${JSON.stringify(external)},
+  esbuildOptions(options) {
+    options.alias = {
+      ...options.alias,
+      "@ultrst-armada/floks/ui": ${JSON.stringify(path.join(packedPackage, "packages/ui/dist/index.js"))},
+      "@ultrst-armada/floks/contracts": ${JSON.stringify(path.join(packedPackage, "packages/contracts/dist/index.js"))},
+      "@ultrst-armada/floks/canvas-ui": ${JSON.stringify(path.join(packedPackage, "packages/canvas-ui/dist/index.js"))},
+    };
+  },
+};
+`;
+      fs.writeFileSync(configPath, configSource);
+      run("pnpm", ["exec", "tsup", "--config", configPath]);
       const outputFiles = walk(outDir);
       if (outputFiles.length === 0) throw new Error("No " + platform + " bundle emitted for " + specifier);
       for (const file of outputFiles) {
