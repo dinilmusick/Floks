@@ -107,7 +107,6 @@ try {
         "--format", "esm",
         "--platform", platform,
         "--target", "es2022",
-        "--bundle",
         "--out-dir", outDir,
         ...external.flatMap((name) => ["--external", name]),
       ];
