@@ -22,6 +22,8 @@ const forbiddenPackages = [
   "@ultrst-armada/kloks", "@ultrst-armada/kloks/*",
   "@ultrst-armada/krnl", "@ultrst-armada/krnl/*",
   "@kloks/*", "@krnl/*",
+  "@dinilmusick/gutts/server", "@dinilmusick/gutts/node",
+  "@ultrst-armada/frnlts/server", "@ultrst-armada/frnlts/node",
   "@aws-sdk/*", "googleapis", "@google-cloud/*",
   "@cloudflare/*", "@vercel/*",
 ];
