@@ -38,7 +38,7 @@ const forbiddenImport = new RegExp(
 );
 const forbiddenPackageImport = new RegExp(
   String.raw`(?:from\s*|import\s*(?:\(\s*)?|require\s*\()\s*["'](?:${forbiddenPackages
-    .map((name) => name.replace(/[|\\{}()[\\]^$+?.]/g, "\\$&").replaceAll("*", "[^/]+"))
+    .map((name) => name.replaceAll("*", "\\u0000").replace(/[.*+?^${}()|[\\]\\\\]/g, "\\\\    .map((name) => name.replace(/[|\\{}()[\\]^$+?.]/g, "\\$&").replaceAll("*", "[^/]+"))").replaceAll("\\u0000", "[^/]+"))
     .join("|")})(?:/[^"']*)?["']`,
 );
 
