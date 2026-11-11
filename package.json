@@ -90,7 +90,8 @@
     "clean": "pnpm -r run clean",
     "boundary": "node scripts/architecture-boundary.mjs",
     "boundary:clean-room": "node scripts/clean-room-boundary.mjs",
-    "boundary:relative": "node scripts/relative-package-boundary.mjs"
+    "boundary:relative": "node scripts/relative-package-boundary.mjs",
+    "test:consumer-browser": "node scripts/consumer-browser-boundary.mjs"
   },
   "dependencies": {
     "@ultrst-armada/frnlts": "^0.5.21",
