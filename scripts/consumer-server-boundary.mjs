@@ -70,7 +70,7 @@ try {
   const probe = path.join(consumer, "universal-consumer.mjs");
   fs.writeFileSync(probe, "import * as api from " + JSON.stringify(universalEntries[1]) + ";\nconsole.log(Object.keys(api).length);\n");
   const esbuild = path.join(root, "node_modules", ".bin", process.platform === "win32" ? "esbuild.cmd" : "esbuild");
-  const forbidden = /(?:node:|from\\s*["'](?:react|react-dom|@xyflow\\/react|d3-force|zustand|lucide-react|@ultrst-armada\\/frnlts|@dinilmusick\\/gutts)|\\.css(?:["']|\\?))/;
+  const forbidden = /(?:node:|from\s*["'](?:react|react-dom|@xyflow\/react|d3-force|zustand|lucide-react|@ultrst-armada\/frnlts|@dinilmusick\/gutts)|\.css(?:["']|\?))/;
   for (const platform of ["browser", "node"]) {
     const output = path.join(temporary, platform + "-universal.mjs");
     run(esbuild, [probe, "--bundle", "--platform=" + platform, "--format=esm", "--target=es2022", "--conditions=worker,browser,import", "--outfile=" + output], consumer);
