@@ -1,21 +1,23 @@
 # Runtime compatibility contract
 
-| Environment | Surface | Status | Evidence / limitation |
+| Environment | Supported surface | Status | Boundary |
 |---|---|---|---|
-| Browser | `/ui`, `/canvas-ui`, UI subpaths | Intended browser surfaces; actual browser execution required | React, XYFlow, D3 and CSS are browser-oriented dependencies. |
-| Node.js | package metadata, declarations and build tooling | Import-time safety unverified | CSS and browser-only dependencies must not break Node tooling or SSR imports. |
-| Cloudflare Workers | No dedicated Worker export | Unsupported / unverified | UI packages are not Worker server runtimes. |
-| Build-time tooling | package build and type generation | Node.js tooling | Keep bundler, CSS processing and code-generation dependencies out of runtime entry points. |
-| TypeScript consumers | root, ui, canvas-ui, contracts and named UI subpaths | Declared; clean-consumer verification required | Each export must resolve to shipped JS/CSS and declarations as applicable. |
+| Browser | `/ui`, `/canvas-ui`, `/ai`, `/auth` and named UI subpaths | Supported | React, XYFlow, D3, Monaco, drag/drop and CSS belong to browser-facing exports. |
+| Node.js / Vercel / Google Cloud Run | `/contracts` and `/universal` | Supported for contract/schema/graph utilities | These entrypoints must execute and bundle without installing or importing browser peers. |
+| Cloudflare Workers | `/contracts` and `/universal` | Supported for contract/schema/graph utilities | The universal dependency closure must remain free of Node builtins, DOM renderers and CSS. |
+| Node.js SSR | `/contracts` and `/universal` | Supported | The aggregate root and UI exports are browser-facing and are not server-safe entrypoints. |
+| TypeScript consumers | Every declared export | Supported when the corresponding entrypoint is used | Export targets and declarations must exist in the packed npm artifact. |
 
-## Boundary rules
+## Import boundaries
 
-- Browser UI exports may depend on browser-compatible React/UI packages.
-- CSS exports are assets, not JavaScript entry points; do not include them in pure Node import probes.
+- Use `@ultrst-armada/floks/contracts` or `@ultrst-armada/floks/universal` from server routes, Vercel functions, Cloud Run services, Cloudflare Workers and other non-browser code.
+- The root export (`@ultrst-armada/floks`) remains an aggregate browser-facing API. It re-exports UI and canvas components and must not be imported by server-only modules.
+- Use `@ultrst-armada/floks/ui` and `@ultrst-armada/floks/canvas-ui` only from browser-facing application code.
+- Browser runtime dependencies are optional peer dependencies at the aggregate package boundary. Browser applications must provide the peers they use (React, React DOM, Lucide, FrnlTS, GutTS, XYFlow, D3 Force and Zustand). They are not installed merely because a server consumer installs the package for `/contracts` or `/universal`.
+- CSS exports are assets, not JavaScript entrypoints. Import them explicitly from browser application stylesheets.
 - UI package import-time initialization must not access `window`, `document`, `navigator` or `localStorage` before a component is mounted.
 - Floks UI packages must not acquire Kloks/Krnl backend implementation dependencies.
-- Worker compatibility is not claimed for UI packages.
 
 ## Verification gates
 
-Use a real browser-compatible test environment to mount representative UI and canvas components. Separately verify Node import-time safety for any subpath advertised for SSR or build tooling. Compile clean TypeScript consumers against every public UI and contracts subpath.
+CI builds and tests the monorepo, then packs the actual npm artifact into an isolated consumer. The server consumer test installs the tarball without optional browser peers, imports both universal entrypoints in Node, bundles the universal graph with Node and Worker conditions, checks that browser peers remain absent, and validates published CSS export targets. The browser consumer test separately verifies browser and neutral builds for the UI, canvas and contracts surfaces.
