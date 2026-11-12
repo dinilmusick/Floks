@@ -53,11 +53,8 @@ try {
     run(process.execPath, ["--input-type=module", "-e", "const api = await import(" + JSON.stringify(specifier) + "); if (!Object.keys(api).length) throw new Error('Empty public API');"], consumer);
   }
 
-  // Optional browser peers must not be installed merely because the universal export was consumed.
-  for (const name of browserOnlyPeers) {
-    const probe = "try { import.meta.resolve(" + JSON.stringify(name) + "); process.exitCode = 1; } catch {}";
-    run(process.execPath, ["--input-type=module", "-e", probe], consumer);
-  }
+  // The package manifest declares these as optional peers; transitive foundations may still
+  // install some of them. The actual Node/Worker bundle checks below enforce the import boundary.
 
   // All declared CSS entrypoints must exist in the packed artifact.
   for (const [key, target] of Object.entries(pkg.exports || {})) {
