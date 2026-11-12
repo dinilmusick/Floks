@@ -66,13 +66,35 @@ try {
   // CSS, DOM-renderer, Node-builtin, and browser-only package edges in the server-safe graph.
   const probe = path.join(consumer, "universal-consumer.mjs");
   fs.writeFileSync(probe, "import * as api from " + JSON.stringify(universalEntries[1]) + ";\nconsole.log(Object.keys(api).length);\n");
-  const esbuild = path.join(root, "node_modules", ".bin", process.platform === "win32" ? "esbuild.cmd" : "esbuild");
   const forbidden = /(?:node:|from\s*["'](?:react|react-dom|@xyflow\/react|d3-force|zustand|lucide-react|@ultrst-armada\/frnlts|@dinilmusick\/gutts)|\.css(?:["']|\?))/;
   for (const platform of ["browser", "node"]) {
-    const output = path.join(temporary, platform + "-universal.mjs");
-    run(esbuild, [probe, "--bundle", "--platform=" + platform, "--format=esm", "--target=es2022", "--conditions=worker,browser,import", "--outfile=" + output], consumer);
-    const bundle = fs.readFileSync(output, "utf8");
-    assert(!forbidden.test(bundle), platform + " universal bundle contains a forbidden browser/CSS/Node dependency edge");
+    const outDir = path.join(temporary, platform + "-bundle");
+    const configPath = path.join(temporary, "tsup-" + platform + ".config.mjs");
+    const config = `export default {
+      entry: [${JSON.stringify(probe)}],
+      format: ["esm"],
+      platform: ${JSON.stringify(platform)},
+      target: "es2022",
+      outDir: ${JSON.stringify(outDir)},
+      clean: true,
+      splitting: false,
+      esbuildOptions(options) {
+        options.conditions = ["worker", "browser", "import"];
+      },
+    };\n`;
+    fs.writeFileSync(configPath, config);
+    run("pnpm", ["exec", "tsup", "--config", configPath], root);
+    const bundles = [];
+    const walk = (dir) => {
+      for (const entry of fs.readdirSync(dir, {withFileTypes: true})) {
+        const file = path.join(dir, entry.name);
+        if (entry.isDirectory()) walk(file);
+        else if (file.endsWith(".js") || file.endsWith(".mjs")) bundles.push(fs.readFileSync(file, "utf8"));
+      }
+    };
+    walk(outDir);
+    assert(bundles.length > 0, platform + " universal bundle was not emitted");
+    for (const bundle of bundles) assert(!forbidden.test(bundle), platform + " universal bundle contains a forbidden browser/CSS/Node dependency edge");
   }
 
   if (failures.length) {
