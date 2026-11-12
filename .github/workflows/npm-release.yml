@@ -167,8 +167,8 @@ jobs:
               for (const file of fs.readdirSync('.changeset').filter(f => f.endsWith('.md') && f !== 'README.md')) {
                 const text = fs.readFileSync('.changeset/' + file, 'utf8');
                 const front = text.split('---').slice(1, 2)[0] || '';
-                const line = front.split('\\n').find(value => value.includes(pkg.name));
-                const match = line?.match(/:\\s*(major|minor|patch)\\s*$/);
+                const line = front.split('\n').find(value => value.includes(pkg.name));
+                const match = line?.match(/:\s*(major|minor|patch)\s*$/);
                 if (match && (!selected || order[match[1]] > order[selected])) selected = match[1];
               }
             }
