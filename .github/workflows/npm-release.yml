@@ -173,7 +173,7 @@ jobs:
               }
             }
             process.stdout.write(selected);
-            NODE
+          NODE
 
             BUMP="$(cat "$RUNNER_TEMP/krusbl-bump")"
             if [ -z "$BUMP" ]; then
