@@ -13,8 +13,6 @@ const consumer = path.join(temporary, "consumer");
 const packageName = pkg.name;
 const universalEntries = [packageName + "/contracts", packageName + "/universal"];
 const browserOnlyPeers = [
-  "@ultrst-armada/frnlts",
-  "@dinilmusick/gutts",
   "@xyflow/react",
   "d3-force",
   "zustand",
