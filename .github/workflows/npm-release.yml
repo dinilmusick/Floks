@@ -74,10 +74,13 @@ jobs:
             const pkg = JSON.parse(fs.readFileSync(file, 'utf8'));
             const name = '@dinilmusick/gutts';
             pkg.dependencies ??= {};
-            if (!pkg.dependencies[name] && !pkg.devDependencies?.[name] && !pkg.optionalDependencies?.[name]) {
-              pkg.dependencies[name] = '^' + process.env.GUT_VERSION;
+            if (!pkg.dependencies[name] && !pkg.devDependencies?.[name] && !pkg.optionalDependencies?.[name] && !pkg.peerDependencies?.[name]) {
+              pkg.peerDependencies ??= {};
+              pkg.peerDependenciesMeta ??= {};
+              pkg.peerDependencies[name] = '^' + process.env.GUT_VERSION;
+              pkg.peerDependenciesMeta[name] = { optional: true };
               fs.writeFileSync(file, JSON.stringify(pkg, null, 2) + '\n');
-              console.log('Added public GutTS dependency at ' + pkg.dependencies[name]);
+              console.log('Added optional public GutTS peer at ' + pkg.peerDependencies[name]);
             }
           NODE
           fi
