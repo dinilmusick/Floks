@@ -148,36 +148,56 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          BUMP=""
-          node --input-type=module <<'NODE' > "$RUNNER_TEMP/krusbl-bump"
-          import fs from 'node:fs';
-          const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
-          const order = { patch: 1, minor: 2, major: 3 };
-          let selected = '';
-          if (fs.existsSync('.changeset')) {
-            for (const file of fs.readdirSync('.changeset').filter(f => f.endsWith('.md') && f !== 'README.md')) {
-              const text = fs.readFileSync('.changeset/' + file, 'utf8');
-              const front = text.split('---').slice(1, 2)[0] || '';
-              const line = front.split('\n').find(value => value.includes(pkg.name));
-              const match = line?.match(/:\s*(major|minor|patch)\s*$/);
-              if (match && (!selected || order[match[1]] > order[selected])) selected = match[1];
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          # A concurrent dependency-sync push can advance main while this release job
+          # is running. Re-read main and re-apply the version bump instead of failing
+          # with a non-fast-forward push or dropping a pending changeset.
+          for attempt in 1 2 3; do
+            git fetch origin main
+            git reset --hard origin/main
+
+            node --input-type=module <<'NODE' > "$RUNNER_TEMP/krusbl-bump"
+            import fs from 'node:fs';
+            const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+            const order = { patch: 1, minor: 2, major: 3 };
+            let selected = '';
+            if (fs.existsSync('.changeset')) {
+              for (const file of fs.readdirSync('.changeset').filter(f => f.endsWith('.md') && f !== 'README.md')) {
+                const text = fs.readFileSync('.changeset/' + file, 'utf8');
+                const front = text.split('---').slice(1, 2)[0] || '';
+                const line = front.split('\\n').find(value => value.includes(pkg.name));
+                const match = line?.match(/:\\s*(major|minor|patch)\\s*$/);
+                if (match && (!selected || order[match[1]] > order[selected])) selected = match[1];
+              }
             }
-          }
-          process.stdout.write(selected);
-          NODE
-          BUMP="$(cat "$RUNNER_TEMP/krusbl-bump")"
-          if [ -n "$BUMP" ]; then
+            process.stdout.write(selected);
+            NODE
+
+            BUMP="$(cat "$RUNNER_TEMP/krusbl-bump")"
+            if [ -z "$BUMP" ]; then
+              echo "No pending Krusbl changeset found on latest main."
+              echo "changed=false" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+
             npm version "$BUMP" --no-git-tag-version
             find .changeset -maxdepth 1 -type f -name '*.md' ! -name README.md -delete
-            git config user.name "github-actions[bot]"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
             git add -A package.json pnpm-lock.yaml .changeset
             git commit -m "chore(release): apply Krusbl changeset [skip ci]"
-            git push origin HEAD:main
-            echo "changed=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "changed=false" >> "$GITHUB_OUTPUT"
-          fi
+
+            if git push origin HEAD:main; then
+              echo "Applied $BUMP changeset and pushed release version."
+              echo "changed=true" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+
+            echo "main advanced during release attempt $attempt; retrying against latest main."
+          done
+
+          echo "Could not apply changeset after three fast-forward retries." >&2
+          exit 1
 
       - name: Validate package metadata
         id: package
