@@ -100,6 +100,8 @@
     "test:consumer-server": "node scripts/consumer-server-boundary.mjs"
   },
   "dependencies": {
+    "@dinilmusick/gutts": "^2.0.3",
+    "@ultrst-armada/frnlts": "^0.5.22",
     "zod": "^3.24.1"
   },
   "peerDependencies": {
@@ -107,11 +109,9 @@
     "react": "^18.0.0 || ^19.0.0",
     "react-dom": "^18.0.0 || ^19.0.0",
     "@types/react": "^18.0.0 || ^19.0.0",
-    "@ultrst-armada/frnlts": "^0.5.22",
     "@xyflow/react": "^12.8.6",
     "d3-force": "^3.0.0",
-    "zustand": "^5.0.3",
-    "@dinilmusick/gutts": "^2.0.3"
+    "zustand": "^5.0.3"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^7.0.1",
@@ -152,9 +152,6 @@
     "@types/react": {
       "optional": true
     },
-    "@ultrst-armada/frnlts": {
-      "optional": true
-    },
     "@xyflow/react": {
       "optional": true
     },
@@ -162,9 +159,6 @@
       "optional": true
     },
     "zustand": {
-      "optional": true
-    },
-    "@dinilmusick/gutts": {
       "optional": true
     }
   }
