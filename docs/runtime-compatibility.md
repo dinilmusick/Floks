@@ -13,7 +13,7 @@
 - Use `@ultrst-armada/floks/contracts` or `@ultrst-armada/floks/universal` from server routes, Vercel functions, Cloud Run services, Cloudflare Workers and other non-browser code.
 - The root export (`@ultrst-armada/floks`) remains an aggregate browser-facing API. It re-exports UI and canvas components and must not be imported by server-only modules.
 - Use `@ultrst-armada/floks/ui` and `@ultrst-armada/floks/canvas-ui` only from browser-facing application code.
-- Browser runtime dependencies are optional peer dependencies at the aggregate package boundary. Browser applications must provide the peers they use (React, React DOM, Lucide, FrnlTS, GutTS, XYFlow, D3 Force and Zustand). They are not installed merely because a server consumer installs the package for `/contracts` or `/universal`.
+- Browser runtime dependencies are optional peer dependencies at the aggregate package boundary. Browser applications must provide the peers they use (React, React DOM, Lucide, XYFlow, D3 Force and Zustand). The canonical GutTS and FrnlTS runtime dependencies remain declared as required ecosystem edges; they are not bundled into the `/contracts` or `/universal` entrypoint dependency closure.
 - CSS exports are assets, not JavaScript entrypoints. Import them explicitly from browser application stylesheets.
 - UI package import-time initialization must not access `window`, `document`, `navigator` or `localStorage` before a component is mounted.
 - Floks UI packages must not acquire Kloks/Krnl backend implementation dependencies.
