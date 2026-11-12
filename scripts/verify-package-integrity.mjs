@@ -70,8 +70,13 @@ try {
   const publicSpecifiers = Object.keys(packedManifest.exports || {}).filter((key) => !key.includes("*") && !/\.(css|json)$/.test(key)).map((key) => packedManifest.name + (key === "." ? "" : key.slice(1)));
   const resolveProgram = "for (const specifier of " + JSON.stringify(publicSpecifiers) + ") await import.meta.resolve(specifier);";
   run("node", ["--input-type=module", "-e", resolveProgram], consumer);
-  const rootTypeSmoke = "import * as rootSurface from " + JSON.stringify(packedManifest.name) + "; void rootSurface;\n";
-  await writeFile(path.join(consumer, "consumer-smoke.ts"), rootTypeSmoke);
+  // The clean consumer intentionally installs no optional browser peers. Type-check only
+  // server-safe public surfaces here; the full browser declaration graph is checked below
+  // in a separate consumer that installs the declared optional peers.
+  const serverTypeSmoke = ["contracts", "universal"].map((subpath, index) =>
+    "import * as serverSurface" + index + " from " + JSON.stringify(packedManifest.name + "/" + subpath) + "; void serverSurface" + index + ";"
+  ).join("\\n") + "\\n";
+  await writeFile(path.join(consumer, "consumer-smoke.ts"), serverTypeSmoke);
   run(path.join(consumer, "node_modules", ".bin", "tsc"), ["--noEmit", "--module", "NodeNext", "--moduleResolution", "NodeNext", "--target", "ES2022", "--resolveJsonModule", "--esModuleInterop", "consumer-smoke.ts"], consumer);
   const typedConsumer = path.join(temp, "consumer-with-optional-peers");
   await import("node:fs/promises").then(({ mkdir }) => mkdir(typedConsumer));
