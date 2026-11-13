@@ -108,9 +108,9 @@ const VARIANT_STYLES: Record<FrnlButtonVariant, React.CSSProperties> = {
     color: 'var(--skipo-text-muted, #94a3b8)',
   },
   accent: {
-    backgroundColor: 'var(--skipo-accent, #38bdf8)',
-    borderColor: 'var(--skipo-accent-contrast, #0284c7)',
-    color: '#000000',
+    backgroundColor: 'var(--skipo-accent, #d4af37)',
+    borderColor: 'var(--skipo-accent-contrast, var(--skipo-border-color, #3b4250))',
+    color: 'var(--skipo-accent-fg, #000000)',
     fontWeight: 700,
   },
   dock: {
