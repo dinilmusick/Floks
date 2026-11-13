@@ -101,7 +101,7 @@
     "verify:npm-trusted-publishing": "node scripts/verify-npm-trusted-publishing.mjs"
   },
   "dependencies": {
-    "@dinilmusick/gutts": "^2.0.3",
+    "@dinilmusick/gutts": "^2.1.0",
     "@ultrst-armada/frnlts": "^0.5.23",
     "zod": "^3.24.1"
   },
