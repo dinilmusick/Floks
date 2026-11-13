@@ -36,6 +36,7 @@
   /* Semantic accents */
   --skipo-accent:      #d4af37;
   --skipo-accent-fg:   #000000;
+  --skipo-accent-contrast: #b89628;
   --skipo-accent-glow: 0 0 14px rgba(212, 175, 55, 0.45);
   --skipo-rune-glow:   0 0 14px rgba(212, 163, 89, 0.35);
   --skipo-ambient-glow: 0 0 10px rgba(255, 255, 255, 0.12);
