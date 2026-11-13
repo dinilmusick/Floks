@@ -1,37 +1,6 @@
-@import "tailwindcss";
+/* Canonical Tailwind source registration for Floks consumers.
+   The consuming Skipo app owns the Tailwind runtime/import. */
 @source "../components";
 @source "../frnl";
 @source "../theme";
-
 @import "../theme/tokens.css";
-
-html,
-body,
-#root {
-  min-height: 100%;
-  width: 100%;
-  margin: 0;
-}
-
-body {
-  background: var(--skipo-bg);
-  color: var(--skipo-text);
-  font-family: var(--skipo-font);
-}
-
-*,
-*::before,
-*::after {
-  box-sizing: border-box;
-}
-
-button,
-input,
-textarea,
-select {
-  font: inherit;
-}
-
-button:disabled {
-  cursor: not-allowed;
-}
