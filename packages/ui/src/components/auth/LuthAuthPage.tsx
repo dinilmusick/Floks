@@ -31,6 +31,8 @@ export interface LuthAuthPageProps extends Omit<AuthPageProps, 'onLogin' | 'onRe
   authenticatedContent?: React.ReactNode | ((auth: UseLuthAuthResult) => React.ReactNode);
   unauthenticatedContent?: React.ReactNode;
   loadingContent?: React.ReactNode;
+  /** When provided, renders a "CONTINUE AS GUEST" button on the auth page. */
+  onContinueAsGuest?: () => void;
 }
 
 export function createLuthAuthClientForApplication(input: LuthAuthConfig): LuthAuthClient {

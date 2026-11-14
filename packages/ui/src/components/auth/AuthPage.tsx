@@ -21,6 +21,7 @@ export interface AuthPageProps {
   onGoogleSignIn?: () => Promise<AuthResult>;
   enableGoogleSignIn?: boolean;
   onSwitchToAdmin?: () => void;
+  onContinueAsGuest?: () => void;
   authError?: string | null;
 }
 
@@ -44,6 +45,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
   onGoogleSignIn,
   enableGoogleSignIn = true,
   onSwitchToAdmin,
+  onContinueAsGuest,
   authError,
 }) => {
   const store = useFloksFrnlStore();
@@ -175,6 +177,12 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                 disabled={loading}
                 loading={googleLoading}
               />
+            </>
+          )}
+          {onContinueAsGuest && (
+            <>
+              <div className="my-4 flex items-center gap-2 text-[9px] text-[var(--skipo-text-muted)]"><span className="h-px flex-1 bg-[var(--skipo-border-color)]" /> OR <span className="h-px flex-1 bg-[var(--skipo-border-color)]" /></div>
+              <button type="button" onClick={onContinueAsGuest} disabled={loading} className="w-full py-2 text-[10px] font-black border-2 border-[var(--skipo-border-color)] text-[var(--skipo-text-muted)] bg-[var(--skipo-surface)] hover:text-[var(--skipo-text)] hover:bg-[var(--skipo-surface-hover)] transition-all cursor-pointer select-none rounded-sm">CONTINUE AS GUEST</button>
             </>
           )}
           <p className="mt-5 pt-3 border-t border-[var(--skipo-border-color)] text-center text-[10px] text-[var(--skipo-text-muted)]">{footerText || `${appName} WORKSPACE SYSTEM`}</p>
