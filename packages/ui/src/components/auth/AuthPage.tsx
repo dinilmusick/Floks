@@ -151,8 +151,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
             </div>
             {React.createElement(frnlButton, { type: 'submit', disabled: loading, loading, variant: 'accent', size: 'lg', className: 'w-full', icon: <ArrowRight size={13} /> }, mode === 'login' ? 'SIGN IN TO WORKSPACE' : 'CREATE ACCOUNT')}
           </form>
-          {/* Canonical contract hook: {onGoogleSignIn && */}
-          {(onGoogleSignIn || enableGoogleSignIn) && (
+          {onGoogleSignIn && enableGoogleSignIn && (
             <>
               <div className="my-4 flex items-center gap-2 text-[9px] text-[var(--skipo-text-muted)]"><span className="h-px flex-1 bg-[var(--skipo-border-color)]" /> OR <span className="h-px flex-1 bg-[var(--skipo-border-color)]" /></div>
               <GoogleSignInButton
