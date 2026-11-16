@@ -3,7 +3,11 @@ import type { AuthoringAssetRef, UIAuthoringContext, UIAuthoringNode, UIAuthorin
 import { UiAuthoringInspector } from './UiAuthoringInspector.js';
 import { UiAuthoringTree } from './UiAuthoringTree.js';
 import { UiAuthoringBindingEditor } from './UiAuthoringBindingEditor.js';
-import { getAuthoringSubtreeIds } from './authoringModel.js';
+import {
+  addAuthoringNode,
+  removeAuthoringNode,
+  updateAuthoringNode,
+} from './authoringOperations.js';
 
 export function UiAuthoringWorkspace(props: {
   session: UIAuthoringSession;
@@ -20,44 +24,27 @@ export function UiAuthoringWorkspace(props: {
       : kind === 'component'
         ? props.session.nodes.find((node) => node.kind === 'section')
         : undefined;
-    const node: UIAuthoringNode = {
-      id: `authoring-${kind}-${Date.now().toString(36)}`,
+    const id = `authoring-${kind}-${Date.now().toString(36)}`;
+    const session = addAuthoringNode(props.session, {
+      id,
       kind,
       name: kind === 'component' ? assetRef?.assetId || 'Component' : kind[0].toUpperCase() + kind.slice(1),
       componentId: kind === 'component' ? assetRef?.assetId : undefined,
       assetRef,
       parentId: parent?.id,
-      props: {},
-    };
-    props.onChange({ ...props.session, nodes: [...props.session.nodes, node] });
-    setSelectedNodeId(node.id);
+    });
+    props.onChange(session);
+    setSelectedNodeId(id);
   };
 
   const updateSelected = (patch: Partial<UIAuthoringNode>) => {
     if (!selectedNode) return;
-    props.onChange({
-      ...props.session,
-      nodes: props.session.nodes.map((node) => node.id === selectedNode.id ? { ...node, ...patch } : node),
-    });
+    props.onChange(updateAuthoringNode(props.session, selectedNode.id, patch));
   };
 
   const removeSelected = () => {
     if (!selectedNode) return;
-    const removedIds = getAuthoringSubtreeIds(selectedNode.id, props.session.nodes);
-    props.onChange({
-      ...props.session,
-      nodes: props.session.nodes
-        .filter((node) => !removedIds.has(node.id))
-        .map((node) => ({
-          ...node,
-          slots: node.slots
-            ? Object.fromEntries(Object.entries(node.slots).map(([slot, children]) => [
-                slot, children.filter((childId) => !removedIds.has(childId)),
-              ]))
-            : undefined,
-        })),
-      bindings: props.session.bindings.filter((binding) => !removedIds.has(binding.componentId)),
-    });
+    props.onChange(removeAuthoringNode(props.session, selectedNode.id));
     setSelectedNodeId(undefined);
   };
 
