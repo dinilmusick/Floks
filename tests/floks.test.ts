@@ -8,7 +8,7 @@ import * as FloksUI from '../packages/ui/dist/index.js';
 import * as FloksCanvasUI from '../packages/canvas-ui/dist/index.js';
 
 describe('Floks Public Frontend & UI Package Library (@floks/*)', () => {
-  it('exports @floks/ui base primitives, containers, composite, layout, hierarchy, and theme engine', () => {
+  it('exports @floks/ui base primitives, containers, composite, layout, FrnlTS components, and theme engine', () => {
     expect(FloksUI.BaseButton).toBeDefined();
     expect(FloksUI.BaseInput).toBeDefined();
     expect(FloksUI.BaseSelect).toBeDefined();
@@ -21,20 +21,19 @@ describe('Floks Public Frontend & UI Package Library (@floks/*)', () => {
     expect(FloksUI.TopToolbar).toBeDefined();
     expect(FloksUI.BottomStrip).toBeDefined();
     expect(FloksUI.WorkspaceTilesMenu).toBeDefined();
-    // Generalized UI Hierarchy, FrnlTS Integration & Palette Engine
+    // Canonical FrnlTS component suite
     expect(FloksUI.floksFrnlStore).toBeDefined();
     expect(FloksUI.FrnlStoreProvider).toBeDefined();
     expect(FloksUI.useFloksFrnlStore).toBeDefined();
-    expect(FloksUI.ButtonParent).toBeDefined();
-    expect(FloksUI.PanelParent).toBeDefined();
-    expect(FloksUI.SliderInput).toBeDefined();
-    expect(FloksUI.TextInput).toBeDefined();
-    expect(FloksUI.SelectInput).toBeDefined();
-    expect(FloksUI.ToggleInput).toBeDefined();
-    expect(FloksUI.TileParent).toBeDefined();
-    expect(FloksUI.Badge).toBeDefined();
-    expect(FloksUI.TelemetryPill).toBeDefined();
-    expect(FloksUI.StatusDot).toBeDefined();
+    expect(FloksUI.frnlButton).toBeDefined();
+    expect(FloksUI.frnlTextInput).toBeDefined();
+    expect(FloksUI.frnlSelect).toBeDefined();
+    expect(FloksUI.frnlToggle).toBeDefined();
+    expect(FloksUI.frnlSlider).toBeDefined();
+    expect(FloksUI.frnlBadge).toBeDefined();
+    expect(FloksUI.frnlPage).toBeDefined();
+    expect(FloksUI.TilesMenu).toBeDefined();
+    expect(FloksUI.WorkspaceTilesMenu).toBeDefined();
     expect(FloksUI.ThemeProvider).toBeDefined();
     expect(FloksUI.usePalette).toBeDefined();
   });
