@@ -35,7 +35,22 @@ describe('WorkspaceCreateDialog Google Drive integration', () => {
         open
         userId="user-1"
         storageOptions={[{ id: 'local_fs', provider: 'local_fs', label: 'Local Folder' }]}
-        storageService={{ connectGoogleDrive, listGoogleDriveFolders, getGoogleDriveAccountIdentity, selectGoogleDriveRootFolder }}
+        storageService={{
+          listStorageProviderCapabilities: vi.fn().mockResolvedValue([{
+            id: 'google_drive',
+            displayName: 'Google Drive',
+            enabled: true,
+            canSelectExistingConnection: true,
+            canCreateConnection: true,
+            requiredConfigurationFields: [],
+            authorizationMode: 'oauth2',
+            discoveryCapabilities: { accounts: true, buckets: false, folders: true },
+          }]),
+          connectGoogleDrive,
+          listGoogleDriveFolders,
+          getGoogleDriveAccountIdentity,
+          selectGoogleDriveRootFolder,
+        }}
         visibility={{ storagePolicy: { providers: ['local_fs', 'google_drive'] } }}
         onClose={() => undefined}
         onSubmit={onSubmit}
