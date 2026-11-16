@@ -270,6 +270,7 @@ export function createKloksWorkspaceStorageService(
       localFolderName: connection.localFolderName,
       b2BucketName: connection.b2BucketName,
       googleEmail: connection.googleEmail,
+      googleAccountId: connection.googleAccountId,
       googleRootFolderId: connection.googleRootFolderId,
       googleRootFolderName: connection.googleRootFolderName,
     };
@@ -473,6 +474,28 @@ export function WorkspaceCreateDialog({
       setBackblazeMode(false);
     }
   }, [open, googleDriveConnectionId, storageOptions, loadedOptions]);
+
+  useEffect(() => {
+    if (!open || !storageService.getGoogleDriveAccountIdentity) return;
+    const connection = (storageOptions ?? loadedOptions).find(
+      (option) => option.id === selectedStorageId && option.provider === 'google_drive',
+    );
+    if (!connection) return;
+    let active = true;
+    storageService.getGoogleDriveAccountIdentity(effectiveUserId, connection.id)
+      .then((identity) => {
+        if (!active) return;
+        setConnectedDriveOption({
+          ...connection,
+          googleAccountId: identity.accountId,
+          googleEmail: identity.email || connection.googleEmail,
+        });
+      })
+      .catch((reason) => {
+        if (active) setError(reason instanceof Error ? reason.message : 'Unable to verify the Google Drive account identity.');
+      });
+    return () => { active = false; };
+  }, [open, selectedStorageId, storageOptions, loadedOptions, effectiveUserId, storageService]);
 
   useEffect(() => {
     if (!open || storageOptions) return;
