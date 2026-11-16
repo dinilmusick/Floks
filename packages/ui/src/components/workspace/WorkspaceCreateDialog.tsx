@@ -85,7 +85,24 @@ export interface WorkspaceCreateInput {
   storageConnection?: WorkspaceStorageOption;
 }
 
+export interface StorageProviderCapability {
+  id: WorkspaceStorageProvider;
+  displayName: string;
+  enabled: boolean;
+  availabilityReason?: string;
+  canSelectExistingConnection: boolean;
+  canCreateConnection: boolean;
+  requiredConfigurationFields: string[];
+  authorizationMode: string;
+  discoveryCapabilities: {
+    accounts: boolean;
+    buckets: boolean;
+    folders: boolean;
+  };
+}
+
 export interface WorkspaceStorageService {
+  listStorageProviderCapabilities?: (userId: string) => Promise<StorageProviderCapability[]>;
   listStorageConnections?: (userId: string) => Promise<WorkspaceStorageOption[]>;
   listBackblazeAccounts?: (userId: string) => Promise<BackblazeAccount[]>;
   listBackblazeBuckets?: (accountId: string, userId?: string) => Promise<BackblazeBucket[]>;
@@ -272,6 +289,17 @@ export function createKloksWorkspaceStorageService(
   };
 
   return {
+    listStorageProviderCapabilities: async (userId: string) => {
+      const result = await invoker.invoke('kloks.backend.storage', 'getProviderCapabilities', { userId });
+      const capabilities = Array.isArray(result)
+        ? result
+        : Array.isArray((result as any)?.providers)
+          ? (result as any).providers
+          : [];
+      return capabilities.filter((item: any) =>
+        item && typeof item.id === 'string' && typeof item.displayName === 'string',
+      ) as StorageProviderCapability[];
+    },
     listStorageConnections,
     listBackblazeAccounts: async (userId: string) => (await listStorageConnections(userId))
       .filter((item) => item.provider === 'backblaze_b2')
@@ -323,6 +351,7 @@ export function WorkspaceCreateDialog({
   onSubmit,
 }: WorkspaceCreateDialogProps) {
   const [loadedOptions, setLoadedOptions] = useState<WorkspaceStorageOption[]>([]);
+  const [providerCapabilities, setProviderCapabilities] = useState<StorageProviderCapability[]>([]);
   const [connectedDriveOption, setConnectedDriveOption] = useState<WorkspaceStorageOption | null>(null);
   const [googleDriveFolder, setGoogleDriveFolder] = useState<GoogleDriveFolder | null>(null);
   const [name, setName] = useState('');
@@ -376,6 +405,17 @@ export function WorkspaceCreateDialog({
   }, [open]);
 
   useEffect(() => {
+    if (!open || !storageService.listStorageProviderCapabilities) return;
+    let active = true;
+    storageService.listStorageProviderCapabilities(effectiveUserId)
+      .then((items) => { if (active) setProviderCapabilities(Array.isArray(items) ? items : []); })
+      .catch((reason) => {
+        if (active) setError(reason instanceof Error ? reason.message : 'Unable to load storage provider capabilities.');
+      });
+    return () => { active = false; };
+  }, [open, effectiveUserId, storageService]);
+
+  useEffect(() => {
     if (!open || storageOptions) return;
     let active = true;
     const listConnections = storageService.listStorageConnections;
@@ -395,7 +435,7 @@ export function WorkspaceCreateDialog({
     const supplied = storageOptions ?? loadedOptions;
     const providerOrder = visibility?.storagePolicy?.providers
       ?? visibility?.availableStorageProviders
-      ?? [];
+      ?? providerCapabilities.filter((capability) => capability.enabled).map((capability) => capability.id);
     const hidden = new Set(visibility?.hiddenStorageProviders || []);
     const enabled = supplied.filter((option) =>
       option
@@ -420,11 +460,14 @@ export function WorkspaceCreateDialog({
         }
         if (provider === 'backblaze_b2') {
           const connections = forProvider(provider);
-          return connections.length > 0 ? connections : [{ id: 'backblaze_external', provider: 'backblaze_b2', label: 'Choose Backblaze account and bucket' }];
+          return [
+            ...connections,
+            { id: 'backblaze_external', provider: 'backblaze_b2', label: 'Add or choose a Backblaze account' },
+          ];
         }
         return forProvider(provider);
       });
-  }, [storageOptions, loadedOptions, connectedDriveOption, visibility]);
+  }, [storageOptions, loadedOptions, connectedDriveOption, visibility, providerCapabilities]);
 
   useEffect(() => {
     if (!open || loadingStorage || defaultStorageApplied) return;
