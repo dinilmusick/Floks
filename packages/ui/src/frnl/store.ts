@@ -1,23 +1,31 @@
-import React, { createContext, useContext, type ReactNode } from 'react';
-import { createFrnlFrontendApi, installFrnlFrontendApi, createFrnlStore, type FrnlStore } from '@ultrst-armada/frnlts';
+import React, { createContext, useContext, useMemo, type ReactNode } from 'react';
+import {
+  createFrnlFrontendApi,
+  createFrnlDomMeasurementAdapter,
+  installFrnlFrontendApi,
+  createFrnlStore,
+  type FrnlStore,
+  type FrnlFrontendApi,
+} from '@ultrst-armada/frnlts';
 
 export type { FrnlStore };
 
-/**
- * Default canonical shared FrnlTS semantic store for Floks UI assets.
- * For application-level custom store isolation, prefer using `FrnlStoreProvider`.
- */
+/** Default canonical shared FrnlTS semantic store for Floks UI assets. */
 export const floksFrnlStore: FrnlStore = createFrnlStore();
 
-/** Canonical programmatic API for every Frnl component registered in Floks. */
-export const floksFrnlFrontendApi = createFrnlFrontendApi(floksFrnlStore);
+/** Canonical programmatic UI surface for the default Floks store. */
+export const floksFrnlFrontendApi: FrnlFrontendApi = createFrnlFrontendApi(floksFrnlStore, {
+  applicationId: 'floks',
+  measurementAdapter: createFrnlDomMeasurementAdapter(),
+});
 installFrnlFrontendApi(floksFrnlFrontendApi);
 
-/**
- * Returns the currently active global Frnl store (defaults to `floksFrnlStore`).
- */
 export function getFloksFrnlStore(): FrnlStore {
   return floksFrnlStore;
+}
+
+export function getFloksFrnlFrontendApi(): FrnlFrontendApi {
+  return floksFrnlFrontendApi;
 }
 
 const FrnlStoreContext = createContext<FrnlStore | null>(null);
@@ -25,20 +33,33 @@ const FrnlStoreContext = createContext<FrnlStore | null>(null);
 export interface FrnlStoreProviderProps {
   store: FrnlStore;
   children: ReactNode;
+  applicationId?: string;
+  route?: string;
 }
 
-/**
- * Context provider allowing applications to inject an isolated or shared Frnl store
- * down a specific component subtree. This is the preferred mechanism for custom store injection.
- */
-export const FrnlStoreProvider: React.FC<FrnlStoreProviderProps> = ({ store, children }) => {
+export const FrnlStoreProvider: React.FC<FrnlStoreProviderProps> = ({
+  store,
+  children,
+  applicationId,
+  route,
+}) => {
+  const api = useMemo(
+    () => createFrnlFrontendApi(store, {
+      applicationId,
+      route,
+      measurementAdapter: createFrnlDomMeasurementAdapter(),
+    }),
+    [store, applicationId, route],
+  );
+
+  React.useEffect(() => {
+    installFrnlFrontendApi(api);
+    return () => api.dispose();
+  }, [api]);
+
   return React.createElement(FrnlStoreContext.Provider, { value: store }, children);
 };
 
-/**
- * Hook to access the active Frnl store: prefers React Context if provided via FrnlStoreProvider,
- * falling back to the canonical default floksFrnlStore.
- */
 export function useFloksFrnlStore(): FrnlStore {
   const contextStore = useContext(FrnlStoreContext);
   return contextStore ?? floksFrnlStore;
