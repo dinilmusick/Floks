@@ -295,7 +295,6 @@ describe('WorkspaceCreateDialog Google Drive integration', () => {
             { id: 'backblaze_b2', displayName: 'Backblaze B2', enabled: true, canCreateConnection: true },
           ]),
           listStorageConnections: vi.fn().mockResolvedValue([]),
-          listBackblazeAccounts: vi.fn().mockResolvedValue([]),
           testBackblazeCredentials,
           createBackblazeConnection,
         }}
