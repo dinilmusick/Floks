@@ -224,5 +224,78 @@ describe('WorkspaceCreateDialog Google Drive integration', () => {
 
     await expect(service.connectGoogleDrive?.('user-1')).resolves.toMatchObject({ id: 'drive-2', provider: 'google_drive' });
     await expect(service.listGoogleDriveFolders?.('drive-2')).resolves.toEqual([]);
-  });;
+  });
+
+  it('creates a tested Backblaze connection from the workspace dialog and uses it immediately', async () => {
+    const testBackblazeCredentials = vi.fn().mockResolvedValue({
+      success: true,
+      accountId: 'b2-account-1',
+      buckets: [{ id: 'bucket-1', bucketName: 'archive' }],
+    });
+    const createBackblazeConnection = vi.fn().mockResolvedValue({
+      id: 'b2-connection-1',
+      name: 'Production B2',
+      provider: 'backblaze_b2',
+    });
+    const onSubmit = vi.fn().mockResolvedValue(undefined);
+
+    render(
+      <WorkspaceCreateDialog
+        open
+        userId="user-1"
+        storageOptions={[]}
+        storageService={{
+          listStorageProviderCapabilities: vi.fn().mockResolvedValue([
+            { id: 'backblaze_b2', displayName: 'Backblaze B2', enabled: true, canCreateConnection: true },
+          ]),
+          listStorageConnections: vi.fn().mockResolvedValue([]),
+          listBackblazeAccounts: vi.fn().mockResolvedValue([]),
+          testBackblazeCredentials,
+          createBackblazeConnection,
+        }}
+        visibility={{ storagePolicy: { providers: ['backblaze_b2'] } }}
+        onClose={() => undefined}
+        onSubmit={onSubmit}
+      />,
+    );
+
+    fireEvent.change(screen.getByLabelText('Workspace name'), { target: { value: 'Archive Workspace' } });
+    fireEvent.change(screen.getByLabelText('Workspace storage'), { target: { value: 'backblaze_external' } });
+    fireEvent.click(await screen.findByRole('button', { name: /add new backblaze account/i }));
+
+    fireEvent.change(screen.getByLabelText('Backblaze Key ID'), { target: { value: 'test-key-id' } });
+    fireEvent.change(screen.getByLabelText('Backblaze Application Key'), { target: { value: 'test-application-key' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Test B2 credentials' }));
+
+    expect(await screen.findByText(/credentials verified/i)).toBeInTheDocument();
+    expect(testBackblazeCredentials).toHaveBeenCalledWith({
+      keyId: 'test-key-id',
+      applicationKey: 'test-application-key',
+    });
+
+    fireEvent.change(screen.getByLabelText('New Backblaze bucket'), { target: { value: 'archive' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Save account and use it' }));
+    await waitFor(() => expect(createBackblazeConnection).toHaveBeenCalledWith('user-1', {
+      label: undefined,
+      keyId: 'test-key-id',
+      applicationKey: 'test-application-key',
+      bucketName: 'archive',
+    }));
+
+    fireEvent.click(screen.getByRole('button', { name: 'Create Workspace' }));
+    await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
+    const input = onSubmit.mock.calls[0][0];
+    expect(input.storageProvider).toBe('backblaze_b2');
+    expect(input.storageConnectionId).toBe('b2-connection-1');
+    expect(input.storage.connectionId).toBe('b2-connection-1');
+    expect(input.b2BucketName).toBe('archive');
+    expect(input.storageConnection).toMatchObject({
+      id: 'b2-connection-1',
+      provider: 'backblaze_b2',
+      b2BucketName: 'archive',
+    });
+    expect(JSON.stringify(input)).not.toContain('test-application-key');
+    expect(JSON.stringify(input)).not.toContain('test-key-id');
+  });
+
 });
