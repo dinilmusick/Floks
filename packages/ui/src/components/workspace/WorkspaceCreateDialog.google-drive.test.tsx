@@ -305,6 +305,7 @@ describe('WorkspaceCreateDialog Google Drive integration', () => {
     );
 
     fireEvent.change(screen.getByLabelText('Workspace name'), { target: { value: 'Archive Workspace' } });
+    await screen.findByRole('option', { name: /Add or choose a Backblaze account/i });
     fireEvent.change(screen.getByLabelText('Workspace storage'), { target: { value: 'backblaze_external' } });
 
     fireEvent.change(screen.getByLabelText('Backblaze Key ID'), { target: { value: 'test-key-id' } });
