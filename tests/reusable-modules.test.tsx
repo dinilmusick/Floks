@@ -112,10 +112,7 @@ describe('reusable application modules', () => {
   });
 
   it('renders the workspace menu with the reusable creation flow', () => {
-    const storageService = {
-      listBackblazeAccounts: async () => [],
-      listBackblazeBuckets: async () => [],
-    };
+    const storageService = {};
     render(
       <WorkspaceTilesMenu
         workspaces={[{ id: 'ws1', title: 'Docs', storageProvider: 'local_fs' }]}
