@@ -105,8 +105,6 @@ export interface StorageProviderCapability {
 export interface WorkspaceStorageService {
   listStorageProviderCapabilities?: (userId: string) => Promise<StorageProviderCapability[]>;
   listStorageConnections?: (userId: string) => Promise<WorkspaceStorageOption[]>;
-  listBackblazeAccounts?: (userId: string) => Promise<BackblazeAccount[]>;
-  listBackblazeBuckets?: (accountId: string, userId?: string) => Promise<BackblazeBucket[]>;
   testBackblazeCredentials?: (input: BackblazeCredentialInput) => Promise<BackblazeCredentialTestResult>;
   createBackblazeConnection?: (userId: string, input: BackblazeCredentialInput & { bucketName: string }) => Promise<BackblazeAccount>;
   connectGoogleDrive?: (userId: string) => Promise<WorkspaceStorageOption | void>;
@@ -301,16 +299,6 @@ export function createKloksWorkspaceStorageService(
       ) as StorageProviderCapability[];
     },
     listStorageConnections,
-    listBackblazeAccounts: async (userId: string) => (await listStorageConnections(userId))
-      .filter((item) => item.provider === 'backblaze_b2')
-      .map((item) => ({ id: item.id, name: item.label || item.name || item.id, provider: item.provider })),
-    listBackblazeBuckets: async (accountId: string, userId = '') => {
-      const result = await invoker.invoke('kloks.backend.storage', 'listBackblazeConnectionBuckets', {
-        userId,
-        connectionId: accountId,
-      });
-      return Array.isArray(result) ? result as BackblazeBucket[] : Array.isArray((result as any)?.buckets) ? (result as any).buckets : [];
-    },
     testBackblazeCredentials: async (input) => {
       const result = await invoker.invoke('kloks.backend.storage', 'testBackblazeCredentials', { ...input });
       return result as BackblazeCredentialTestResult;
@@ -413,11 +401,6 @@ export function WorkspaceCreateDialog({
   const [selectedStorageId, setSelectedStorageId] = useState('local_fs');
   const [defaultStorageApplied, setDefaultStorageApplied] = useState(false);
   const [backblazeMode, setBackblazeMode] = useState(false);
-  const [backblazeAccounts, setBackblazeAccounts] = useState<BackblazeAccount[]>([]);
-  const [backblazeAccountId, setBackblazeAccountId] = useState('');
-  const [backblazeBuckets, setBackblazeBuckets] = useState<BackblazeBucket[]>([]);
-  const [backblazeBucketName, setBackblazeBucketName] = useState('');
-  const [addingBackblazeAccount, setAddingBackblazeAccount] = useState(false);
   const [newBackblazeLabel, setNewBackblazeLabel] = useState('');
   const [newBackblazeKeyId, setNewBackblazeKeyId] = useState('');
   const [newBackblazeApplicationKey, setNewBackblazeApplicationKey] = useState('');
@@ -426,8 +409,6 @@ export function WorkspaceCreateDialog({
   const [backblazeCredentialsTested, setBackblazeCredentialsTested] = useState(false);
   const [testingBackblazeCredentials, setTestingBackblazeCredentials] = useState(false);
   const [savingBackblazeConnection, setSavingBackblazeConnection] = useState(false);
-  const [loadingBackblazeAccounts, setLoadingBackblazeAccounts] = useState(false);
-  const [loadingBackblazeBuckets, setLoadingBackblazeBuckets] = useState(false);
   const [loadingStorage, setLoadingStorage] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -442,11 +423,6 @@ export function WorkspaceCreateDialog({
     setSelectedStorageId('local_fs');
     setDefaultStorageApplied(false);
     setBackblazeMode(false);
-    setBackblazeAccounts([]);
-    setBackblazeAccountId('');
-    setBackblazeBuckets([]);
-    setBackblazeBucketName('');
-    setAddingBackblazeAccount(false);
     setNewBackblazeLabel('');
     setNewBackblazeKeyId('');
     setNewBackblazeApplicationKey('');
@@ -621,7 +597,6 @@ export function WorkspaceCreateDialog({
   };
 
   const beginAddBackblazeAccount = () => {
-    setAddingBackblazeAccount(true);
     setNewBackblazeLabel('');
     setNewBackblazeKeyId('');
     setNewBackblazeApplicationKey('');
@@ -632,7 +607,6 @@ export function WorkspaceCreateDialog({
   };
 
   const cancelAddBackblazeAccount = () => {
-    setAddingBackblazeAccount(false);
     setBackblazeMode(false);
     setSelectedStorageId('backblaze_external');
     setNewBackblazeLabel('');
@@ -729,21 +703,7 @@ export function WorkspaceCreateDialog({
     }
   };
 
-  const handleBackblazeAccountChange = async (accountId: string) => {
-    setBackblazeAccountId(accountId);
-    setBackblazeBuckets([]);
-    setBackblazeBucketName('');
-    if (!accountId || !storageService.listBackblazeBuckets) return;
-    setLoadingBackblazeBuckets(true);
-    try {
-      const buckets = await storageService.listBackblazeBuckets(accountId, effectiveUserId);
-      setBackblazeBuckets(Array.isArray(buckets) ? buckets : []);
-    } catch (reason) {
-      setError(reason instanceof Error ? reason.message : 'Failed to load Backblaze buckets.');
-    } finally {
-      setLoadingBackblazeBuckets(false);
-    }
-  };
+
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -767,7 +727,7 @@ export function WorkspaceCreateDialog({
       setError('Verify the authenticated Google Drive account before creating this workspace.');
       return;
     }
-    if (loadingStorage || loadingBackblazeAccounts || loadingBackblazeBuckets || testingBackblazeCredentials || savingBackblazeConnection || submitting) return;
+    if (loadingStorage || testingBackblazeCredentials || savingBackblazeConnection || submitting) return;
     setSubmitting(true);
     setError(null);
     try {
@@ -1024,7 +984,7 @@ export function WorkspaceCreateDialog({
 
         <div className="mt-5 flex justify-end gap-2 border-t pt-3" style={{ borderColor: border }}>
           <button type="button" onClick={onClose} disabled={submitting} className="h-9 border px-3 text-xs" style={{ borderColor: border }}>Cancel</button>
-          <button type="submit" disabled={submitting || loadingStorage || loadingBackblazeAccounts || loadingBackblazeBuckets || testingBackblazeCredentials || savingBackblazeConnection || !availableOptions.length || !name.trim()} className="h-9 px-4 text-xs font-black uppercase text-black disabled:opacity-50" style={{ backgroundColor: accent }}>
+          <button type="submit" disabled={submitting || loadingStorage || testingBackblazeCredentials || savingBackblazeConnection || !availableOptions.length || !name.trim()} className="h-9 px-4 text-xs font-black uppercase text-black disabled:opacity-50" style={{ backgroundColor: accent }}>
             {submitting ? 'Creating…' : 'Create Workspace'}
           </button>
         </div>
