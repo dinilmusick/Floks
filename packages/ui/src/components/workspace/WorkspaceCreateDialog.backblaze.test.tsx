@@ -18,10 +18,6 @@ describe('canonical Backblaze workspace creation flow', () => {
         discoveryCapabilities: { accounts: true, buckets: true, folders: false },
       }]),
       listStorageConnections: vi.fn().mockResolvedValue([]),
-      listBackblazeAccounts: vi.fn().mockImplementation(async () => {
-        calls.push('listBackblazeAccounts');
-        return [];
-      }),
       testBackblazeCredentials: vi.fn().mockImplementation(async () => {
         calls.push('testBackblazeCredentials');
         return { success: true, buckets: [{ bucketId: 'bucket-1', bucketName: 'workspace-data' }] };
@@ -59,7 +55,6 @@ describe('canonical Backblaze workspace creation flow', () => {
       target: { value: 'backblaze_external' },
     });
 
-    fireEvent.click(await screen.findByRole('button', { name: '+ Add new Backblaze account' }));
     fireEvent.change(screen.getByRole('textbox', { name: 'Backblaze Key ID' }), {
       target: { value: 'temporary-key' },
     });
@@ -85,6 +80,6 @@ describe('canonical Backblaze workspace creation flow', () => {
     expect(payload.storageConnectionId).toBe('saved-b2-1');
     expect(payload.b2BucketName).toBe('workspace-data');
     expect(JSON.stringify(payload)).not.toMatch(/temporary-key|temporary-secret|applicationKey|b2KeyId/);
-    expect(calls).toEqual(['listBackblazeAccounts', 'testBackblazeCredentials', 'createBackblazeConnection']);
+    expect(calls).toEqual(['testBackblazeCredentials', 'createBackblazeConnection']);
   });
 });
