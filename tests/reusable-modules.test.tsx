@@ -60,7 +60,7 @@ describe('reusable application modules', () => {
     const storageService = {
       listStorageProviderCapabilities: async (userId: string) => {
         calls.push('capabilities:' + userId);
-        return [{ id: 'backblaze_b2', displayName: 'Backblaze B2', enabled: true, canCreateConnection: false }];
+        return [{ id: 'backblaze_b2', displayName: 'Backblaze B2', enabled: true, canSelectExistingConnection: true, canCreateConnection: false, requiredConfigurationFields: [], authorizationMode: 'none', discoveryCapabilities: { accounts: true, buckets: true, folders: false } }];
       },
       listStorageConnections: async (userId: string) => {
         calls.push('connections:' + userId);
