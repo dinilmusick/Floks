@@ -29,6 +29,19 @@ export interface BackblazeAccount {
   provider?: string;
 }
 
+export interface BackblazeCredentialInput {
+  label?: string;
+  keyId: string;
+  applicationKey: string;
+}
+
+export interface BackblazeCredentialTestResult {
+  success: boolean;
+  accountId?: string;
+  buckets: BackblazeBucket[];
+  error?: string;
+}
+
 export interface WorkspaceStorageOption {
   id: string;
   provider: WorkspaceStorageProvider;
@@ -76,6 +89,8 @@ export interface WorkspaceStorageService {
   listStorageConnections?: (userId: string) => Promise<WorkspaceStorageOption[]>;
   listBackblazeAccounts?: (userId: string) => Promise<BackblazeAccount[]>;
   listBackblazeBuckets?: (accountId: string, userId?: string) => Promise<BackblazeBucket[]>;
+  testBackblazeCredentials?: (input: BackblazeCredentialInput) => Promise<BackblazeCredentialTestResult>;
+  createBackblazeConnection?: (userId: string, input: BackblazeCredentialInput & { bucketName: string }) => Promise<BackblazeAccount>;
   connectGoogleDrive?: (userId: string) => Promise<WorkspaceStorageOption>;
   listGoogleDriveFolders?: (connectionId: string, parentFolderId?: string) => Promise<GoogleDriveFolder[]>;
 }
@@ -244,17 +259,48 @@ export function createKloksWorkspaceStorageService(
     };
   };
 
+  const listStorageConnections = async (userId: string): Promise<WorkspaceStorageOption[]> => {
+    const result = await invoker.invoke('kloks.backend.storage', 'getConnections', { userId });
+    const storedConnections = Array.isArray(result)
+      ? result
+      : Array.isArray((result as any)?.connections)
+        ? (result as any).connections
+        : [];
+    return storedConnections
+      .map(mapStorageConnection)
+      .filter((item): item is WorkspaceStorageOption => Boolean(item));
+  };
+
   return {
-    listStorageConnections: async () => {
-      const result = await invoker.invoke('kloks.service.storage', 'getConnections', {});
-      const storedConnections = Array.isArray(result)
-        ? result
-        : Array.isArray((result as any)?.connections)
-          ? (result as any).connections
-          : [];
-      return storedConnections
-        .map(mapStorageConnection)
-        .filter((item): item is WorkspaceStorageOption => Boolean(item));
+    listStorageConnections,
+    listBackblazeAccounts: async (userId: string) => (await listStorageConnections(userId))
+      .filter((item) => item.provider === 'backblaze_b2')
+      .map((item) => ({ id: item.id, name: item.label || item.name || item.id, provider: item.provider })),
+    listBackblazeBuckets: async (accountId: string, userId = '') => {
+      const result = await invoker.invoke('kloks.backend.storage', 'listBackblazeConnectionBuckets', {
+        userId,
+        connectionId: accountId,
+      });
+      return Array.isArray(result) ? result as BackblazeBucket[] : Array.isArray((result as any)?.buckets) ? (result as any).buckets : [];
+    },
+    testBackblazeCredentials: async (input) => {
+      const result = await invoker.invoke('kloks.backend.storage', 'testBackblazeCredentials', input);
+      return result as BackblazeCredentialTestResult;
+    },
+    createBackblazeConnection: async (userId, input) => {
+      const result = await invoker.invoke('kloks.backend.storage', 'createBackblazeConnection', {
+        userId,
+        ...input,
+      });
+      const connection = (result as any)?.connection || result;
+      if (!connection || typeof connection.id !== 'string') {
+        throw new Error('Kloks did not return a valid Backblaze storage connection.');
+      }
+      return {
+        id: connection.id,
+        name: String(connection.label || connection.name || connection.id),
+        provider: String(connection.provider || 'backblaze_b2'),
+      };
     },
     ...(googleDrive
       ? {
