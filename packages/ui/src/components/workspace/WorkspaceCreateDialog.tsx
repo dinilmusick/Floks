@@ -689,7 +689,6 @@ export function WorkspaceCreateDialog({
       setConnectedBackblazeOption(savedOption);
       setSelectedStorageId(savedOption.id);
       setBackblazeMode(false);
-      setAddingBackblazeAccount(false);
       setNewBackblazeLabel('');
       setNewBackblazeKeyId('');
       setNewBackblazeApplicationKey('');
