@@ -54,6 +54,7 @@ describe('canonical Backblaze workspace creation flow', () => {
     fireEvent.change(screen.getByRole('textbox', { name: 'Workspace name' }), {
       target: { value: 'Research Vault' },
     });
+    await screen.findByRole('option', { name: /Add or choose a Backblaze account/i });
     fireEvent.change(screen.getByRole('combobox', { name: 'Workspace storage' }), {
       target: { value: 'backblaze_external' },
     });
