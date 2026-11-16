@@ -313,7 +313,7 @@ export function createKloksWorkspaceStorageService(
       return Array.isArray(result) ? result as BackblazeBucket[] : Array.isArray((result as any)?.buckets) ? (result as any).buckets : [];
     },
     testBackblazeCredentials: async (input) => {
-      const result = await invoker.invoke('kloks.backend.storage', 'testBackblazeCredentials', input);
+      const result = await invoker.invoke('kloks.backend.storage', 'testBackblazeCredentials', { ...input });
       return result as BackblazeCredentialTestResult;
     },
     createBackblazeConnection: async (userId, input) => {
