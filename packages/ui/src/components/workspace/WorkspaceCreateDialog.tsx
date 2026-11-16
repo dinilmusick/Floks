@@ -634,7 +634,7 @@ export function WorkspaceCreateDialog({
   const cancelAddBackblazeAccount = () => {
     setAddingBackblazeAccount(false);
     setBackblazeMode(false);
-    setSelectedStorageId(availableOptions.find((option) => option.provider === 'backblaze_b2' && option.id !== 'backblaze_external')?.id || availableOptions.find((option) => option.id !== 'backblaze_external')?.id || '');
+    setSelectedStorageId('backblaze_external');
     setNewBackblazeLabel('');
     setNewBackblazeKeyId('');
     setNewBackblazeApplicationKey('');
