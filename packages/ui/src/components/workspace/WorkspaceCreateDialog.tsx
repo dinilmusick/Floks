@@ -553,16 +553,20 @@ export function WorkspaceCreateDialog({
             ...(connectedDriveOption && connectedDriveOption.enabled !== false ? [connectedDriveOption] : []),
           ].filter((option, index, items) => items.findIndex((candidate) => candidate.id === option.id) === index);
           const capability = providerCapabilities.find((item) => item.id === provider);
-          const label = capability?.enabled
+          const canAuthorize = Boolean(capability?.enabled && capability.canCreateConnection);
+          const label = canAuthorize
             ? 'Connect Google Drive'
             : 'Google Drive authorization unavailable';
           return connections.length > 0 ? connections : [{ id: 'google_drive', provider: 'google_drive', label }];
         }
         if (provider === 'backblaze_b2') {
           const connections = forProvider(provider);
+          const capability = providerCapabilities.find((item) => item.id === provider);
           return [
             ...connections,
-            { id: 'backblaze_external', provider: 'backblaze_b2', label: 'Add or choose a Backblaze account' },
+            ...(capability?.enabled && capability.canCreateConnection
+              ? [{ id: 'backblaze_external', provider: 'backblaze_b2' as const, label: 'Add or choose a Backblaze account' }]
+              : []),
           ];
         }
         return forProvider(provider);
@@ -592,6 +596,10 @@ export function WorkspaceCreateDialog({
   const selectedOption = availableOptions.find((option) => option.id === selectedStorageId)
     || availableOptions[0]
     || NO_STORAGE_OPTION;
+  const googleDriveCapability = providerCapabilities.find((capability) => capability.id === 'google_drive');
+  const backblazeCapability = providerCapabilities.find((capability) => capability.id === 'backblaze_b2');
+  const canCreateBackblazeConnection = Boolean(backblazeCapability?.enabled && backblazeCapability.canCreateConnection);
+  const canAuthorizeGoogleDrive = Boolean(googleDriveCapability?.enabled && googleDriveCapability.canCreateConnection);
   const googleDriveConnection = selectedOption.provider === 'google_drive' && selectedOption.id !== 'google_drive'
     ? selectedOption as WorkspaceStorageOption & GoogleDriveConnection
     : undefined;
@@ -911,15 +919,17 @@ export function WorkspaceCreateDialog({
                       </select>
                       {loadingBackblazeAccounts && <span className="text-[10px]" style={{ color: muted }}>Loading Backblaze accounts…</span>}
                     </label>
-                    <button
-                      type="button"
-                      onClick={beginAddBackblazeAccount}
-                      disabled={submitting}
-                      className="h-9 border px-3 text-xs font-bold disabled:opacity-50"
-                      style={{ borderColor: accent, color: accent }}
-                    >
-                      + Add new Backblaze account
-                    </button>
+                    {canCreateBackblazeConnection && (
+                      <button
+                        type="button"
+                        onClick={beginAddBackblazeAccount}
+                        disabled={submitting}
+                        className="h-9 border px-3 text-xs font-bold disabled:opacity-50"
+                        style={{ borderColor: accent, color: accent }}
+                      >
+                        + Add new Backblaze account
+                      </button>
+                    )}
                     <label className="block space-y-1">
                       <span className="text-[10px] font-black uppercase">Backblaze bucket</span>
                       <select
@@ -1036,7 +1046,7 @@ export function WorkspaceCreateDialog({
             <GoogleDriveWorkspacePicker
               userId={effectiveUserId}
               connection={googleDriveConnection}
-              connectGoogleDrive={storageService.connectGoogleDrive}
+              connectGoogleDrive={canAuthorizeGoogleDrive ? storageService.connectGoogleDrive : undefined}
               listGoogleDriveFolders={storageService.listGoogleDriveFolders
                 ? (connectionId, parentFolderId) => storageService.listGoogleDriveFolders!(connectionId, parentFolderId, effectiveUserId)
                 : undefined}
