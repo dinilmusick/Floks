@@ -1,12 +1,18 @@
-// ══════════════════════════════════════════════════════════════════════════════
-// SKIPO COMPONENT: Storage Option Tiles (Local Workstation vs SRKL Backblaze B2)
-// Automatically discovers Backblaze accounts from SRKL (< 200 lines).
-// ══════════════════════════════════════════════════════════════════════════════
-
+/**
+ * Deprecated internal storage-option tile screen.
+ *
+ * New application workspace creation should use WorkspaceCreateDialog. This
+ * compatibility screen can only enumerate opaque Kloks connection IDs through
+ * an injected service; it has no SRKL endpoint fallback and never accepts or
+ * emits provider credentials.
+ */
 import React, { useState, useEffect, useCallback } from 'react';
 import { HardDrive, Cloud, RefreshCw } from 'lucide-react';
 import { StoragePresetTile } from './StoragePresetTile.js';
-import { SrklBackblazeTile, SrklBackblazeAccount } from './SrklBackblazeTile.js';
+import {
+  BackblazeConnectionTile,
+  type BackblazeWorkspaceConnection,
+} from './SrklBackblazeTile.js';
 
 export interface StorageSelection {
   provider: 'local_fs' | 'backblaze_b2';
@@ -14,18 +20,15 @@ export interface StorageSelection {
   localFolderName?: string;
   localFolderKey?: string;
   b2BucketName?: string;
-  b2Endpoint?: string;
-  b2Region?: string;
 }
 
 interface Props {
-  currentUser?: { id: string; email: string; name?: string } | null;
+  currentUser?: { id: string; email?: string; name?: string } | null;
   userId?: string;
-  selectedProvider?: string;
   selectedConnectionId?: string;
   storageService?: {
-    listBackblazeAccounts?: (userId: string) => Promise<any[]>;
-    listBackblazeBuckets?: (accountId: string, userId: string) => Promise<any[]>;
+    listBackblazeAccounts?: (userId: string) => Promise<BackblazeWorkspaceConnection[]>;
+    listBackblazeBuckets?: (connectionId: string, userId: string) => Promise<any[]>;
   };
   onSelectStorage: (selection: StorageSelection) => void;
 }
@@ -38,64 +41,56 @@ export const StorageOptionTiles: React.FC<Props> = ({
   onSelectStorage,
 }) => {
   const [activeId, setActiveId] = useState<string>(selectedConnectionId || 'local_default');
-  const [selectedBucket, setSelectedBucket] = useState<string>('');
-  const [srklAccounts, setSrklAccounts] = useState<SrklBackblazeAccount[]>([]);
-  const [loadingSrkl, setLoadingSrkl] = useState(false);
+  const [selectedBucket, setSelectedBucket] = useState('');
+  const [backblazeConnections, setBackblazeConnections] = useState<BackblazeWorkspaceConnection[]>([]);
+  const [loadingBackblaze, setLoadingBackblaze] = useState(false);
   const effectiveUserId = currentUser?.id || userId || '';
 
-  const fetchSrklAccounts = useCallback(async () => {
-    if (!effectiveUserId) return;
-    setLoadingSrkl(true);
+  const fetchBackblazeConnections = useCallback(async () => {
+    if (!effectiveUserId || !storageService?.listBackblazeAccounts) {
+      setBackblazeConnections([]);
+      return;
+    }
+    setLoadingBackblaze(true);
     try {
-      if (storageService?.listBackblazeAccounts) {
-        const accs = await storageService.listBackblazeAccounts(effectiveUserId);
-        if (Array.isArray(accs) && accs.length > 0) {
-          setSrklAccounts(accs);
-          return;
-        }
-      }
-      const uId = encodeURIComponent(effectiveUserId);
-      const res = await fetch(`/api/srkl/accounts?service=backblaze&userId=${uId}`);
-      const data = await res.json().catch(() => ({}));
-      if (data.success && Array.isArray(data.accounts)) {
-        setSrklAccounts(data.accounts);
-      }
+      const result = await storageService.listBackblazeAccounts(effectiveUserId);
+      setBackblazeConnections(Array.isArray(result)
+        ? result.filter((item) => item && typeof item.id === 'string' && typeof item.provider === 'string')
+        : []);
     } catch {
-      // fallback
+      setBackblazeConnections([]);
     } finally {
-      setLoadingSrkl(false);
+      setLoadingBackblaze(false);
     }
   }, [effectiveUserId, storageService]);
 
   useEffect(() => {
-    fetchSrklAccounts();
-  }, [fetchSrklAccounts]);
+    void fetchBackblazeConnections();
+  }, [fetchBackblazeConnections]);
 
-  const handleSelectLocal = (conn: any) => {
-    setActiveId(conn.id);
+  const handleSelectLocal = (connection: any) => {
+    setActiveId(connection.id);
     setSelectedBucket('');
     onSelectStorage({
       provider: 'local_fs',
-      connectionId: conn.id,
-      localFolderName: conn.localFolderName || 'Local-Vault',
-      localFolderKey: conn.localFolderKey,
+      connectionId: connection.id,
+      localFolderName: connection.localFolderName || 'Local-Vault',
+      localFolderKey: connection.localFolderKey,
     });
   };
 
-  const handleSelectSrklBucket = (account: SrklBackblazeAccount, bucketName: string) => {
-    setActiveId(account.id);
+  const handleSelectBackblazeBucket = (connection: BackblazeWorkspaceConnection, bucketName: string) => {
+    setActiveId(connection.id);
     setSelectedBucket(bucketName);
-    const creds = account.credentials || {};
+    // The canonical Kloks registry resolves B2 keys, endpoint, and region server-side.
     onSelectStorage({
       provider: 'backblaze_b2',
-      connectionId: account.id,
+      connectionId: connection.id,
       b2BucketName: bucketName,
-      b2Endpoint: creds.endpoint,
-      b2Region: creds.region || 'us-east-005',
     });
   };
 
-  const defaultLocalConn = {
+  const defaultLocalConnection = {
     id: 'local_default',
     label: 'Local Workstation Vault',
     localFolderName: 'Local-Vault',
@@ -104,48 +99,46 @@ export const StorageOptionTiles: React.FC<Props> = ({
 
   return (
     <div className="space-y-4 font-mono select-none">
-      {/* 1. Local Storage Vault Option */}
       <div className="space-y-2">
         <span className="text-[9px] font-black uppercase text-[var(--skipo-text-muted)] flex items-center gap-1">
-          <HardDrive size={11} /> 1. Local Filesystem (Workstation Vault)
+          <HardDrive size={11} /> Local Filesystem
         </span>
         <StoragePresetTile
-          conn={defaultLocalConn}
-          isSelected={activeId === defaultLocalConn.id && !selectedBucket}
+          conn={defaultLocalConnection}
+          isSelected={activeId === defaultLocalConnection.id && !selectedBucket}
           onSelect={handleSelectLocal}
         />
       </div>
 
-      {/* 2. SRKL Federated Backblaze B2 Accounts */}
       <div className="space-y-2 pt-1 border-t border-[var(--skipo-border-color)]/60">
         <div className="flex items-center justify-between">
           <span className="text-[9px] font-black uppercase text-amber-300 flex items-center gap-1">
-            <Cloud size={11} /> 2. Backblaze B2 (Federated from SRKL)
+            <Cloud size={11} /> Backblaze B2 connections
           </span>
           <button
             type="button"
-            onClick={fetchSrklAccounts}
-            disabled={loadingSrkl}
+            onClick={() => void fetchBackblazeConnections()}
+            disabled={loadingBackblaze || !storageService?.listBackblazeAccounts}
             className="p-1 rounded text-[var(--skipo-text-muted)] hover:text-amber-300 cursor-pointer"
-            title="Refresh SRKL Accounts"
+            title="Refresh Backblaze connections"
           >
-            <RefreshCw size={11} className={loadingSrkl ? 'animate-spin text-amber-300' : ''} />
+            <RefreshCw size={11} className={loadingBackblaze ? 'animate-spin text-amber-300' : ''} />
           </button>
         </div>
 
-        {srklAccounts.length === 0 && !loadingSrkl && (
+        {backblazeConnections.length === 0 && !loadingBackblaze && (
           <div className="p-3 border border-dashed border-[var(--skipo-border-color)] text-[11px] text-[var(--skipo-text-muted)] rounded">
-            No Backblaze B2 accounts linked in your SRKL profile. Configure Backblaze in SRKL to pick buckets here.
+            No Backblaze B2 connections are available through Kloks for this account.
           </div>
         )}
 
-        {srklAccounts.map((account) => (
-          <SrklBackblazeTile
-            key={account.id}
-            account={account}
+        {backblazeConnections.map((connection) => (
+          <BackblazeConnectionTile
+            key={connection.id}
+            account={connection}
             selectedBucketName={selectedBucket}
-            isSelectedAccount={account.id === activeId}
-            onSelectBucket={handleSelectSrklBucket}
+            isSelectedAccount={connection.id === activeId}
+            onSelectBucket={handleSelectBackblazeBucket}
             userId={effectiveUserId}
             storageService={storageService}
           />
