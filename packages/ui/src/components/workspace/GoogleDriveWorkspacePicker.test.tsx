@@ -52,7 +52,7 @@ describe('canonical Google Drive workspace picker', () => {
     );
 
     expect(await screen.findByText('Shared Projects')).toBeInTheDocument();
-    expect(listGoogleDriveFolders).toHaveBeenCalledWith(connection.id, undefined);
+    expect(listGoogleDriveFolders).toHaveBeenCalledWith(connection.id, undefined, 'user-1');
     fireEvent.click(screen.getByRole('button', { name: 'Select' }));
     expect(onSelectFolder).toHaveBeenCalledWith({
       id: 'folder-shared',
@@ -81,8 +81,8 @@ describe('canonical Google Drive workspace picker', () => {
     expect(await screen.findByText('Current Project')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Back' }));
     expect(await screen.findByText('Projects')).toBeInTheDocument();
-    expect(listGoogleDriveFolders).toHaveBeenNthCalledWith(2, connection.id, 'folder-parent');
-    expect(listGoogleDriveFolders).toHaveBeenNthCalledWith(3, connection.id, undefined);
+    expect(listGoogleDriveFolders).toHaveBeenNthCalledWith(2, connection.id, 'folder-parent', 'user-1');
+    expect(listGoogleDriveFolders).toHaveBeenNthCalledWith(3, connection.id, undefined, 'user-1');
   });
 
   it('represents authorization cancellation without treating it as an unexpected failure', async () => {
