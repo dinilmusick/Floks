@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { LogOut, ArrowLeft } from 'lucide-react';
 import { WorkspaceTilesMenu, type WorkspaceRecord } from './WorkspaceTilesMenu.js';
-import { type WorkspaceStorageService, type WorkspaceCreateInput } from './WorkspaceCreateDialog.js';
+import { type WorkspaceStorageService, type WorkspaceCreateInput, type WorkspaceStorageOption, type WorkspaceCreateDialogVisibility } from './WorkspaceCreateDialog.js';
 
 export interface WorkspaceGateProps {
   workspaces: WorkspaceRecord[] | any[];
@@ -11,6 +11,8 @@ export interface WorkspaceGateProps {
   appName?: string;
   appSubtitle?: string;
   storageService?: WorkspaceStorageService;
+  storageOptions?: WorkspaceStorageOption[];
+  visibility?: WorkspaceCreateDialogVisibility;
   onSelectWorkspace: (workspace: WorkspaceRecord) => void;
   onCreateWorkspace?: (input: WorkspaceCreateInput | any) => Promise<void> | void;
   onUpdateWorkspace?: (workspaceId: string, patch: { name: string; description?: string }) => Promise<void> | void;
@@ -30,6 +32,8 @@ export const WorkspaceGate: React.FC<WorkspaceGateProps> = ({
   appName = 'Workspaces',
   appSubtitle = 'WORKSPACE VAULT GATEWAY • ISOLATION ENFORCED (LAW L6)',
   storageService,
+  storageOptions,
+  visibility,
   onSelectWorkspace,
   onCreateWorkspace,
   onUpdateWorkspace,
@@ -103,6 +107,8 @@ export const WorkspaceGate: React.FC<WorkspaceGateProps> = ({
           currentUser={currentUser}
           appName={appName}
           storageService={storageService}
+          storageOptions={storageOptions}
+          visibility={visibility}
           onSelectWorkspace={onSelectWorkspace}
           onCreateWorkspace={onCreateWorkspace || (() => {})}
           onUpdateWorkspace={onUpdateWorkspace}
