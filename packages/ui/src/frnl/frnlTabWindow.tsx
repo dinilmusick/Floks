@@ -2,7 +2,10 @@
 // FLOKS CANONICAL TAB WINDOW (frnlTabWindow)
 // Strictly flat tab navigation and content pane manager
 // ══════════════════════════════════════════════════════════════════════════════
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
+import { defineFrnlComponent } from '@ultrst-armada/frnlts';
+import { useFrnlComponent } from '@ultrst-armada/frnlts/react';
+import { useFloksFrnlStore } from './store.js';
 import { frnlButton } from './frnlButton.js';
 import { useBottomStrip } from '../components/bottom-strip/index.js';
 
@@ -14,6 +17,18 @@ export interface FrnlTabItem {
   disabled?: boolean;
   content?: React.ReactNode;
 }
+
+export const frnlTabWindowDefinition = defineFrnlComponent({
+  name: 'frnlTabWindow',
+  states: {
+    active: {
+      name: 'active',
+      events: { selectTab: { functionId: 'frnlTabWindow.selectTab' } },
+      visualParameters: {},
+      phases: { sustainPhase: { visualDefinition: { parameters: {} } } },
+    },
+  },
+});
 
 export interface FrnlTabWindowProps {
   id?: string;
@@ -32,15 +47,33 @@ export const frnlTabWindow: React.FC<FrnlTabWindowProps> = ({
   className = '',
   children,
 }) => {
+  const store = useFloksFrnlStore();
   const [internalActiveTab, setInternalActiveTab] = useState(tabs[0]?.id);
+  const resolvedId = id;
   const activeId = activeTabId ?? internalActiveTab;
+  const handlers = useMemo(() => ({
+    'frnlTabWindow.selectTab': (payload: unknown) => {
+      if (typeof payload !== 'string') throw new TypeError('selectTab expects a tab id');
+      const tab = tabs.find((item) => item.id === payload);
+      if (!tab || tab.disabled) throw new Error('Unknown or disabled tab: ' + payload);
+      handleSelect(tab);
+    },
+  }), [tabs, onTabChange]);
+  useFrnlComponent({
+    id: resolvedId,
+    definition: frnlTabWindowDefinition,
+    store,
+    state: 'active',
+    properties: { activeTabId: activeId, tabs: tabs.map((tab) => ({ id: tab.id, label: tab.label, disabled: Boolean(tab.disabled) })) },
+    handlers,
+  });
   const { setInspectionText } = useBottomStrip();
 
-  const handleSelect = (tab: FrnlTabItem) => {
+  function handleSelect(tab: FrnlTabItem) {
     if (tab.disabled) return;
     if (onTabChange) onTabChange(tab.id);
     else setInternalActiveTab(tab.id);
-  };
+  }
 
   const currentTab = tabs.find((t) => t.id === activeId);
 
