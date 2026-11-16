@@ -107,8 +107,8 @@ describe('reusable application modules', () => {
       expect.objectContaining({ id: 'drive-1', provider: 'google_drive' }),
     ]);
     expect(calls).toEqual([['kloks.backend.storage', 'getConnections', { userId: 'user-1' }]]);
-    expect(typeof service.listBackblazeAccounts).toBe('function');
-    expect(typeof service.listBackblazeBuckets).toBe('function');
+    expect(service).not.toHaveProperty('listBackblazeAccounts');
+    expect(service).not.toHaveProperty('listBackblazeBuckets');
   });
 
   it('renders the workspace menu with the reusable creation flow', () => {
