@@ -430,6 +430,7 @@ export function WorkspaceCreateDialog({
     setNewBackblazeBucketName('');
     setBackblazeCredentialsTested(false);
     setConnectedDriveOption(null);
+    setConnectedBackblazeOption(null);
     setGoogleDriveFolder(null);
     setVerifiedGoogleDriveConnectionId(null);
   }, [open]);
