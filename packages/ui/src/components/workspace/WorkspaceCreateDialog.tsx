@@ -142,6 +142,7 @@ export interface WorkspaceCreateDialogProps {
   storageOptions?: WorkspaceStorageOption[];
   storageService?: WorkspaceStorageService;
   visibility?: WorkspaceCreateDialogVisibility;
+  googleDriveConnectionId?: string;
   onClose: () => void;
   onSubmit: (input: WorkspaceCreateInput) => Promise<void> | void;
 }
@@ -347,6 +348,7 @@ export function WorkspaceCreateDialog({
   storageOptions,
   storageService = defaultWorkspaceStorageService,
   visibility,
+  googleDriveConnectionId,
   onClose,
   onSubmit,
 }: WorkspaceCreateDialogProps) {
@@ -414,6 +416,15 @@ export function WorkspaceCreateDialog({
       });
     return () => { active = false; };
   }, [open, effectiveUserId, storageService]);
+
+  useEffect(() => {
+    if (!open || !googleDriveConnectionId) return;
+    const exists = (storageOptions ?? loadedOptions).some((option) => option.id === googleDriveConnectionId);
+    if (exists) {
+      setSelectedStorageId(googleDriveConnectionId);
+      setBackblazeMode(false);
+    }
+  }, [open, googleDriveConnectionId, storageOptions, loadedOptions]);
 
   useEffect(() => {
     if (!open || storageOptions) return;
