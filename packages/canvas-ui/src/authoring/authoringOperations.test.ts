@@ -74,7 +74,7 @@ describe('authoringOperations', () => {
   });
 
   it('rejects invalid graph references', () => {
-    const session = createAuthoringSession({ sessionId: 'session-3', context: 'general-component' });
+    let session = createAuthoringSession({ sessionId: 'session-3', context: 'general-component' });
 
     expect(() => addAuthoringNode(session, {
       id: 'child',
@@ -82,7 +82,7 @@ describe('authoringOperations', () => {
       parentId: 'missing',
     })).toThrow("Authoring parent 'missing' does not exist.");
 
-    expect(() => addAuthoringNode(session, { id: 'page', kind: 'page' })).not.toThrow();
+    session = addAuthoringNode(session, { id: 'page', kind: 'page' });
     expect(() => addAuthoringNode(session, { id: 'page', kind: 'page' })).toThrow("Authoring node 'page' already exists.");
   });
 });
