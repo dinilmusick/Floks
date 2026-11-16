@@ -8,24 +8,24 @@
 import React, { useState, useEffect } from 'react';
 import { Cloud, CheckCircle2, RefreshCw } from 'lucide-react';
 
-export interface SrklBackblazeAccount {
+export interface BackblazeWorkspaceConnection {
   id: string;
   name: string;
   provider: string;
 }
 
 interface Props {
-  account: SrklBackblazeAccount;
+  account: BackblazeWorkspaceConnection;
   selectedBucketName?: string;
   isSelectedAccount: boolean;
-  onSelectBucket: (account: SrklBackblazeAccount, bucketName: string) => void;
+  onSelectBucket: (account: BackblazeWorkspaceConnection, bucketName: string) => void;
   userId?: string;
   storageService?: {
     listBackblazeBuckets?: (connectionId: string, userId: string) => Promise<any[]>;
   };
 }
 
-export const SrklBackblazeTile: React.FC<Props> = ({
+export const BackblazeConnectionTile: React.FC<Props> = ({
   account,
   selectedBucketName,
   isSelectedAccount,
