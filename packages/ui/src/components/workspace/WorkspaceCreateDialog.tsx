@@ -481,7 +481,7 @@ export function WorkspaceCreateDialog({
     if (!open || !storageService.getGoogleDriveAccountIdentity) return;
     const connection = (storageOptions ?? loadedOptions).find(
       (option) => option.id === selectedStorageId && option.provider === 'google_drive',
-    );
+    ) || (connectedDriveOption?.id === selectedStorageId ? connectedDriveOption : undefined);
     if (!connection) {
       setVerifiedGoogleDriveConnectionId(null);
       return;
@@ -505,7 +505,7 @@ export function WorkspaceCreateDialog({
         }
       });
     return () => { active = false; };
-  }, [open, selectedStorageId, storageOptions, loadedOptions, effectiveUserId, storageService]);
+  }, [open, selectedStorageId, storageOptions, loadedOptions, connectedDriveOption, effectiveUserId, storageService]);
 
   useEffect(() => {
     if (!open || storageOptions) return;
