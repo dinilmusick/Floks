@@ -13,7 +13,7 @@ import {
   type WorkspaceStorageOption,
 } from './WorkspaceCreateDialog.js';
 
-export const WORKSPACE_TILES_MENU_REQUIRED_SERVICES = ['auth', 'workspace', 'storage', 'srkl'] as const;
+export const WORKSPACE_TILES_MENU_REQUIRED_SERVICES = ['auth', 'workspace', 'storage'] as const;
 
 export interface WorkspaceRecord {
   id: string;
