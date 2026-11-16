@@ -54,11 +54,23 @@ describe('reusable application modules', () => {
     expect(selected).toBe('one');
   });
 
-  it('loads injected external-provider accounts then buckets in the workspace creation dialog', async () => {
+  it('discovers and selects an existing saved Backblaze connection through the canonical storage selector', async () => {
     const calls: string[] = [];
+    const onSubmit = vi.fn();
     const storageService = {
-      listBackblazeAccounts: async (userId: string) => { calls.push('accounts:' + userId); return [{ id: 'acct-1', name: 'Archive B2' }]; },
-      listBackblazeBuckets: async (accountId: string) => { calls.push('buckets:' + accountId); return [{ bucketId: 'b1', bucketName: 'workspace-bucket' }]; },
+      listStorageProviderCapabilities: async (userId: string) => {
+        calls.push('capabilities:' + userId);
+        return [{ id: 'backblaze_b2', displayName: 'Backblaze B2', enabled: true, canCreateConnection: false }];
+      },
+      listStorageConnections: async (userId: string) => {
+        calls.push('connections:' + userId);
+        return [{
+          id: 'acct-1',
+          provider: 'backblaze_b2',
+          label: 'Archive B2',
+          b2BucketName: 'workspace-bucket',
+        }];
+      },
     };
     render(
       <WorkspaceCreateDialog
@@ -67,14 +79,20 @@ describe('reusable application modules', () => {
         storageService={storageService}
         visibility={{ storagePolicy: { providers: ['backblaze_b2'] } }}
         onClose={() => {}}
-        onSubmit={async () => {}}
+        onSubmit={onSubmit}
       />,
     );
-    fireEvent.change(screen.getByLabelText('Workspace storage'), { target: { value: 'backblaze_external' } });
-    expect(await screen.findByText('Archive B2')).toBeInTheDocument();
-    fireEvent.change(screen.getByLabelText('Backblaze account'), { target: { value: 'acct-1' } });
-    expect(await screen.findByText('workspace-bucket')).toBeInTheDocument();
-    expect(calls).toEqual(['accounts:user-1', 'buckets:acct-1']);
+    fireEvent.change(screen.getByLabelText('Workspace name'), { target: { value: 'Archive' } });
+    expect(await screen.findByRole('option', { name: /Archive B2/ })).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText('Workspace storage'), { target: { value: 'acct-1' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Create Workspace' }));
+    await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
+    expect(onSubmit.mock.calls[0][0]).toMatchObject({
+      storageProvider: 'backblaze_b2',
+      storageConnectionId: 'acct-1',
+      b2BucketName: 'workspace-bucket',
+    });
+    expect(calls).toEqual(['capabilities:user-1', 'connections:user-1']);
   });
 
   it('adapts canonical Kloks connections without coupling provider account management to SRKL', async () => {
