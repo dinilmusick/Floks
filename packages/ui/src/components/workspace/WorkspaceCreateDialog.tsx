@@ -404,6 +404,7 @@ export function WorkspaceCreateDialog({
   const [loadedOptions, setLoadedOptions] = useState<WorkspaceStorageOption[]>([]);
   const [providerCapabilities, setProviderCapabilities] = useState<StorageProviderCapability[]>([]);
   const [connectedDriveOption, setConnectedDriveOption] = useState<WorkspaceStorageOption | null>(null);
+  const [connectedBackblazeOption, setConnectedBackblazeOption] = useState<WorkspaceStorageOption | null>(null);
   const [googleDriveFolder, setGoogleDriveFolder] = useState<GoogleDriveFolder | null>(null);
   const [verifiedGoogleDriveConnectionId, setVerifiedGoogleDriveConnectionId] = useState<string | null>(null);
   const [name, setName] = useState('');
@@ -563,7 +564,10 @@ export function WorkspaceCreateDialog({
           return connections.length > 0 ? connections : [{ id: 'google_drive', provider: 'google_drive', label }];
         }
         if (provider === 'backblaze_b2') {
-          const connections = forProvider(provider);
+          const connections = [
+            ...forProvider(provider),
+            ...(connectedBackblazeOption ? [connectedBackblazeOption] : []),
+          ].filter((option, index, items) => items.findIndex((candidate) => candidate.id === option.id) === index);
           const capability = providerCapabilities.find((item) => item.id === provider);
           return [
             ...connections,
@@ -574,7 +578,7 @@ export function WorkspaceCreateDialog({
         }
         return forProvider(provider);
       });
-  }, [storageOptions, loadedOptions, connectedDriveOption, visibility, providerCapabilities]);
+  }, [storageOptions, loadedOptions, connectedDriveOption, connectedBackblazeOption, visibility, providerCapabilities]);
 
   useEffect(() => {
     if (!open || loadingStorage || defaultStorageApplied) return;
@@ -610,26 +614,10 @@ export function WorkspaceCreateDialog({
   const userName = currentUser?.username || currentUser?.name || currentUser?.email?.split('@')[0] || 'user';
   const folderPreview = formatWorkspaceFolderPreview(appName, userName, name || 'workspace');
 
-  const handleSelectBackblaze = async () => {
+  const handleSelectBackblaze = () => {
     setBackblazeMode(true);
     setSelectedStorageId('backblaze_external');
-    setBackblazeAccountId('');
-    setBackblazeBuckets([]);
-    setBackblazeBucketName('');
-    setError(null);
-    if (!storageService.listBackblazeAccounts) {
-      setBackblazeAccounts([]);
-      return;
-    }
-    setLoadingBackblazeAccounts(true);
-    try {
-      const accounts = await storageService.listBackblazeAccounts(effectiveUserId);
-      setBackblazeAccounts(Array.isArray(accounts) ? accounts : []);
-    } catch (reason) {
-      setError(reason instanceof Error ? reason.message : 'Failed to load Backblaze accounts.');
-    } finally {
-      setLoadingBackblazeAccounts(false);
-    }
+    beginAddBackblazeAccount();
   };
 
   const beginAddBackblazeAccount = () => {
@@ -645,6 +633,8 @@ export function WorkspaceCreateDialog({
 
   const cancelAddBackblazeAccount = () => {
     setAddingBackblazeAccount(false);
+    setBackblazeMode(false);
+    setSelectedStorageId(availableOptions.find((option) => option.provider === 'backblaze_b2' && option.id !== 'backblaze_external')?.id || availableOptions.find((option) => option.id !== 'backblaze_external')?.id || '');
     setNewBackblazeLabel('');
     setNewBackblazeKeyId('');
     setNewBackblazeApplicationKey('');
@@ -714,18 +704,17 @@ export function WorkspaceCreateDialog({
         bucketName: newBackblazeBucketName,
       });
       if (!saved || !saved.id) throw new Error('Kloks did not return a saved Backblaze connection.');
-      const savedAccount: BackblazeAccount = {
+      const savedOption: WorkspaceStorageOption = {
         id: saved.id,
         name: saved.name || newBackblazeLabel.trim() || 'Backblaze B2',
+        label: saved.name || newBackblazeLabel.trim() || 'Backblaze B2',
         provider: saved.provider || 'backblaze_b2',
+        b2BucketName: newBackblazeBucketName,
+        bucketName: newBackblazeBucketName,
       };
-      setBackblazeAccounts((current) => [
-        ...current.filter((account) => account.id !== savedAccount.id),
-        savedAccount,
-      ]);
-      setBackblazeAccountId(savedAccount.id);
-      setBackblazeBuckets(newBackblazeBuckets);
-      setBackblazeBucketName(newBackblazeBucketName);
+      setConnectedBackblazeOption(savedOption);
+      setSelectedStorageId(savedOption.id);
+      setBackblazeMode(false);
       setAddingBackblazeAccount(false);
       setNewBackblazeLabel('');
       setNewBackblazeKeyId('');
@@ -762,8 +751,8 @@ export function WorkspaceCreateDialog({
       setError('Workspace name is required.');
       return;
     }
-    if (backblazeMode && (!backblazeAccountId || !backblazeBucketName)) {
-      setError('Select a Backblaze account and bucket.');
+    if (backblazeMode || selectedStorageId === 'backblaze_external') {
+      setError('Save the tested Backblaze connection before creating the workspace.');
       return;
     }
     if (!backblazeMode && !availableOptions.some((option) => option.id === selectedStorageId)) {
@@ -792,24 +781,15 @@ export function WorkspaceCreateDialog({
           googleDriveFolder.id,
         );
       }
-      const backblazeAccount = backblazeAccounts.find((account) => account.id === backblazeAccountId);
-      const option: WorkspaceStorageOption = backblazeMode
-        ? {
-            id: backblazeAccountId,
-            provider: 'backblaze_b2',
-            label: backblazeAccount?.name || 'Backblaze B2',
-            b2BucketName: backblazeBucketName,
-            bucketName: backblazeBucketName,
-          }
-        : selectedOption.provider === 'local_fs'
-          ? { ...selectedOption, localFolderName: localFolderName.trim() || selectedOption.localFolderName || name.trim() }
-          : selectedOption.provider === 'google_drive' && googleDriveFolder
-            ? {
-                ...selectedOption,
-                googleRootFolderId: googleDriveFolder.id,
-                googleRootFolderName: googleDriveFolder.name,
-              }
-            : selectedOption;
+      const option: WorkspaceStorageOption = selectedOption.provider === 'local_fs'
+        ? { ...selectedOption, localFolderName: localFolderName.trim() || selectedOption.localFolderName || name.trim() }
+        : selectedOption.provider === 'google_drive' && googleDriveFolder
+          ? {
+              ...selectedOption,
+              googleRootFolderId: googleDriveFolder.id,
+              googleRootFolderName: googleDriveFolder.name,
+            }
+          : selectedOption;
       await onSubmit(buildWorkspaceCreateInput(name, description, option));
       onClose();
     } catch (reason) {
