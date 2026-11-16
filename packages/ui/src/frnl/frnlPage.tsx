@@ -7,6 +7,8 @@
 import React, { useEffect, useState } from 'react';
 import { mountFrnlOrchestration, type FrnlOrchestrationDefinition } from '@ultrst-armada/frnlts';
 import { useFloksFrnlStore } from './store.js';
+import { defineFrnlComponent } from '@ultrst-armada/frnlts';
+import { useFrnlComponent } from '@ultrst-armada/frnlts/react';
 import {
   BottomStripProvider,
   useBottomStrip,
@@ -21,6 +23,23 @@ import {
   frnlBottomBar,
   type FrnlApiRequestLog,
 } from './frnlBottomBar.js';
+
+export const frnlPageDefinition = defineFrnlComponent({
+  name: 'frnlPage',
+  states: {
+    active: {
+      name: 'active',
+      events: {
+        selectTab: { functionId: 'frnlPage.selectTab' },
+        save: { functionId: 'frnlPage.save' },
+        openSettings: { functionId: 'frnlPage.openSettings' },
+        logout: { functionId: 'frnlPage.logout' },
+      },
+      visualParameters: {},
+      phases: { sustainPhase: { visualDefinition: { parameters: {} } } },
+    },
+  },
+});
 
 export interface FrnlPageTab extends FrnlTopBarTab {
   content?: React.ReactNode;
@@ -137,6 +156,25 @@ function FrnlPageInner({
   const store = useFloksFrnlStore();
   const [internalActiveTab, setInternalActiveTab] = useState(tabs[0]?.id);
   const activeTab = activeTabId ?? internalActiveTab;
+
+  const handlers = React.useMemo(() => ({
+    'frnlPage.selectTab': (payload: unknown) => {
+      if (typeof payload !== 'string') throw new TypeError('selectTab expects a tab id');
+      handleTabChange(payload);
+    },
+    'frnlPage.save': () => onSave?.(),
+    'frnlPage.openSettings': () => onOpenSettings?.(),
+    'frnlPage.logout': () => onLogout?.(),
+  }), [onSave, onOpenSettings, onLogout, onTabChange]);
+
+  useFrnlComponent({
+    id,
+    definition: frnlPageDefinition,
+    store,
+    state: 'active',
+    properties: { appName, activeTabId: activeTab, tabIds: tabs.map((tab) => tab.id) },
+    handlers,
+  });
 
   useEffect(() => {
     const cleanups = orchestrations.map((orchestration) =>
