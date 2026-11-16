@@ -4,7 +4,7 @@
 // Features: frnlTopBar & frnlBottomBar enabled by default (toggleable),
 // global dynamic hover inspection listener, tab manager, and responsive shell.
 // ══════════════════════════════════════════════════════════════════════════════
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { mountFrnlOrchestration, type FrnlOrchestrationDefinition } from '@ultrst-armada/frnlts';
 import { useFloksFrnlStore } from './store.js';
 import { defineFrnlComponent } from '@ultrst-armada/frnlts';
@@ -68,6 +68,10 @@ export interface FrnlPageProps {
   className?: string;
   children?: React.ReactNode;
 }
+
+const EMPTY_PAGE_TABS: FrnlPageTab[] = [];
+const EMPTY_PAGE_ORCHESTRATIONS: readonly FrnlOrchestrationDefinition[] = [];
+const EMPTY_RECENT_API_REQUESTS: FrnlApiRequestLog[] = [];
 
 /**
  * Global hover/focus listener that inspects DOM elements for title, data-hover,
@@ -137,7 +141,7 @@ function FrnlPageInner({
   appName = 'Skipo App',
   appLogo,
   breadcrumbs,
-  tabs = [],
+  tabs = EMPTY_PAGE_TABS,
   activeTabId,
   onTabChange,
   showTopBar = true,
@@ -148,8 +152,8 @@ function FrnlPageInner({
   onOpenSettings,
   onSave,
   isSaving = false,
-  recentApiRequests = [],
-  orchestrations = [],
+  recentApiRequests = EMPTY_RECENT_API_REQUESTS,
+  orchestrations = EMPTY_PAGE_ORCHESTRATIONS,
   className = '',
   children,
 }: FrnlPageProps) {
@@ -167,12 +171,17 @@ function FrnlPageInner({
     'frnlPage.logout': () => onLogout?.(),
   }), [onSave, onOpenSettings, onLogout, onTabChange]);
 
+  const semanticProperties = useMemo(
+    () => ({ appName, activeTabId: activeTab, tabIds: tabs.map((tab) => tab.id) }),
+    [appName, activeTab, tabs],
+  );
+
   useFrnlComponent({
     id,
     definition: frnlPageDefinition,
     store,
     state: 'active',
-    properties: { appName, activeTabId: activeTab, tabIds: tabs.map((tab) => tab.id) },
+    properties: semanticProperties,
     handlers,
   });
 
