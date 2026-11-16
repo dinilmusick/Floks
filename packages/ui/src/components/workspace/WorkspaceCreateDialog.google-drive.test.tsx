@@ -172,19 +172,19 @@ describe('WorkspaceCreateDialog Google Drive integration', () => {
       if (serviceId === 'kloks.backend.storage' && operation === 'createBackblazeConnection') {
         return { id: 'b2-new', provider: 'backblaze_b2', label: 'New B2' };
       }
+      if (serviceId === 'kloks.backend.storage' && operation === 'createGoogleDriveAuthorizationRequest') {
+        return { authorizationUrl: 'https://accounts.google.com/o/oauth2/v2/auth?state=signed-state' };
+      }
+      if (serviceId === 'kloks.backend.storage' && operation === 'listGoogleDriveFolders') return [];
+      if (serviceId === 'kloks.backend.storage' && operation === 'getGoogleDriveAccountIdentity') {
+        return { accountId: 'google-account-1', email: 'artist@example.test' };
+      }
+      if (serviceId === 'kloks.backend.storage' && operation === 'selectGoogleDriveRootFolder') {
+        return { id: 'folder-1', name: 'Projects' };
+      }
       return {};
     });
-    const connectGoogleDrive = vi.fn().mockResolvedValue({
-      id: 'drive-2',
-      provider: 'google_drive',
-      googleEmail: 'artist@example.test',
-    });
-    const listGoogleDriveFolders = vi.fn().mockResolvedValue([]);
-
-    const service = createKloksWorkspaceStorageService(
-      { invoke },
-      { connectGoogleDrive, listGoogleDriveFolders },
-    );
+    const service = createKloksWorkspaceStorageService({ invoke });
     const connections = await service.listStorageConnections?.('user-1');
     const capabilities = await service.listStorageProviderCapabilities?.('user-1');
 
@@ -222,8 +222,32 @@ describe('WorkspaceCreateDialog Google Drive integration', () => {
       bucketName: 'archive',
     });
 
-    await expect(service.connectGoogleDrive?.('user-1')).resolves.toMatchObject({ id: 'drive-2', provider: 'google_drive' });
-    await expect(service.listGoogleDriveFolders?.('drive-2')).resolves.toEqual([]);
+    const location = {
+      href: 'https://app.example.test/workspaces',
+      origin: 'https://app.example.test',
+      assign: vi.fn(),
+    };
+    vi.stubGlobal('window', { location });
+    try {
+      await service.connectGoogleDrive?.('user-1');
+      expect(location.assign).toHaveBeenCalledWith(expect.stringContaining('https://accounts.google.com/'));
+    } finally {
+      vi.unstubAllGlobals();
+    }
+    expect(invoke).toHaveBeenCalledWith('kloks.backend.storage', 'createGoogleDriveAuthorizationRequest', {
+      userId: 'user-1',
+      returnTo: location.href,
+      callbackOrigin: location.origin,
+    });
+    await expect(service.listGoogleDriveFolders?.('drive-2', undefined, 'user-1')).resolves.toEqual([]);
+    await expect(service.getGoogleDriveAccountIdentity?.('user-1', 'drive-2')).resolves.toEqual({
+      accountId: 'google-account-1',
+      email: 'artist@example.test',
+    });
+    await expect(service.selectGoogleDriveRootFolder?.('user-1', 'drive-2', 'folder-1')).resolves.toEqual({
+      id: 'folder-1',
+      name: 'Projects',
+    });
   });
 
   it('creates a tested Backblaze connection from the workspace dialog and uses it immediately', async () => {
