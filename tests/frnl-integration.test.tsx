@@ -8,13 +8,11 @@ import {
 } from '../packages/ui/src/index.js';
 import { createFrnlStore } from '@ultrst-armada/frnlts';
 
-afterEach(() => {
-  cleanup();
-});
+afterEach(() => cleanup());
 
 describe('Floks FrnlTS Semantic Integration Suite', () => {
   it('registers a canonical Frnl button in the shared store', () => {
-    render(<frnlButton id="test-btn-1" label="Launch">Launch</frnlButton>);
+    render(React.createElement(frnlButton, { id: 'test-btn-1', label: 'Launch' }, 'Launch'));
 
     const entity = floksFrnlStore.getState().entities['test-btn-1'];
     expect(entity).toBeDefined();
@@ -28,41 +26,46 @@ describe('Floks FrnlTS Semantic Integration Suite', () => {
 
   it('represents disabled, active, and loading behavior through Frnl state', () => {
     const { rerender } = render(
-      <frnlButton id="stateful-btn" label="Stateful" disabled={false} isActive={false}>
-        Stateful
-      </frnlButton>,
+      React.createElement(frnlButton, {
+        id: 'stateful-btn',
+        label: 'Stateful',
+        disabled: false,
+        isActive: false,
+      }, 'Stateful'),
     );
 
     expect(floksFrnlStore.getState().entities['stateful-btn'].state).toBe('idle');
 
-    rerender(
-      <frnlButton id="stateful-btn" label="Stateful" isActive>
-        Stateful
-      </frnlButton>,
-    );
+    rerender(React.createElement(frnlButton, {
+      id: 'stateful-btn',
+      label: 'Stateful',
+      isActive: true,
+    }, 'Stateful'));
     expect(floksFrnlStore.getState().entities['stateful-btn'].state).toBe('active');
 
-    rerender(
-      <frnlButton id="stateful-btn" label="Stateful" disabled>
-        Stateful
-      </frnlButton>,
-    );
+    rerender(React.createElement(frnlButton, {
+      id: 'stateful-btn',
+      label: 'Stateful',
+      disabled: true,
+    }, 'Stateful'));
     expect(floksFrnlStore.getState().entities['stateful-btn'].state).toBe('disabled');
 
-    rerender(
-      <frnlButton id="stateful-btn" label="Stateful" loading>
-        Stateful
-      </frnlButton>,
-    );
+    rerender(React.createElement(frnlButton, {
+      id: 'stateful-btn',
+      label: 'Stateful',
+      loading: true,
+    }, 'Stateful'));
     expect(floksFrnlStore.getState().entities['stateful-btn'].state).toBe('loading');
   });
 
   it('stores declarative button properties in the Frnl entity', () => {
-    render(
-      <frnlButton id="props-btn" label="Propped" variant="accent" size="lg" isActive>
-        Propped
-      </frnlButton>,
-    );
+    render(React.createElement(frnlButton, {
+      id: 'props-btn',
+      label: 'Propped',
+      variant: 'accent',
+      size: 'lg',
+      isActive: true,
+    }, 'Propped'));
 
     const entity = floksFrnlStore.getState().entities['props-btn'];
     expect(entity.properties.variant).toBe('accent');
@@ -73,31 +76,32 @@ describe('Floks FrnlTS Semantic Integration Suite', () => {
 
   it('routes interaction through the Frnl event boundary', () => {
     let clicked = false;
-    render(
-      <frnlButton id="click-btn" label="Clickable" onClick={() => { clicked = true; }}>
-        Clickable
-      </frnlButton>,
-    );
+    render(React.createElement(frnlButton, {
+      id: 'click-btn',
+      label: 'Clickable',
+      onClick: () => { clicked = true; },
+    }, 'Clickable'));
 
     fireEvent.click(screen.getByRole('button', { name: /clickable/i }));
     expect(clicked).toBe(true);
 
     let disabledClicked = false;
-    render(
-      <frnlButton id="disabled-click-btn" label="Disabled" disabled onClick={() => { disabledClicked = true; }}>
-        Disabled
-      </frnlButton>,
-    );
+    render(React.createElement(frnlButton, {
+      id: 'disabled-click-btn',
+      label: 'Disabled',
+      disabled: true,
+      onClick: () => { disabledClicked = true; },
+    }, 'Disabled'));
     fireEvent.click(screen.getByRole('button', { name: /disabled/i }));
     expect(disabledClicked).toBe(false);
   });
 
   it('preserves declarative properties and runtime state across registered entities', () => {
     render(
-      <>
-        <frnlButton id="one" label="One">One</frnlButton>
-        <frnlButton id="two" label="Two" isActive>Two</frnlButton>
-      </>,
+      React.createElement('div', null,
+        React.createElement(frnlButton, { id: 'one', label: 'One' }, 'One'),
+        React.createElement(frnlButton, { id: 'two', label: 'Two', isActive: true }, 'Two'),
+      ),
     );
 
     const entities = Object.values(floksFrnlStore.getState().entities);
@@ -114,9 +118,11 @@ describe('Floks FrnlTS Semantic Integration Suite', () => {
     const customStore = createFrnlStore();
 
     render(
-      <FrnlStoreProvider store={customStore}>
-        <frnlButton id="isolated-btn" label="Isolated">Isolated</frnlButton>
-      </FrnlStoreProvider>,
+      React.createElement(
+        FrnlStoreProvider,
+        { store: customStore },
+        React.createElement(frnlButton, { id: 'isolated-btn', label: 'Isolated' }, 'Isolated'),
+      ),
     );
 
     expect(customStore.getState().entities['isolated-btn']?.state).toBe('idle');
@@ -125,15 +131,15 @@ describe('Floks FrnlTS Semantic Integration Suite', () => {
 
   it('assigns collision-free IDs to anonymous canonical buttons', () => {
     render(
-      <>
-        <frnlButton>Save</frnlButton>
-        <frnlButton>Save</frnlButton>
-        <frnlButton>Submit</frnlButton>
-      </>,
+      React.createElement('div', null,
+        React.createElement(frnlButton, null, 'Save'),
+        React.createElement(frnlButton, null, 'Save'),
+        React.createElement(frnlButton, null, 'Submit'),
+      ),
     );
 
     const buttons = screen.getAllByRole('button');
-    expect(buttons.length).toBeGreaterThanOrEqual(3);
+    expect(buttons.length).toBe(3);
 
     const ids = buttons.map((button) => button.id).filter(Boolean);
     expect(new Set(ids).size).toBe(ids.length);
