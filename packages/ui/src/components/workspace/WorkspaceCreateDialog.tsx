@@ -55,6 +55,7 @@ export interface WorkspaceStorageOption {
   bucketName?: string;
   b2BucketName?: string;
   googleEmail?: string;
+  googleAccountId?: string;
   googleRootFolderId?: string;
   googleRootFolderName?: string;
 }
@@ -108,8 +109,10 @@ export interface WorkspaceStorageService {
   listBackblazeBuckets?: (accountId: string, userId?: string) => Promise<BackblazeBucket[]>;
   testBackblazeCredentials?: (input: BackblazeCredentialInput) => Promise<BackblazeCredentialTestResult>;
   createBackblazeConnection?: (userId: string, input: BackblazeCredentialInput & { bucketName: string }) => Promise<BackblazeAccount>;
-  connectGoogleDrive?: (userId: string) => Promise<WorkspaceStorageOption>;
-  listGoogleDriveFolders?: (connectionId: string, parentFolderId?: string) => Promise<GoogleDriveFolder[]>;
+  connectGoogleDrive?: (userId: string) => Promise<WorkspaceStorageOption | void>;
+  listGoogleDriveFolders?: (connectionId: string, parentFolderId?: string, userId?: string) => Promise<GoogleDriveFolder[]>;
+  getGoogleDriveAccountIdentity?: (userId: string, connectionId: string) => Promise<{ accountId: string; email?: string }>;
+  selectGoogleDriveRootFolder?: (userId: string, connectionId: string, folderId: string) => Promise<GoogleDriveFolder>;
 }
 
 export type WorkspaceCreateDialogHiddenField =
@@ -249,17 +252,12 @@ export interface KloksServiceInvoker {
 }
 
 /**
- * Drive operations are intentionally supplied by the canonical Kloks storage
- * service. Floks does not implement OAuth, exchange codes, or store Drive tokens.
+ * Every storage operation, including Google OAuth and folder selection, is
+ * invoked through the canonical Kloks StorageService contract. Floks never
+ * exchanges OAuth codes, persists tokens, or calls provider APIs directly.
  */
-export interface KloksGoogleDriveWorkspaceApi {
-  connectGoogleDrive: (userId: string) => Promise<WorkspaceStorageOption>;
-  listGoogleDriveFolders: (connectionId: string, parentFolderId?: string) => Promise<GoogleDriveFolder[]>;
-}
-
 export function createKloksWorkspaceStorageService(
   invoker: KloksServiceInvoker,
-  googleDrive?: KloksGoogleDriveWorkspaceApi,
 ): WorkspaceStorageService {
   const mapStorageConnection = (connection: any): WorkspaceStorageOption | null => {
     if (!connection || typeof connection.id !== 'string' || typeof connection.provider !== 'string') return null;
@@ -331,12 +329,62 @@ export function createKloksWorkspaceStorageService(
         provider: String(connection.provider || 'backblaze_b2'),
       };
     },
-    ...(googleDrive
-      ? {
-          connectGoogleDrive: googleDrive.connectGoogleDrive,
-          listGoogleDriveFolders: googleDrive.listGoogleDriveFolders,
-        }
-      : {}),
+    connectGoogleDrive: async (userId: string) => {
+      if (typeof window === 'undefined') {
+        throw new Error('Google Drive authorization can only start in a browser.');
+      }
+      const result = await invoker.invoke('kloks.backend.storage', 'createGoogleDriveAuthorizationRequest', {
+        userId,
+        returnTo: window.location.href,
+        callbackOrigin: window.location.origin,
+      }) as { authorizationUrl?: unknown };
+      const authorizationUrl = result?.authorizationUrl;
+      if (typeof authorizationUrl !== 'string') {
+        throw new Error('Kloks did not return a Google Drive authorization URL.');
+      }
+      const parsed = new URL(authorizationUrl);
+      if (parsed.origin !== 'https://accounts.google.com') {
+        throw new Error('Kloks returned an untrusted Google Drive authorization destination.');
+      }
+      window.location.assign(parsed.toString());
+    },
+    listGoogleDriveFolders: async (connectionId: string, parentFolderId?: string, userId = '') => {
+      const result = await invoker.invoke('kloks.backend.storage', 'listGoogleDriveFolders', {
+        userId,
+        connectionId,
+        parentFolderId,
+      });
+      return Array.isArray(result)
+        ? result as GoogleDriveFolder[]
+        : Array.isArray((result as any)?.folders)
+          ? (result as any).folders as GoogleDriveFolder[]
+          : [];
+    },
+    getGoogleDriveAccountIdentity: async (userId: string, connectionId: string) => {
+      const result = await invoker.invoke('kloks.backend.storage', 'getGoogleDriveAccountIdentity', {
+        userId,
+        connectionId,
+      }) as { accountId?: unknown; email?: unknown };
+      if (typeof result?.accountId !== 'string' || !result.accountId) {
+        throw new Error('Kloks did not return an authenticated Google Drive account identity.');
+      }
+      return {
+        accountId: result.accountId,
+        ...(typeof result.email === 'string' ? { email: result.email } : {}),
+      };
+    },
+    selectGoogleDriveRootFolder: async (userId: string, connectionId: string, folderId: string) => {
+      const result = await invoker.invoke('kloks.backend.storage', 'selectGoogleDriveRootFolder', {
+        userId,
+        connectionId,
+        folderId,
+      });
+      const folder = (result as any)?.folder || result;
+      if (!folder || typeof folder.id !== 'string' || typeof folder.name !== 'string') {
+        throw new Error('Kloks did not confirm the selected Google Drive workspace root.');
+      }
+      return folder as GoogleDriveFolder;
+    },
   };
 }
 
@@ -686,6 +734,16 @@ export function WorkspaceCreateDialog({
     setSubmitting(true);
     setError(null);
     try {
+      if (selectedOption.provider === 'google_drive' && googleDriveFolder) {
+        if (!googleDriveConnection || !storageService.selectGoogleDriveRootFolder) {
+          throw new Error('Google Drive root selection is not configured through the canonical Kloks storage service.');
+        }
+        await storageService.selectGoogleDriveRootFolder(
+          effectiveUserId,
+          googleDriveConnection.id,
+          googleDriveFolder.id,
+        );
+      }
       const backblazeAccount = backblazeAccounts.find((account) => account.id === backblazeAccountId);
       const option: WorkspaceStorageOption = backblazeMode
         ? {
@@ -942,7 +1000,9 @@ export function WorkspaceCreateDialog({
               userId={effectiveUserId}
               connection={googleDriveConnection}
               connectGoogleDrive={storageService.connectGoogleDrive}
-              listGoogleDriveFolders={storageService.listGoogleDriveFolders}
+              listGoogleDriveFolders={storageService.listGoogleDriveFolders
+                ? (connectionId, parentFolderId) => storageService.listGoogleDriveFolders!(connectionId, parentFolderId, effectiveUserId)
+                : undefined}
               selectedFolder={googleDriveFolder}
               onConnected={(connection) => {
                 if (connection.provider !== 'google_drive') {
