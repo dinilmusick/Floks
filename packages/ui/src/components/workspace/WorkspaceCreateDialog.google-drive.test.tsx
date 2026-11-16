@@ -43,7 +43,7 @@ describe('WorkspaceCreateDialog Google Drive integration', () => {
 
     await waitFor(() => expect(connectGoogleDrive).toHaveBeenCalledWith('user-1'));
     expect(await screen.findByText('Studio Archive')).toBeInTheDocument();
-    expect(listGoogleDriveFolders).toHaveBeenCalledWith('drive-auth-1', undefined);
+    expect(listGoogleDriveFolders).toHaveBeenCalledWith('drive-auth-1', undefined, 'user-1');
 
     fireEvent.click(screen.getByRole('button', { name: 'Select' }));
     fireEvent.click(screen.getByRole('button', { name: 'Create Workspace' }));
