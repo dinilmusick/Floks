@@ -23,6 +23,11 @@ describe('WorkspaceCreateDialog Google Drive integration', () => {
     const folder = { id: 'drive-folder-1', name: 'Studio Archive', mimeType: 'application/vnd.google-apps.folder' };
     const connectGoogleDrive = vi.fn().mockResolvedValue(driveConnection);
     const listGoogleDriveFolders = vi.fn().mockResolvedValue([folder]);
+    const getGoogleDriveAccountIdentity = vi.fn().mockResolvedValue({
+      accountId: 'google-account-1',
+      email: 'artist@example.test',
+    });
+    const selectGoogleDriveRootFolder = vi.fn().mockResolvedValue(folder);
     const onSubmit = vi.fn().mockResolvedValue(undefined);
 
     render(
@@ -30,7 +35,7 @@ describe('WorkspaceCreateDialog Google Drive integration', () => {
         open
         userId="user-1"
         storageOptions={[{ id: 'local_fs', provider: 'local_fs', label: 'Local Folder' }]}
-        storageService={{ connectGoogleDrive, listGoogleDriveFolders }}
+        storageService={{ connectGoogleDrive, listGoogleDriveFolders, getGoogleDriveAccountIdentity, selectGoogleDriveRootFolder }}
         visibility={{ storagePolicy: { providers: ['local_fs', 'google_drive'] } }}
         onClose={() => undefined}
         onSubmit={onSubmit}
@@ -46,8 +51,10 @@ describe('WorkspaceCreateDialog Google Drive integration', () => {
     expect(listGoogleDriveFolders).toHaveBeenCalledWith('drive-auth-1', undefined, 'user-1');
 
     fireEvent.click(screen.getByRole('button', { name: 'Select' }));
+    await waitFor(() => expect(getGoogleDriveAccountIdentity).toHaveBeenCalledWith('user-1', 'drive-auth-1'));
     fireEvent.click(screen.getByRole('button', { name: 'Create Workspace' }));
 
+    await waitFor(() => expect(selectGoogleDriveRootFolder).toHaveBeenCalledWith('user-1', 'drive-auth-1', 'drive-folder-1'));
     await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
     const input = onSubmit.mock.calls[0][0];
     expect(input.storageProvider).toBe('google_drive');
