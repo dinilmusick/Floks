@@ -405,6 +405,7 @@ export function WorkspaceCreateDialog({
   const [providerCapabilities, setProviderCapabilities] = useState<StorageProviderCapability[]>([]);
   const [connectedDriveOption, setConnectedDriveOption] = useState<WorkspaceStorageOption | null>(null);
   const [googleDriveFolder, setGoogleDriveFolder] = useState<GoogleDriveFolder | null>(null);
+  const [verifiedGoogleDriveConnectionId, setVerifiedGoogleDriveConnectionId] = useState<string | null>(null);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [localFolderName, setLocalFolderName] = useState('');
@@ -453,6 +454,7 @@ export function WorkspaceCreateDialog({
     setBackblazeCredentialsTested(false);
     setConnectedDriveOption(null);
     setGoogleDriveFolder(null);
+    setVerifiedGoogleDriveConnectionId(null);
   }, [open]);
 
   useEffect(() => {
@@ -480,8 +482,12 @@ export function WorkspaceCreateDialog({
     const connection = (storageOptions ?? loadedOptions).find(
       (option) => option.id === selectedStorageId && option.provider === 'google_drive',
     );
-    if (!connection) return;
+    if (!connection) {
+      setVerifiedGoogleDriveConnectionId(null);
+      return;
+    }
     let active = true;
+    setVerifiedGoogleDriveConnectionId(null);
     storageService.getGoogleDriveAccountIdentity(effectiveUserId, connection.id)
       .then((identity) => {
         if (!active) return;
@@ -490,9 +496,13 @@ export function WorkspaceCreateDialog({
           googleAccountId: identity.accountId,
           googleEmail: identity.email || connection.googleEmail,
         });
+        setVerifiedGoogleDriveConnectionId(connection.id);
       })
       .catch((reason) => {
-        if (active) setError(reason instanceof Error ? reason.message : 'Unable to verify the Google Drive account identity.');
+        if (active) {
+          setVerifiedGoogleDriveConnectionId(null);
+          setError(reason instanceof Error ? reason.message : 'Unable to verify the Google Drive account identity.');
+        }
       });
     return () => { active = false; };
   }, [open, selectedStorageId, storageOptions, loadedOptions, effectiveUserId, storageService]);
@@ -751,6 +761,10 @@ export function WorkspaceCreateDialog({
     }
     if (selectedOption.provider === 'google_drive' && (!googleDriveConnection || !googleDriveFolder)) {
       setError('Connect Google Drive and select a folder for this workspace.');
+      return;
+    }
+    if (selectedOption.provider === 'google_drive' && verifiedGoogleDriveConnectionId !== googleDriveConnection?.id) {
+      setError('Verify the authenticated Google Drive account before creating this workspace.');
       return;
     }
     if (loadingStorage || loadingBackblazeAccounts || loadingBackblazeBuckets || testingBackblazeCredentials || savingBackblazeConnection || submitting) return;
