@@ -96,8 +96,19 @@ describe('canonical Kloks workspace storage adapter', () => {
   });
 
   it('rejects unsafe or malformed Google authorization destinations', async () => {
-    const invoke = vi.fn().mockResolvedValue({ authorizationUrl: 'https://evil.example/steal' });
-    const service = createKloksWorkspaceStorageService({ invoke });
-    await expect(service.connectGoogleDrive?.('user-1')).rejects.toThrow(/untrusted/i);
+    const location = {
+      href: 'https://app.example.test/workspaces',
+      origin: 'https://app.example.test',
+      assign: vi.fn(),
+    };
+    vi.stubGlobal('window', { location });
+    try {
+      const invoke = vi.fn().mockResolvedValue({ authorizationUrl: 'https://evil.example/steal' });
+      const service = createKloksWorkspaceStorageService({ invoke });
+      await expect(service.connectGoogleDrive?.('user-1')).rejects.toThrow(/untrusted/i);
+      expect(location.assign).not.toHaveBeenCalled();
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 });
