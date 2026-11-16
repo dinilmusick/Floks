@@ -75,7 +75,7 @@ describe('canonical Backblaze workspace creation flow', () => {
     await waitFor(() => expect(storageService.createBackblazeConnection).toHaveBeenCalledTimes(1));
     expect(screen.queryByLabelText('Backblaze Key ID')).not.toBeInTheDocument();
     expect(screen.queryByLabelText('Backblaze Application Key')).not.toBeInTheDocument();
-    expect(screen.getByRole('combobox', { name: 'Backblaze account' })).toHaveValue('saved-b2-1');
+    expect(screen.getByRole('combobox', { name: 'Workspace storage' })).toHaveValue('saved-b2-1');
 
     fireEvent.click(screen.getByRole('button', { name: 'Create Workspace' }));
     await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
