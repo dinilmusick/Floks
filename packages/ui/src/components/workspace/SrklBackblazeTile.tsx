@@ -1,7 +1,10 @@
-// ══════════════════════════════════════════════════════════════════════════════
-// SKIPO COMPONENT: SRKL Federated Backblaze B2 Tile (< 200 lines)
-// ══════════════════════════════════════════════════════════════════════════════
-
+/**
+ * Deprecated compatibility component for older internal screens.
+ *
+ * Bucket discovery is only performed through an injected canonical Kloks
+ * storage service. This component accepts opaque connection metadata only;
+ * it never receives provider keys or calls application-local SRKL routes.
+ */
 import React, { useState, useEffect } from 'react';
 import { Cloud, CheckCircle2, RefreshCw } from 'lucide-react';
 
@@ -9,15 +12,6 @@ export interface SrklBackblazeAccount {
   id: string;
   name: string;
   provider: string;
-  credentials?: {
-    keyId?: string;
-    b2KeyId?: string;
-    applicationKey?: string;
-    b2ApplicationKey?: string;
-    bucketName?: string;
-    region?: string;
-    endpoint?: string;
-  };
 }
 
 interface Props {
@@ -27,7 +21,7 @@ interface Props {
   onSelectBucket: (account: SrklBackblazeAccount, bucketName: string) => void;
   userId?: string;
   storageService?: {
-    listBackblazeBuckets?: (accountId: string, userId: string) => Promise<any[]>;
+    listBackblazeBuckets?: (connectionId: string, userId: string) => Promise<any[]>;
   };
 }
 
@@ -43,41 +37,24 @@ export const SrklBackblazeTile: React.FC<Props> = ({
   const [loading, setLoading] = useState(false);
 
   const fetchBuckets = async () => {
+    if (!storageService?.listBackblazeBuckets || !userId) {
+      setBuckets([]);
+      return;
+    }
     setLoading(true);
     try {
-      if (storageService?.listBackblazeBuckets) {
-        const res = await storageService.listBackblazeBuckets(account.id, userId || '');
-        if (Array.isArray(res) && res.length > 0) {
-          setBuckets(res);
-          return;
-        }
-      }
-      const creds = account.credentials || (account as any).metadata?.credentials || {};
-      const keyId = creds.keyId || creds.b2KeyId || '';
-      const applicationKey = creds.applicationKey || creds.b2ApplicationKey || '';
-      const defaultBucket = creds.bucketName || 'ultrst-apps';
-
-      const res = await fetch('/api/srkl/backblaze/buckets', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ accountId: account.id, keyId, applicationKey, userId, bucketName: defaultBucket }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (data.success && Array.isArray(data.buckets)) {
-        setBuckets(data.buckets);
-      } else {
-        setBuckets([{ bucketId: 'default', bucketName: defaultBucket }]);
-      }
+      const result = await storageService.listBackblazeBuckets(account.id, userId);
+      setBuckets(Array.isArray(result) ? result : []);
     } catch {
-      setBuckets([{ bucketId: 'default', bucketName: 'ultrst-apps' }]);
+      setBuckets([]);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchBuckets();
-  }, [account.id]);
+    void fetchBuckets();
+  }, [account.id, userId, storageService]);
 
   return (
     <div className={`p-3 border-2 rounded transition-all font-mono select-none ${
@@ -94,36 +71,36 @@ export const SrklBackblazeTile: React.FC<Props> = ({
         </div>
         <button
           type="button"
-          onClick={fetchBuckets}
-          disabled={loading}
+          onClick={() => void fetchBuckets()}
+          disabled={loading || !storageService?.listBackblazeBuckets}
           className="p-1 text-[var(--skipo-text-muted)] hover:text-amber-300 rounded cursor-pointer"
           title="Refresh buckets"
         >
           <RefreshCw size={11} className={loading ? 'animate-spin text-amber-400' : ''} />
         </button>
       </div>
-
       <div className="mt-2 space-y-1.5">
         <span className="text-[9px] font-bold uppercase text-[var(--skipo-text-muted)] block">
           Select Target B2 Bucket:
         </span>
         <div className="flex flex-wrap gap-1.5">
-          {buckets.map((b) => {
-            const bName = b.bucketName || b.name || 'ultrst-apps';
-            const isSelected = isSelectedAccount && selectedBucketName === bName;
+          {buckets.map((bucket) => {
+            const bucketName = bucket.bucketName || bucket.name;
+            if (!bucketName) return null;
+            const selected = isSelectedAccount && selectedBucketName === bucketName;
             return (
               <button
-                key={b.bucketId || bName}
+                key={bucket.bucketId || bucketName}
                 type="button"
-                onClick={() => onSelectBucket(account, bName)}
+                onClick={() => onSelectBucket(account, bucketName)}
                 className={`px-2 py-1 text-[10px] font-bold rounded flex items-center gap-1 border transition-all cursor-pointer ${
-                  isSelected
+                  selected
                     ? 'border-amber-400 bg-amber-400 text-black shadow-sm font-black'
                     : 'border-[var(--skipo-border-color)] bg-[var(--skipo-surface)] hover:border-amber-400/80 text-[var(--skipo-text)]'
                 }`}
               >
-                {isSelected && <CheckCircle2 size={10} />}
-                <span>{bName}</span>
+                {selected && <CheckCircle2 size={10} />}
+                <span>{bucketName}</span>
               </button>
             );
           })}
