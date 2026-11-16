@@ -17,7 +17,13 @@ jobs:
       - name: Check whitespace errors in the change set
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
-        run: git diff --check "${BASE_SHA}...HEAD"
+        run: |
+          set -euo pipefail
+          base_sha="$BASE_SHA"
+          if [[ -z "$base_sha" || "$base_sha" == "0000000000000000000000000000000000000000" ]]; then
+            base_sha="$(git merge-base origin/main HEAD)"
+          fi
+          git diff --check "${base_sha}...HEAD"
       - uses: pnpm/action-setup@v4
         with:
           version: 10.33.0
