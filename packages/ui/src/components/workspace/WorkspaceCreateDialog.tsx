@@ -985,7 +985,7 @@ export function WorkspaceCreateDialog({
 
         <div className="mt-5 flex justify-end gap-2 border-t pt-3" style={{ borderColor: border }}>
           <button type="button" onClick={onClose} disabled={submitting} className="h-9 border px-3 text-xs" style={{ borderColor: border }}>Cancel</button>
-          <button type="submit" disabled={submitting || loadingStorage || loadingBackblazeAccounts || loadingBackblazeBuckets || !availableOptions.length || !name.trim()} className="h-9 px-4 text-xs font-black uppercase text-black disabled:opacity-50" style={{ backgroundColor: accent }}>
+          <button type="submit" disabled={submitting || loadingStorage || loadingBackblazeAccounts || loadingBackblazeBuckets || testingBackblazeCredentials || savingBackblazeConnection || !availableOptions.length || !name.trim()} className="h-9 px-4 text-xs font-black uppercase text-black disabled:opacity-50" style={{ backgroundColor: accent }}>
             {submitting ? 'Creating…' : 'Create Workspace'}
           </button>
         </div>
