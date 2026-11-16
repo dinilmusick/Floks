@@ -1,4 +1,3 @@
-export * from './StoragePresetTile.js';
 export * from './WorkspaceStorageReadonlyPanel.js';
 export * from './WorkspaceSecondaryClonesPanel.js';
 export * from './WorkspaceCreateDialog.js';
