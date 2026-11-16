@@ -335,6 +335,15 @@ export function WorkspaceCreateDialog({
   const [backblazeAccountId, setBackblazeAccountId] = useState('');
   const [backblazeBuckets, setBackblazeBuckets] = useState<BackblazeBucket[]>([]);
   const [backblazeBucketName, setBackblazeBucketName] = useState('');
+  const [addingBackblazeAccount, setAddingBackblazeAccount] = useState(false);
+  const [newBackblazeLabel, setNewBackblazeLabel] = useState('');
+  const [newBackblazeKeyId, setNewBackblazeKeyId] = useState('');
+  const [newBackblazeApplicationKey, setNewBackblazeApplicationKey] = useState('');
+  const [newBackblazeBuckets, setNewBackblazeBuckets] = useState<BackblazeBucket[]>([]);
+  const [newBackblazeBucketName, setNewBackblazeBucketName] = useState('');
+  const [backblazeCredentialsTested, setBackblazeCredentialsTested] = useState(false);
+  const [testingBackblazeCredentials, setTestingBackblazeCredentials] = useState(false);
+  const [savingBackblazeConnection, setSavingBackblazeConnection] = useState(false);
   const [loadingBackblazeAccounts, setLoadingBackblazeAccounts] = useState(false);
   const [loadingBackblazeBuckets, setLoadingBackblazeBuckets] = useState(false);
   const [loadingStorage, setLoadingStorage] = useState(false);
@@ -355,6 +364,13 @@ export function WorkspaceCreateDialog({
     setBackblazeAccountId('');
     setBackblazeBuckets([]);
     setBackblazeBucketName('');
+    setAddingBackblazeAccount(false);
+    setNewBackblazeLabel('');
+    setNewBackblazeKeyId('');
+    setNewBackblazeApplicationKey('');
+    setNewBackblazeBuckets([]);
+    setNewBackblazeBucketName('');
+    setBackblazeCredentialsTested(false);
     setConnectedDriveOption(null);
     setGoogleDriveFolder(null);
   }, [open]);
@@ -462,6 +478,114 @@ export function WorkspaceCreateDialog({
     }
   };
 
+  const beginAddBackblazeAccount = () => {
+    setAddingBackblazeAccount(true);
+    setNewBackblazeLabel('');
+    setNewBackblazeKeyId('');
+    setNewBackblazeApplicationKey('');
+    setNewBackblazeBuckets([]);
+    setNewBackblazeBucketName('');
+    setBackblazeCredentialsTested(false);
+    setError(null);
+  };
+
+  const cancelAddBackblazeAccount = () => {
+    setAddingBackblazeAccount(false);
+    setNewBackblazeLabel('');
+    setNewBackblazeKeyId('');
+    setNewBackblazeApplicationKey('');
+    setNewBackblazeBuckets([]);
+    setNewBackblazeBucketName('');
+    setBackblazeCredentialsTested(false);
+    setError(null);
+  };
+
+  const testNewBackblazeCredentials = async () => {
+    if (!storageService.testBackblazeCredentials) {
+      setError('Backblaze credential validation is not configured for this storage service.');
+      return;
+    }
+    if (!newBackblazeKeyId.trim() || !newBackblazeApplicationKey.trim()) {
+      setError('Enter the Backblaze Key ID and Application Key before testing.');
+      return;
+    }
+    setTestingBackblazeCredentials(true);
+    setError(null);
+    setBackblazeCredentialsTested(false);
+    setNewBackblazeBuckets([]);
+    setNewBackblazeBucketName('');
+    try {
+      const result = await storageService.testBackblazeCredentials({
+        keyId: newBackblazeKeyId.trim(),
+        applicationKey: newBackblazeApplicationKey.trim(),
+      });
+      if (!result.success) {
+        throw new Error(result.error || 'Backblaze credentials could not be validated.');
+      }
+      if (!Array.isArray(result.buckets) || result.buckets.length === 0) {
+        throw new Error('The Backblaze credentials are valid but no accessible buckets were discovered.');
+      }
+      setNewBackblazeBuckets(result.buckets);
+      setBackblazeCredentialsTested(true);
+      setNewBackblazeBucketName(result.buckets.length === 1
+        ? String(result.buckets[0].bucketName || result.buckets[0].name || '')
+        : '');
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : 'Backblaze credential validation failed.');
+    } finally {
+      setTestingBackblazeCredentials(false);
+    }
+  };
+
+  const saveNewBackblazeConnection = async () => {
+    if (!storageService.createBackblazeConnection) {
+      setError('Creating Backblaze connections is not configured for this storage service.');
+      return;
+    }
+    if (!backblazeCredentialsTested) {
+      setError('Test the Backblaze credentials before saving this connection.');
+      return;
+    }
+    if (!newBackblazeBucketName) {
+      setError('Select an accessible bucket before saving this connection.');
+      return;
+    }
+    setSavingBackblazeConnection(true);
+    setError(null);
+    try {
+      const saved = await storageService.createBackblazeConnection(effectiveUserId, {
+        label: newBackblazeLabel.trim() || undefined,
+        keyId: newBackblazeKeyId.trim(),
+        applicationKey: newBackblazeApplicationKey.trim(),
+        bucketName: newBackblazeBucketName,
+      });
+      if (!saved || !saved.id) throw new Error('Kloks did not return a saved Backblaze connection.');
+      const savedAccount: BackblazeAccount = {
+        id: saved.id,
+        name: saved.name || newBackblazeLabel.trim() || 'Backblaze B2',
+        provider: saved.provider || 'backblaze_b2',
+      };
+      setBackblazeAccounts((current) => [
+        ...current.filter((account) => account.id !== savedAccount.id),
+        savedAccount,
+      ]);
+      setBackblazeAccountId(savedAccount.id);
+      setBackblazeBuckets(newBackblazeBuckets);
+      setBackblazeBucketName(newBackblazeBucketName);
+      setAddingBackblazeAccount(false);
+      setNewBackblazeLabel('');
+      setNewBackblazeKeyId('');
+      setNewBackblazeApplicationKey('');
+      setNewBackblazeBuckets([]);
+      setNewBackblazeBucketName('');
+      setBackblazeCredentialsTested(false);
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : 'Unable to save the Backblaze connection.');
+    } finally {
+      setSavingBackblazeConnection(false);
+    }
+  };
+
   const handleBackblazeAccountChange = async (accountId: string) => {
     setBackblazeAccountId(accountId);
     setBackblazeBuckets([]);
@@ -496,7 +620,7 @@ export function WorkspaceCreateDialog({
       setError('Connect Google Drive and select a folder for this workspace.');
       return;
     }
-    if (loadingStorage || loadingBackblazeAccounts || loadingBackblazeBuckets || submitting) return;
+    if (loadingStorage || loadingBackblazeAccounts || loadingBackblazeBuckets || testingBackblazeCredentials || savingBackblazeConnection || submitting) return;
     setSubmitting(true);
     setError(null);
     try {
@@ -610,42 +734,136 @@ export function WorkspaceCreateDialog({
 
             </div>
             {!hiddenFields.has('backblaze') && backblazeMode && (
-              <div className="mt-3 space-y-2 border-t pt-3" style={{ borderColor: border }}>
-                <label className="block space-y-1">
-                  <span className="text-[10px] font-black uppercase">Backblaze account</span>
-                  <select
-                    aria-label="Backblaze account"
-                    value={backblazeAccountId}
-                    onChange={(event) => handleBackblazeAccountChange(event.target.value)}
-                    disabled={loadingBackblazeAccounts || submitting}
-                    className="h-9 w-full border px-2 text-xs"
-                    style={{ backgroundColor: background, borderColor: border }}
-                  >
-                    <option value="">Select Backblaze account</option>
-                    {backblazeAccounts.map((account) => (
-                      <option key={account.id} value={account.id}>{account.name}</option>
-                    ))}
-                  </select>
-                  {loadingBackblazeAccounts && <span className="text-[10px]" style={{ color: muted }}>Loading Backblaze accounts…</span>}
-                </label>
-                <label className="block space-y-1">
-                  <span className="text-[10px] font-black uppercase">Backblaze bucket</span>
-                  <select
-                    aria-label="Backblaze bucket"
-                    value={backblazeBucketName}
-                    onChange={(event) => setBackblazeBucketName(event.target.value)}
-                    disabled={!backblazeAccountId || loadingBackblazeBuckets || submitting}
-                    className="h-9 w-full border px-2 text-xs"
-                    style={{ backgroundColor: background, borderColor: border }}
-                  >
-                    <option value="">Select bucket</option>
-                    {backblazeBuckets.map((bucket) => {
-                      const bucketName = bucket.bucketName || bucket.name || '';
-                      return <option key={bucket.bucketId || bucket.id || bucketName} value={bucketName}>{bucketName}</option>;
-                    })}
-                  </select>
-                  {loadingBackblazeBuckets && <span className="text-[10px]" style={{ color: muted }}>Loading buckets…</span>}
-                </label>
+              <div className="mt-3 space-y-3 border-t pt-3" style={{ borderColor: border }}>
+                {!addingBackblazeAccount ? (
+                  <>
+                    <label className="block space-y-1">
+                      <span className="text-[10px] font-black uppercase">Backblaze account</span>
+                      <select
+                        aria-label="Backblaze account"
+                        value={backblazeAccountId}
+                        onChange={(event) => handleBackblazeAccountChange(event.target.value)}
+                        disabled={loadingBackblazeAccounts || submitting}
+                        className="h-9 w-full border px-2 text-xs"
+                        style={{ backgroundColor: background, borderColor: border }}
+                      >
+                        <option value="">Select Backblaze account</option>
+                        {backblazeAccounts.map((account) => (
+                          <option key={account.id} value={account.id}>{account.name}</option>
+                        ))}
+                      </select>
+                      {loadingBackblazeAccounts && <span className="text-[10px]" style={{ color: muted }}>Loading Backblaze accounts…</span>}
+                    </label>
+                    <button
+                      type="button"
+                      onClick={beginAddBackblazeAccount}
+                      disabled={submitting}
+                      className="h-9 border px-3 text-xs font-bold disabled:opacity-50"
+                      style={{ borderColor: accent, color: accent }}
+                    >
+                      + Add new Backblaze account
+                    </button>
+                    <label className="block space-y-1">
+                      <span className="text-[10px] font-black uppercase">Backblaze bucket</span>
+                      <select
+                        aria-label="Backblaze bucket"
+                        value={backblazeBucketName}
+                        onChange={(event) => setBackblazeBucketName(event.target.value)}
+                        disabled={!backblazeAccountId || loadingBackblazeBuckets || submitting}
+                        className="h-9 w-full border px-2 text-xs"
+                        style={{ backgroundColor: background, borderColor: border }}
+                      >
+                        <option value="">Select bucket</option>
+                        {backblazeBuckets.map((bucket) => {
+                          const bucketName = bucket.bucketName || bucket.name || '';
+                          return <option key={bucket.bucketId || bucket.id || bucketName} value={bucketName}>{bucketName}</option>;
+                        })}
+                      </select>
+                      {loadingBackblazeBuckets && <span className="text-[10px]" style={{ color: muted }}>Loading buckets…</span>}
+                    </label>
+                  </>
+                ) : (
+                  <div className="space-y-2 border p-3" style={{ borderColor: border, backgroundColor: background }}>
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-[10px] font-black uppercase">Add Backblaze account</span>
+                      <button type="button" onClick={cancelAddBackblazeAccount} disabled={testingBackblazeCredentials || savingBackblazeConnection} className="text-[10px] underline">Cancel</button>
+                    </div>
+                    <label className="block space-y-1">
+                      <span className="text-[10px] font-black uppercase">Account label</span>
+                      <input
+                        aria-label="Backblaze account label"
+                        value={newBackblazeLabel}
+                        onChange={(event) => setNewBackblazeLabel(event.target.value)}
+                        placeholder="Production B2 account"
+                        className="h-9 w-full border px-3 text-xs"
+                        style={{ backgroundColor: surface, borderColor: border }}
+                      />
+                    </label>
+                    <label className="block space-y-1">
+                      <span className="text-[10px] font-black uppercase">B2 Key ID</span>
+                      <input
+                        aria-label="Backblaze Key ID"
+                        autoComplete="off"
+                        value={newBackblazeKeyId}
+                        onChange={(event) => { setNewBackblazeKeyId(event.target.value); setBackblazeCredentialsTested(false); }}
+                        className="h-9 w-full border px-3 text-xs"
+                        style={{ backgroundColor: surface, borderColor: border }}
+                      />
+                    </label>
+                    <label className="block space-y-1">
+                      <span className="text-[10px] font-black uppercase">Application Key</span>
+                      <input
+                        aria-label="Backblaze Application Key"
+                        type="password"
+                        autoComplete="new-password"
+                        value={newBackblazeApplicationKey}
+                        onChange={(event) => { setNewBackblazeApplicationKey(event.target.value); setBackblazeCredentialsTested(false); }}
+                        className="h-9 w-full border px-3 text-xs"
+                        style={{ backgroundColor: surface, borderColor: border }}
+                      />
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => void testNewBackblazeCredentials()}
+                      disabled={testingBackblazeCredentials || savingBackblazeConnection || !newBackblazeKeyId.trim() || !newBackblazeApplicationKey.trim()}
+                      className="h-9 border px-3 text-xs font-bold disabled:opacity-50"
+                      style={{ borderColor: border }}
+                    >
+                      {testingBackblazeCredentials ? 'Testing credentials…' : 'Test B2 credentials'}
+                    </button>
+                    {backblazeCredentialsTested && (
+                      <>
+                        <p role="status" className="text-[10px] text-emerald-400">Credentials verified. Select the bucket to associate with this account.</p>
+                        <label className="block space-y-1">
+                          <span className="text-[10px] font-black uppercase">Accessible bucket</span>
+                          <select
+                            aria-label="New Backblaze bucket"
+                            value={newBackblazeBucketName}
+                            onChange={(event) => setNewBackblazeBucketName(event.target.value)}
+                            disabled={savingBackblazeConnection}
+                            className="h-9 w-full border px-2 text-xs"
+                            style={{ backgroundColor: surface, borderColor: border }}
+                          >
+                            <option value="">Select bucket</option>
+                            {newBackblazeBuckets.map((bucket) => {
+                              const bucketName = bucket.bucketName || bucket.name || '';
+                              return <option key={bucket.bucketId || bucket.id || bucketName} value={bucketName}>{bucketName}</option>;
+                            })}
+                          </select>
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => void saveNewBackblazeConnection()}
+                          disabled={savingBackblazeConnection || !newBackblazeBucketName}
+                          className="h-9 px-3 text-xs font-bold text-black disabled:opacity-50"
+                          style={{ backgroundColor: accent }}
+                        >
+                          {savingBackblazeConnection ? 'Saving connection…' : 'Save account and use it'}
+                        </button>
+                      </>
+                    )}
+                  </div>
+                )}
               </div>
             )}
             {loadingStorage ? (
