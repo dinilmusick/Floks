@@ -183,10 +183,10 @@ export function GoogleDriveWorkspacePicker({
         <button
           type="button"
           onClick={handleConnect}
-          disabled={connecting}
+          disabled={connecting || !connectGoogleDrive}
           className="border px-3 py-2 text-xs font-bold disabled:opacity-50"
         >
-          {connecting ? 'Connecting to Google…' : 'Connect Google Drive'}
+          {connecting ? 'Connecting to Google…' : connectGoogleDrive ? 'Connect Google Drive' : 'Google Drive authorization unavailable'}
         </button>
       </section>
     );
