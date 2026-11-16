@@ -72,8 +72,8 @@ describe('canonical Backblaze workspace creation flow', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Save account and use it' }));
 
     await waitFor(() => expect(storageService.createBackblazeConnection).toHaveBeenCalledTimes(1));
-    expect(screen.getByRole('textbox', { name: 'Backblaze Key ID' })).toHaveValue('');
-    expect(screen.getByLabelText('Backblaze Application Key')).toHaveValue('');
+    expect(screen.queryByLabelText('Backblaze Key ID')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Backblaze Application Key')).not.toBeInTheDocument();
     expect(screen.getByRole('combobox', { name: 'Backblaze account' })).toHaveValue('saved-b2-1');
 
     fireEvent.click(screen.getByRole('button', { name: 'Create Workspace' }));
