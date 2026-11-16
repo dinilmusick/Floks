@@ -509,10 +509,7 @@ export function WorkspaceCreateDialog({
     // they do not erase existing user-owned connections from the selector.
     const providerOrder = visibility?.storagePolicy?.providers
       ?? visibility?.availableStorageProviders
-      ?? [
-        ...providerCapabilities.map((capability) => capability.id),
-        ...supplied.map((option) => option.provider),
-      ];
+      ?? providerCapabilities.map((capability) => capability.id);
     const hidden = new Set(visibility?.hiddenStorageProviders || []);
     const enabled = supplied.filter((option) =>
       option
