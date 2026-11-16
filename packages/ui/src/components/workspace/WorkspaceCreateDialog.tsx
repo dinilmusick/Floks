@@ -444,9 +444,13 @@ export function WorkspaceCreateDialog({
 
   const availableOptions = useMemo(() => {
     const supplied = storageOptions ?? loadedOptions;
+    // Existing user connections remain selectable even when new provider
+    // authorization is currently unavailable (for example, an OAuth system
+    // credential rotation). Capabilities control discovery/creation state;
+    // they do not erase existing user-owned connections from the selector.
     const providerOrder = visibility?.storagePolicy?.providers
       ?? visibility?.availableStorageProviders
-      ?? providerCapabilities.filter((capability) => capability.enabled).map((capability) => capability.id);
+      ?? providerCapabilities.map((capability) => capability.id);
     const hidden = new Set(visibility?.hiddenStorageProviders || []);
     const enabled = supplied.filter((option) =>
       option
@@ -467,7 +471,11 @@ export function WorkspaceCreateDialog({
             ...forProvider(provider),
             ...(connectedDriveOption && connectedDriveOption.enabled !== false ? [connectedDriveOption] : []),
           ].filter((option, index, items) => items.findIndex((candidate) => candidate.id === option.id) === index);
-          return connections.length > 0 ? connections : [{ id: 'google_drive', provider: 'google_drive', label: 'Connect Google Drive' }];
+          const capability = providerCapabilities.find((item) => item.id === provider);
+          const label = capability?.enabled
+            ? 'Connect Google Drive'
+            : 'Google Drive authorization unavailable';
+          return connections.length > 0 ? connections : [{ id: 'google_drive', provider: 'google_drive', label }];
         }
         if (provider === 'backblaze_b2') {
           const connections = forProvider(provider);
