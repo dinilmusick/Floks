@@ -101,8 +101,8 @@
     "verify:npm-trusted-publishing": "node scripts/verify-npm-trusted-publishing.mjs"
   },
   "dependencies": {
-    "@dinilmusick/gutts": "^2.1.1",
-    "@ultrst-armada/frnlts": "^0.5.24",
+    "@dinilmusick/gutts": "^2.2.2",
+    "@ultrst-armada/frnlts": "^0.5.26",
     "zod": "^3.24.1"
   },
   "peerDependencies": {
@@ -120,7 +120,7 @@
     "@types/node": "^22.0.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
-    "@ultrst-armada/frnlts": "^0.5.24",
+    "@ultrst-armada/frnlts": "^0.5.26",
     "happy-dom": "^21.0.3",
     "lucide-react": "^1.55.0",
     "react": "^19.0.1",
