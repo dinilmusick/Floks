@@ -56,27 +56,45 @@ export function TilesMenu<T extends FrnlTileRecord>({
   const [query, setQuery] = React.useState('');
   const [selectedId, setSelectedId] = React.useState<string | null>(null);
   const state = error ? 'error' : loading ? 'loading' : 'idle';
+  const filtered = useMemo(() => {
+    if (loading) return [];
+    const search = query.trim().toLowerCase();
+    return tiles.filter((tile) => !search ||
+      tile.title.toLowerCase().includes(search) ||
+      (tile.description ?? '').toLowerCase().includes(search));
+  }, [loading, query, tiles]);
+  const properties = useMemo(() => ({
+    role: 'region',
+    label: title,
+    title,
+    tileCount: tiles.length,
+    query,
+    selectedId,
+    visibleTiles: filtered.map(({ id, title }) => ({ id, title })),
+  }), [filtered, query, selectedId, tiles.length, title]);
   const handlers = useMemo(() => ({
     'tilesMenu.idle.search': (value: unknown) => setQuery(String(value ?? '')),
-    'tilesMenu.idle.select': (tile: unknown) => onSelect(tile as T),
+    'tilesMenu.idle.select': (value: unknown) => {
+      const id = typeof value === 'string' ? value : (value as { id?: string } | null)?.id;
+      const tile = filtered.find((entry) => entry.id === id);
+      if (!tile) throw new Error('The requested tile is not visible in this menu.');
+      setSelectedId(tile.id);
+      onSelect(tile);
+    },
     'tilesMenu.idle.create': () => onCreate?.(),
     'tilesMenu.error.dismiss': () => {},
-  }), [onCreate, onSelect]);
+  }), [filtered, onCreate, onSelect]);
   const frnl = useFrnlComponent({
     id: componentId,
     definition: tilesMenuDefinition,
     store,
     state,
-    properties: { title, tileCount: tiles.length, query },
+    properties,
     handlers,
-  });
-  const filtered = tiles.filter((tile) => {
-    const q = query.trim().toLowerCase();
-    return !q || tile.title.toLowerCase().includes(q) || (tile.description ?? '').toLowerCase().includes(q);
   });
 
   return (
-    <section id={componentId} data-frnl-component="tilesMenu" data-frnl-state={frnl.state} className="w-full font-mono text-[var(--skipo-text)]">
+    <section id={componentId} data-frnl-component="tilesMenu" data-frnl-state={frnl.state} aria-label={title} className="w-full font-mono text-[var(--skipo-text)]">
       <header className="flex flex-wrap items-center gap-3 mb-4">
         <div className="flex-1 min-w-[220px]">
           <h2 className="text-sm font-black uppercase tracking-wider">{title}</h2>
@@ -96,7 +114,7 @@ export function TilesMenu<T extends FrnlTileRecord>({
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {filtered.map((tile) => {
             const selected = selectedId === tile.id;
-            return <button key={tile.id} type="button" onClick={() => { setSelectedId(tile.id); frnl.events.select(tile); }} className={`text-left p-4 border-2 bg-[var(--skipo-surface)] transition-colors ${selected ? 'border-[var(--skipo-accent)]' : 'border-[var(--skipo-border-color)] hover:border-[var(--skipo-accent)]'}`}>
+            return <button key={tile.id} type="button" onClick={() => frnl.events.select(tile.id)} className={`text-left p-4 border-2 bg-[var(--skipo-surface)] transition-colors ${selected ? 'border-[var(--skipo-accent)]' : 'border-[var(--skipo-border-color)] hover:border-[var(--skipo-accent)]'}`}>
               {renderTile ? renderTile(tile, selected) : <><div className="flex items-center gap-2 text-xs font-black uppercase">{tile.icon}{tile.title}</div><p className="mt-2 text-[11px] text-[var(--skipo-text-muted)]">{tile.description}</p>{tile.metadata && <div className="mt-2 text-[10px]">{tile.metadata}</div>}</>}
             </button>;
           })}
