@@ -36,7 +36,10 @@ describe("Floks browser/server dependency boundary", () => {
     expect(source).not.toMatch(/credentials\??\s*:/);
     expect(source).toContain("Object.freeze({})");
     expect(source).toContain("storagePolicy?.providers");
-    expect(source).toContain("?? []");
+    expect(source).toContain("invoker.invoke('kloks.backend.storage'");
+    expect(source).toContain("Array.isArray(result)");
+    expect(source).toContain(": []");
+    expect(source).not.toContain("fetch(");
   });
 
   it("uses the Krusbl canonical ecosystem policy snapshot for Floks boundary checks", () => {

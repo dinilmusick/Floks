@@ -1,4 +1,4 @@
-import React, { useId, useMemo, useState } from 'react';
+import React, { useEffect, useId, useMemo, useState } from 'react';
 import { FolderOpen, HardDrive, Cloud, LogOut } from 'lucide-react';
 import { defineFrnlComponent } from '@ultrst-armada/frnlts';
 import { useFrnlComponent } from '@ultrst-armada/frnlts/react';
@@ -13,7 +13,7 @@ import {
   type WorkspaceStorageOption,
 } from './WorkspaceCreateDialog.js';
 
-export const WORKSPACE_TILES_MENU_REQUIRED_SERVICES = ['auth', 'workspace', 'storage', 'srkl'] as const;
+export const WORKSPACE_TILES_MENU_REQUIRED_SERVICES = ['auth', 'workspace', 'storage'] as const;
 
 export interface WorkspaceRecord {
   id: string;
@@ -77,6 +77,24 @@ export function WorkspaceTilesMenu({
   const generated = useId().replace(/[:/]/g, '');
   const componentId = `workspaceTilesMenu.${generated}`;
   const [creating, setCreating] = useState(false);
+  const [googleDriveConnectionId, setGoogleDriveConnectionId] = useState<string | undefined>();
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const url = new URL(window.location.href);
+    const connected = url.searchParams.get('googleDriveConnected') === '1';
+    const failed = url.searchParams.get('googleDriveError') === '1';
+    const connectionId = url.searchParams.get('googleDriveConnectionId') || undefined;
+    if (connected || failed) {
+      setCreating(true);
+      setGoogleDriveConnectionId(connectionId);
+      url.searchParams.delete('googleDriveConnected');
+      url.searchParams.delete('googleDriveError');
+      url.searchParams.delete('googleDriveConnectionId');
+      url.searchParams.delete('googleDriveErrorCode');
+      window.history.replaceState(window.history.state, '', url.toString());
+    }
+  }, []);
+
   const handlers = useMemo(() => ({
     'workspaceTilesMenu.idle.select': (value: unknown) => onSelectWorkspace(value as WorkspaceRecord),
     'workspaceTilesMenu.idle.create': () => setCreating(true),
@@ -114,7 +132,7 @@ export function WorkspaceTilesMenu({
           </>
         )}
       />
-      <WorkspaceCreateDialog open={creating} userId={effectiveUserId} currentUser={currentUser} appName={appName} storageOptions={storageOptions} storageService={storageService} visibility={visibility} onClose={() => setCreating(false)} onSubmit={onCreateWorkspace} />
+      <WorkspaceCreateDialog open={creating} userId={effectiveUserId} currentUser={currentUser} appName={appName} storageOptions={storageOptions} storageService={storageService} visibility={visibility} googleDriveConnectionId={googleDriveConnectionId} onClose={() => setCreating(false)} onSubmit={onCreateWorkspace} />
     </section>
   );
 }

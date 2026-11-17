@@ -29,6 +29,19 @@ export interface BackblazeAccount {
   provider?: string;
 }
 
+export interface BackblazeCredentialInput {
+  label?: string;
+  keyId: string;
+  applicationKey: string;
+}
+
+export interface BackblazeCredentialTestResult {
+  success: boolean;
+  accountId?: string;
+  buckets: BackblazeBucket[];
+  error?: string;
+}
+
 export interface WorkspaceStorageOption {
   id: string;
   provider: WorkspaceStorageProvider;
@@ -42,6 +55,7 @@ export interface WorkspaceStorageOption {
   bucketName?: string;
   b2BucketName?: string;
   googleEmail?: string;
+  googleAccountId?: string;
   googleRootFolderId?: string;
   googleRootFolderName?: string;
 }
@@ -72,12 +86,31 @@ export interface WorkspaceCreateInput {
   storageConnection?: WorkspaceStorageOption;
 }
 
+export interface StorageProviderCapability {
+  id: WorkspaceStorageProvider;
+  displayName: string;
+  enabled: boolean;
+  availabilityReason?: string;
+  canSelectExistingConnection: boolean;
+  canCreateConnection: boolean;
+  requiredConfigurationFields: string[];
+  authorizationMode: string;
+  discoveryCapabilities: {
+    accounts: boolean;
+    buckets: boolean;
+    folders: boolean;
+  };
+}
+
 export interface WorkspaceStorageService {
+  listStorageProviderCapabilities?: (userId: string) => Promise<StorageProviderCapability[]>;
   listStorageConnections?: (userId: string) => Promise<WorkspaceStorageOption[]>;
-  listBackblazeAccounts?: (userId: string) => Promise<BackblazeAccount[]>;
-  listBackblazeBuckets?: (accountId: string, userId?: string) => Promise<BackblazeBucket[]>;
-  connectGoogleDrive?: (userId: string) => Promise<WorkspaceStorageOption>;
-  listGoogleDriveFolders?: (connectionId: string, parentFolderId?: string) => Promise<GoogleDriveFolder[]>;
+  testBackblazeCredentials?: (input: BackblazeCredentialInput) => Promise<BackblazeCredentialTestResult>;
+  createBackblazeConnection?: (userId: string, input: BackblazeCredentialInput & { bucketName: string }) => Promise<BackblazeAccount>;
+  connectGoogleDrive?: (userId: string) => Promise<WorkspaceStorageOption | void>;
+  listGoogleDriveFolders?: (connectionId: string, parentFolderId?: string, userId?: string) => Promise<GoogleDriveFolder[]>;
+  getGoogleDriveAccountIdentity?: (userId: string, connectionId: string) => Promise<{ accountId: string; email?: string }>;
+  selectGoogleDriveRootFolder?: (userId: string, connectionId: string, folderId: string) => Promise<GoogleDriveFolder>;
 }
 
 export type WorkspaceCreateDialogHiddenField =
@@ -110,6 +143,7 @@ export interface WorkspaceCreateDialogProps {
   storageOptions?: WorkspaceStorageOption[];
   storageService?: WorkspaceStorageService;
   visibility?: WorkspaceCreateDialogVisibility;
+  googleDriveConnectionId?: string;
   onClose: () => void;
   onSubmit: (input: WorkspaceCreateInput) => Promise<void> | void;
 }
@@ -216,17 +250,12 @@ export interface KloksServiceInvoker {
 }
 
 /**
- * Drive operations are intentionally supplied by the canonical Kloks storage
- * service. Floks does not implement OAuth, exchange codes, or store Drive tokens.
+ * Every storage operation, including Google OAuth and folder selection, is
+ * invoked through the canonical Kloks StorageService contract. Floks never
+ * exchanges OAuth codes, persists tokens, or calls provider APIs directly.
  */
-export interface KloksGoogleDriveWorkspaceApi {
-  connectGoogleDrive: (userId: string) => Promise<WorkspaceStorageOption>;
-  listGoogleDriveFolders: (connectionId: string, parentFolderId?: string) => Promise<GoogleDriveFolder[]>;
-}
-
 export function createKloksWorkspaceStorageService(
   invoker: KloksServiceInvoker,
-  googleDrive?: KloksGoogleDriveWorkspaceApi,
 ): WorkspaceStorageService {
   const mapStorageConnection = (connection: any): WorkspaceStorageOption | null => {
     if (!connection || typeof connection.id !== 'string' || typeof connection.provider !== 'string') return null;
@@ -239,29 +268,112 @@ export function createKloksWorkspaceStorageService(
       localFolderName: connection.localFolderName,
       b2BucketName: connection.b2BucketName,
       googleEmail: connection.googleEmail,
+      googleAccountId: connection.googleAccountId,
       googleRootFolderId: connection.googleRootFolderId,
       googleRootFolderName: connection.googleRootFolderName,
     };
   };
 
+  const listStorageConnections = async (userId: string): Promise<WorkspaceStorageOption[]> => {
+    const result = await invoker.invoke('kloks.backend.storage', 'getConnections', { userId });
+    const storedConnections = Array.isArray(result)
+      ? result
+      : Array.isArray((result as any)?.connections)
+        ? (result as any).connections
+        : [];
+    return storedConnections
+      .map(mapStorageConnection)
+      .filter((item): item is WorkspaceStorageOption => Boolean(item));
+  };
+
   return {
-    listStorageConnections: async () => {
-      const result = await invoker.invoke('kloks.service.storage', 'getConnections', {});
-      const storedConnections = Array.isArray(result)
+    listStorageProviderCapabilities: async (userId: string) => {
+      const result = await invoker.invoke('kloks.backend.storage', 'getProviderCapabilities', { userId });
+      const capabilities = Array.isArray(result)
         ? result
-        : Array.isArray((result as any)?.connections)
-          ? (result as any).connections
+        : Array.isArray((result as any)?.providers)
+          ? (result as any).providers
           : [];
-      return storedConnections
-        .map(mapStorageConnection)
-        .filter((item): item is WorkspaceStorageOption => Boolean(item));
+      return capabilities.filter((item: any) =>
+        item && typeof item.id === 'string' && typeof item.displayName === 'string',
+      ) as StorageProviderCapability[];
     },
-    ...(googleDrive
-      ? {
-          connectGoogleDrive: googleDrive.connectGoogleDrive,
-          listGoogleDriveFolders: googleDrive.listGoogleDriveFolders,
-        }
-      : {}),
+    listStorageConnections,
+    testBackblazeCredentials: async (input) => {
+      const result = await invoker.invoke('kloks.backend.storage', 'testBackblazeCredentials', { ...input });
+      return result as BackblazeCredentialTestResult;
+    },
+    createBackblazeConnection: async (userId, input) => {
+      const result = await invoker.invoke('kloks.backend.storage', 'createBackblazeConnection', {
+        userId,
+        ...input,
+      });
+      const connection = (result as any)?.connection || result;
+      if (!connection || typeof connection.id !== 'string') {
+        throw new Error('Kloks did not return a valid Backblaze storage connection.');
+      }
+      return {
+        id: connection.id,
+        name: String(connection.label || connection.name || connection.id),
+        provider: String(connection.provider || 'backblaze_b2'),
+      };
+    },
+    connectGoogleDrive: async (userId: string) => {
+      if (typeof window === 'undefined') {
+        throw new Error('Google Drive authorization can only start in a browser.');
+      }
+      const result = await invoker.invoke('kloks.backend.storage', 'createGoogleDriveAuthorizationRequest', {
+        userId,
+        returnTo: window.location.href,
+        callbackOrigin: window.location.origin,
+      }) as { authorizationUrl?: unknown };
+      const authorizationUrl = result?.authorizationUrl;
+      if (typeof authorizationUrl !== 'string') {
+        throw new Error('Kloks did not return a Google Drive authorization URL.');
+      }
+      const parsed = new URL(authorizationUrl);
+      if (parsed.origin !== 'https://accounts.google.com') {
+        throw new Error('Kloks returned an untrusted Google Drive authorization destination.');
+      }
+      window.location.assign(parsed.toString());
+    },
+    listGoogleDriveFolders: async (connectionId: string, parentFolderId?: string, userId = '') => {
+      const result = await invoker.invoke('kloks.backend.storage', 'listGoogleDriveFolders', {
+        userId,
+        connectionId,
+        parentFolderId,
+      });
+      return Array.isArray(result)
+        ? result as GoogleDriveFolder[]
+        : Array.isArray((result as any)?.folders)
+          ? (result as any).folders as GoogleDriveFolder[]
+          : [];
+    },
+    getGoogleDriveAccountIdentity: async (userId: string, connectionId: string) => {
+      const result = await invoker.invoke('kloks.backend.storage', 'getGoogleDriveAccountIdentity', {
+        userId,
+        connectionId,
+      }) as { accountId?: unknown; email?: unknown };
+      if (typeof result?.accountId !== 'string' || !result.accountId) {
+        throw new Error('Kloks did not return an authenticated Google Drive account identity.');
+      }
+      return {
+        accountId: result.accountId,
+        ...(typeof result.email === 'string' ? { email: result.email } : {}),
+      };
+    },
+    selectGoogleDriveRootFolder: async (userId: string, connectionId: string, folderId: string) => {
+      const result = await invoker.invoke('kloks.backend.storage', 'selectGoogleDriveRootFolder', {
+        userId,
+        connectionId,
+        folderId,
+      });
+      const folder = (result as any)?.folder || result;
+      if (!folder || typeof folder.id !== 'string' || typeof folder.name !== 'string') {
+        throw new Error('Kloks did not confirm the selected Google Drive workspace root.');
+      }
+      return folder as GoogleDriveFolder;
+    },
   };
 }
 
@@ -273,24 +385,30 @@ export function WorkspaceCreateDialog({
   storageOptions,
   storageService = defaultWorkspaceStorageService,
   visibility,
+  googleDriveConnectionId,
   onClose,
   onSubmit,
 }: WorkspaceCreateDialogProps) {
   const [loadedOptions, setLoadedOptions] = useState<WorkspaceStorageOption[]>([]);
+  const [providerCapabilities, setProviderCapabilities] = useState<StorageProviderCapability[]>([]);
   const [connectedDriveOption, setConnectedDriveOption] = useState<WorkspaceStorageOption | null>(null);
+  const [connectedBackblazeOption, setConnectedBackblazeOption] = useState<WorkspaceStorageOption | null>(null);
   const [googleDriveFolder, setGoogleDriveFolder] = useState<GoogleDriveFolder | null>(null);
+  const [verifiedGoogleDriveConnectionId, setVerifiedGoogleDriveConnectionId] = useState<string | null>(null);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [localFolderName, setLocalFolderName] = useState('');
   const [selectedStorageId, setSelectedStorageId] = useState('local_fs');
   const [defaultStorageApplied, setDefaultStorageApplied] = useState(false);
   const [backblazeMode, setBackblazeMode] = useState(false);
-  const [backblazeAccounts, setBackblazeAccounts] = useState<BackblazeAccount[]>([]);
-  const [backblazeAccountId, setBackblazeAccountId] = useState('');
-  const [backblazeBuckets, setBackblazeBuckets] = useState<BackblazeBucket[]>([]);
-  const [backblazeBucketName, setBackblazeBucketName] = useState('');
-  const [loadingBackblazeAccounts, setLoadingBackblazeAccounts] = useState(false);
-  const [loadingBackblazeBuckets, setLoadingBackblazeBuckets] = useState(false);
+  const [newBackblazeLabel, setNewBackblazeLabel] = useState('');
+  const [newBackblazeKeyId, setNewBackblazeKeyId] = useState('');
+  const [newBackblazeApplicationKey, setNewBackblazeApplicationKey] = useState('');
+  const [newBackblazeBuckets, setNewBackblazeBuckets] = useState<BackblazeBucket[]>([]);
+  const [newBackblazeBucketName, setNewBackblazeBucketName] = useState('');
+  const [backblazeCredentialsTested, setBackblazeCredentialsTested] = useState(false);
+  const [testingBackblazeCredentials, setTestingBackblazeCredentials] = useState(false);
+  const [savingBackblazeConnection, setSavingBackblazeConnection] = useState(false);
   const [loadingStorage, setLoadingStorage] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -305,13 +423,67 @@ export function WorkspaceCreateDialog({
     setSelectedStorageId('local_fs');
     setDefaultStorageApplied(false);
     setBackblazeMode(false);
-    setBackblazeAccounts([]);
-    setBackblazeAccountId('');
-    setBackblazeBuckets([]);
-    setBackblazeBucketName('');
+    setNewBackblazeLabel('');
+    setNewBackblazeKeyId('');
+    setNewBackblazeApplicationKey('');
+    setNewBackblazeBuckets([]);
+    setNewBackblazeBucketName('');
+    setBackblazeCredentialsTested(false);
     setConnectedDriveOption(null);
+    setConnectedBackblazeOption(null);
     setGoogleDriveFolder(null);
+    setVerifiedGoogleDriveConnectionId(null);
   }, [open]);
+
+  useEffect(() => {
+    if (!open || !storageService.listStorageProviderCapabilities) return;
+    let active = true;
+    storageService.listStorageProviderCapabilities(effectiveUserId)
+      .then((items) => { if (active) setProviderCapabilities(Array.isArray(items) ? items : []); })
+      .catch((reason) => {
+        if (active) setError(reason instanceof Error ? reason.message : 'Unable to load storage provider capabilities.');
+      });
+    return () => { active = false; };
+  }, [open, effectiveUserId, storageService]);
+
+  useEffect(() => {
+    if (!open || !googleDriveConnectionId) return;
+    const exists = (storageOptions ?? loadedOptions).some((option) => option.id === googleDriveConnectionId);
+    if (exists) {
+      setSelectedStorageId(googleDriveConnectionId);
+      setBackblazeMode(false);
+    }
+  }, [open, googleDriveConnectionId, storageOptions, loadedOptions]);
+
+  useEffect(() => {
+    if (!open || !storageService.getGoogleDriveAccountIdentity) return;
+    const connection = (storageOptions ?? loadedOptions).find(
+      (option) => option.id === selectedStorageId && option.provider === 'google_drive',
+    ) || (connectedDriveOption?.id === selectedStorageId ? connectedDriveOption : undefined);
+    if (!connection) {
+      setVerifiedGoogleDriveConnectionId(null);
+      return;
+    }
+    let active = true;
+    setVerifiedGoogleDriveConnectionId(null);
+    storageService.getGoogleDriveAccountIdentity(effectiveUserId, connection.id)
+      .then((identity) => {
+        if (!active) return;
+        setConnectedDriveOption({
+          ...connection,
+          googleAccountId: identity.accountId,
+          googleEmail: identity.email || connection.googleEmail,
+        });
+        setVerifiedGoogleDriveConnectionId(connection.id);
+      })
+      .catch((reason) => {
+        if (active) {
+          setVerifiedGoogleDriveConnectionId(null);
+          setError(reason instanceof Error ? reason.message : 'Unable to verify the Google Drive account identity.');
+        }
+      });
+    return () => { active = false; };
+  }, [open, selectedStorageId, storageOptions, loadedOptions, connectedDriveOption, effectiveUserId, storageService]);
 
   useEffect(() => {
     if (!open || storageOptions) return;
@@ -331,9 +503,13 @@ export function WorkspaceCreateDialog({
 
   const availableOptions = useMemo(() => {
     const supplied = storageOptions ?? loadedOptions;
+    // Existing user connections remain selectable even when new provider
+    // authorization is currently unavailable (for example, an OAuth system
+    // credential rotation). Capabilities control discovery/creation state;
+    // they do not erase existing user-owned connections from the selector.
     const providerOrder = visibility?.storagePolicy?.providers
       ?? visibility?.availableStorageProviders
-      ?? [];
+      ?? providerCapabilities.map((capability) => capability.id);
     const hidden = new Set(visibility?.hiddenStorageProviders || []);
     const enabled = supplied.filter((option) =>
       option
@@ -354,15 +530,29 @@ export function WorkspaceCreateDialog({
             ...forProvider(provider),
             ...(connectedDriveOption && connectedDriveOption.enabled !== false ? [connectedDriveOption] : []),
           ].filter((option, index, items) => items.findIndex((candidate) => candidate.id === option.id) === index);
-          return connections.length > 0 ? connections : [{ id: 'google_drive', provider: 'google_drive', label: 'Connect Google Drive' }];
+          const capability = providerCapabilities.find((item) => item.id === provider);
+          const canAuthorize = Boolean(capability?.enabled && capability.canCreateConnection);
+          const label = canAuthorize
+            ? 'Connect Google Drive'
+            : 'Google Drive authorization unavailable';
+          return connections.length > 0 ? connections : [{ id: 'google_drive', provider: 'google_drive', label }];
         }
         if (provider === 'backblaze_b2') {
-          const connections = forProvider(provider);
-          return connections.length > 0 ? connections : [{ id: 'backblaze_external', provider: 'backblaze_b2', label: 'Choose Backblaze account and bucket' }];
+          const connections = [
+            ...forProvider(provider),
+            ...(connectedBackblazeOption ? [connectedBackblazeOption] : []),
+          ].filter((option, index, items) => items.findIndex((candidate) => candidate.id === option.id) === index);
+          const capability = providerCapabilities.find((item) => item.id === provider);
+          return [
+            ...connections,
+            ...(capability?.enabled && capability.canCreateConnection
+              ? [{ id: 'backblaze_external', provider: 'backblaze_b2' as const, label: 'Add or choose a Backblaze account' }]
+              : []),
+          ];
         }
         return forProvider(provider);
       });
-  }, [storageOptions, loadedOptions, connectedDriveOption, visibility]);
+  }, [storageOptions, loadedOptions, connectedDriveOption, connectedBackblazeOption, visibility, providerCapabilities]);
 
   useEffect(() => {
     if (!open || loadingStorage || defaultStorageApplied) return;
@@ -387,6 +577,10 @@ export function WorkspaceCreateDialog({
   const selectedOption = availableOptions.find((option) => option.id === selectedStorageId)
     || availableOptions[0]
     || NO_STORAGE_OPTION;
+  const googleDriveCapability = providerCapabilities.find((capability) => capability.id === 'google_drive');
+  const backblazeCapability = providerCapabilities.find((capability) => capability.id === 'backblaze_b2');
+  const canCreateBackblazeConnection = Boolean(backblazeCapability?.enabled && backblazeCapability.canCreateConnection);
+  const canAuthorizeGoogleDrive = Boolean(googleDriveCapability?.enabled && googleDriveCapability.canCreateConnection);
   const googleDriveConnection = selectedOption.provider === 'google_drive' && selectedOption.id !== 'google_drive'
     ? selectedOption as WorkspaceStorageOption & GoogleDriveConnection
     : undefined;
@@ -394,43 +588,119 @@ export function WorkspaceCreateDialog({
   const userName = currentUser?.username || currentUser?.name || currentUser?.email?.split('@')[0] || 'user';
   const folderPreview = formatWorkspaceFolderPreview(appName, userName, name || 'workspace');
 
-  const handleSelectBackblaze = async () => {
+  const handleSelectBackblaze = () => {
     setBackblazeMode(true);
     setSelectedStorageId('backblaze_external');
-    setBackblazeAccountId('');
-    setBackblazeBuckets([]);
-    setBackblazeBucketName('');
+    beginAddBackblazeAccount();
+  };
+
+  const beginAddBackblazeAccount = () => {
+    setNewBackblazeLabel('');
+    setNewBackblazeKeyId('');
+    setNewBackblazeApplicationKey('');
+    setNewBackblazeBuckets([]);
+    setNewBackblazeBucketName('');
+    setBackblazeCredentialsTested(false);
     setError(null);
-    if (!storageService.listBackblazeAccounts) {
-      setBackblazeAccounts([]);
+  };
+
+  const cancelAddBackblazeAccount = () => {
+    setBackblazeMode(false);
+    setSelectedStorageId('backblaze_external');
+    setNewBackblazeLabel('');
+    setNewBackblazeKeyId('');
+    setNewBackblazeApplicationKey('');
+    setNewBackblazeBuckets([]);
+    setNewBackblazeBucketName('');
+    setBackblazeCredentialsTested(false);
+    setError(null);
+  };
+
+  const testNewBackblazeCredentials = async () => {
+    if (!storageService.testBackblazeCredentials) {
+      setError('Backblaze credential validation is not configured for this storage service.');
       return;
     }
-    setLoadingBackblazeAccounts(true);
+    if (!newBackblazeKeyId.trim() || !newBackblazeApplicationKey.trim()) {
+      setError('Enter the Backblaze Key ID and Application Key before testing.');
+      return;
+    }
+    setTestingBackblazeCredentials(true);
+    setError(null);
+    setBackblazeCredentialsTested(false);
+    setNewBackblazeBuckets([]);
+    setNewBackblazeBucketName('');
     try {
-      const accounts = await storageService.listBackblazeAccounts(effectiveUserId);
-      setBackblazeAccounts(Array.isArray(accounts) ? accounts : []);
+      const result = await storageService.testBackblazeCredentials({
+        keyId: newBackblazeKeyId.trim(),
+        applicationKey: newBackblazeApplicationKey.trim(),
+      });
+      if (!result.success) {
+        throw new Error(result.error || 'Backblaze credentials could not be validated.');
+      }
+      if (!Array.isArray(result.buckets) || result.buckets.length === 0) {
+        throw new Error('The Backblaze credentials are valid but no accessible buckets were discovered.');
+      }
+      setNewBackblazeBuckets(result.buckets);
+      setBackblazeCredentialsTested(true);
+      setNewBackblazeBucketName(result.buckets.length === 1
+        ? String(result.buckets[0].bucketName || result.buckets[0].name || '')
+        : '');
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : 'Failed to load Backblaze accounts.');
+      setError(reason instanceof Error ? reason.message : 'Backblaze credential validation failed.');
     } finally {
-      setLoadingBackblazeAccounts(false);
+      setTestingBackblazeCredentials(false);
     }
   };
 
-  const handleBackblazeAccountChange = async (accountId: string) => {
-    setBackblazeAccountId(accountId);
-    setBackblazeBuckets([]);
-    setBackblazeBucketName('');
-    if (!accountId || !storageService.listBackblazeBuckets) return;
-    setLoadingBackblazeBuckets(true);
+  const saveNewBackblazeConnection = async () => {
+    if (!storageService.createBackblazeConnection) {
+      setError('Creating Backblaze connections is not configured for this storage service.');
+      return;
+    }
+    if (!backblazeCredentialsTested) {
+      setError('Test the Backblaze credentials before saving this connection.');
+      return;
+    }
+    if (!newBackblazeBucketName) {
+      setError('Select an accessible bucket before saving this connection.');
+      return;
+    }
+    setSavingBackblazeConnection(true);
+    setError(null);
     try {
-      const buckets = await storageService.listBackblazeBuckets(accountId, effectiveUserId);
-      setBackblazeBuckets(Array.isArray(buckets) ? buckets : []);
+      const saved = await storageService.createBackblazeConnection(effectiveUserId, {
+        label: newBackblazeLabel.trim() || undefined,
+        keyId: newBackblazeKeyId.trim(),
+        applicationKey: newBackblazeApplicationKey.trim(),
+        bucketName: newBackblazeBucketName,
+      });
+      if (!saved || !saved.id) throw new Error('Kloks did not return a saved Backblaze connection.');
+      const savedOption: WorkspaceStorageOption = {
+        id: saved.id,
+        name: saved.name || newBackblazeLabel.trim() || 'Backblaze B2',
+        label: saved.name || newBackblazeLabel.trim() || 'Backblaze B2',
+        provider: saved.provider || 'backblaze_b2',
+        b2BucketName: newBackblazeBucketName,
+        bucketName: newBackblazeBucketName,
+      };
+      setConnectedBackblazeOption(savedOption);
+      setSelectedStorageId(savedOption.id);
+      setBackblazeMode(false);
+      setNewBackblazeLabel('');
+      setNewBackblazeKeyId('');
+      setNewBackblazeApplicationKey('');
+      setNewBackblazeBuckets([]);
+      setNewBackblazeBucketName('');
+      setBackblazeCredentialsTested(false);
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : 'Failed to load Backblaze buckets.');
+      setError(reason instanceof Error ? reason.message : 'Unable to save the Backblaze connection.');
     } finally {
-      setLoadingBackblazeBuckets(false);
+      setSavingBackblazeConnection(false);
     }
   };
+
+
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -438,8 +708,8 @@ export function WorkspaceCreateDialog({
       setError('Workspace name is required.');
       return;
     }
-    if (backblazeMode && (!backblazeAccountId || !backblazeBucketName)) {
-      setError('Select a Backblaze account and bucket.');
+    if (backblazeMode || selectedStorageId === 'backblaze_external') {
+      setError('Save the tested Backblaze connection before creating the workspace.');
       return;
     }
     if (!backblazeMode && !availableOptions.some((option) => option.id === selectedStorageId)) {
@@ -450,28 +720,33 @@ export function WorkspaceCreateDialog({
       setError('Connect Google Drive and select a folder for this workspace.');
       return;
     }
-    if (loadingStorage || loadingBackblazeAccounts || loadingBackblazeBuckets || submitting) return;
+    if (selectedOption.provider === 'google_drive' && verifiedGoogleDriveConnectionId !== googleDriveConnection?.id) {
+      setError('Verify the authenticated Google Drive account before creating this workspace.');
+      return;
+    }
+    if (loadingStorage || testingBackblazeCredentials || savingBackblazeConnection || submitting) return;
     setSubmitting(true);
     setError(null);
     try {
-      const backblazeAccount = backblazeAccounts.find((account) => account.id === backblazeAccountId);
-      const option: WorkspaceStorageOption = backblazeMode
-        ? {
-            id: backblazeAccountId,
-            provider: 'backblaze_b2',
-            label: backblazeAccount?.name || 'Backblaze B2',
-            b2BucketName: backblazeBucketName,
-            bucketName: backblazeBucketName,
-          }
-        : selectedOption.provider === 'local_fs'
-          ? { ...selectedOption, localFolderName: localFolderName.trim() || selectedOption.localFolderName || name.trim() }
-          : selectedOption.provider === 'google_drive' && googleDriveFolder
-            ? {
-                ...selectedOption,
-                googleRootFolderId: googleDriveFolder.id,
-                googleRootFolderName: googleDriveFolder.name,
-              }
-            : selectedOption;
+      if (selectedOption.provider === 'google_drive' && googleDriveFolder) {
+        if (!googleDriveConnection || !storageService.selectGoogleDriveRootFolder) {
+          throw new Error('Google Drive root selection is not configured through the canonical Kloks storage service.');
+        }
+        await storageService.selectGoogleDriveRootFolder(
+          effectiveUserId,
+          googleDriveConnection.id,
+          googleDriveFolder.id,
+        );
+      }
+      const option: WorkspaceStorageOption = selectedOption.provider === 'local_fs'
+        ? { ...selectedOption, localFolderName: localFolderName.trim() || selectedOption.localFolderName || name.trim() }
+        : selectedOption.provider === 'google_drive' && googleDriveFolder
+          ? {
+              ...selectedOption,
+              googleRootFolderId: googleDriveFolder.id,
+              googleRootFolderName: googleDriveFolder.name,
+            }
+          : selectedOption;
       await onSubmit(buildWorkspaceCreateInput(name, description, option));
       onClose();
     } catch (reason) {
@@ -564,42 +839,87 @@ export function WorkspaceCreateDialog({
 
             </div>
             {!hiddenFields.has('backblaze') && backblazeMode && (
-              <div className="mt-3 space-y-2 border-t pt-3" style={{ borderColor: border }}>
-                <label className="block space-y-1">
-                  <span className="text-[10px] font-black uppercase">Backblaze account</span>
-                  <select
-                    aria-label="Backblaze account"
-                    value={backblazeAccountId}
-                    onChange={(event) => handleBackblazeAccountChange(event.target.value)}
-                    disabled={loadingBackblazeAccounts || submitting}
-                    className="h-9 w-full border px-2 text-xs"
-                    style={{ backgroundColor: background, borderColor: border }}
+              <div className="mt-3 space-y-3 border-t pt-3" style={{ borderColor: border }}>
+                <div className="space-y-2 border p-3" style={{ borderColor: border, backgroundColor: background }}>
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-[10px] font-black uppercase">Add Backblaze B2 connection</span>
+                    <button type="button" onClick={cancelAddBackblazeAccount} disabled={testingBackblazeCredentials || savingBackblazeConnection} className="text-[10px] underline">Cancel</button>
+                  </div>
+                  <label className="block space-y-1">
+                    <span className="text-[10px] font-black uppercase">Account label</span>
+                    <input
+                      aria-label="Backblaze account label"
+                      value={newBackblazeLabel}
+                      onChange={(event) => setNewBackblazeLabel(event.target.value)}
+                      placeholder="Production B2 account"
+                      className="h-9 w-full border px-3 text-xs"
+                      style={{ backgroundColor: surface, borderColor: border }}
+                    />
+                  </label>
+                  <label className="block space-y-1">
+                    <span className="text-[10px] font-black uppercase">B2 Key ID</span>
+                    <input
+                      aria-label="Backblaze Key ID"
+                      autoComplete="off"
+                      value={newBackblazeKeyId}
+                      onChange={(event) => { setNewBackblazeKeyId(event.target.value); setBackblazeCredentialsTested(false); }}
+                      className="h-9 w-full border px-3 text-xs"
+                      style={{ backgroundColor: surface, borderColor: border }}
+                    />
+                  </label>
+                  <label className="block space-y-1">
+                    <span className="text-[10px] font-black uppercase">Application Key</span>
+                    <input
+                      aria-label="Backblaze Application Key"
+                      type="password"
+                      autoComplete="new-password"
+                      value={newBackblazeApplicationKey}
+                      onChange={(event) => { setNewBackblazeApplicationKey(event.target.value); setBackblazeCredentialsTested(false); }}
+                      className="h-9 w-full border px-3 text-xs"
+                      style={{ backgroundColor: surface, borderColor: border }}
+                    />
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => void testNewBackblazeCredentials()}
+                    disabled={testingBackblazeCredentials || savingBackblazeConnection || !newBackblazeKeyId.trim() || !newBackblazeApplicationKey.trim()}
+                    className="h-9 border px-3 text-xs font-bold disabled:opacity-50"
+                    style={{ borderColor: border }}
                   >
-                    <option value="">Select Backblaze account</option>
-                    {backblazeAccounts.map((account) => (
-                      <option key={account.id} value={account.id}>{account.name}</option>
-                    ))}
-                  </select>
-                  {loadingBackblazeAccounts && <span className="text-[10px]" style={{ color: muted }}>Loading Backblaze accounts…</span>}
-                </label>
-                <label className="block space-y-1">
-                  <span className="text-[10px] font-black uppercase">Backblaze bucket</span>
-                  <select
-                    aria-label="Backblaze bucket"
-                    value={backblazeBucketName}
-                    onChange={(event) => setBackblazeBucketName(event.target.value)}
-                    disabled={!backblazeAccountId || loadingBackblazeBuckets || submitting}
-                    className="h-9 w-full border px-2 text-xs"
-                    style={{ backgroundColor: background, borderColor: border }}
-                  >
-                    <option value="">Select bucket</option>
-                    {backblazeBuckets.map((bucket) => {
-                      const bucketName = bucket.bucketName || bucket.name || '';
-                      return <option key={bucket.bucketId || bucket.id || bucketName} value={bucketName}>{bucketName}</option>;
-                    })}
-                  </select>
-                  {loadingBackblazeBuckets && <span className="text-[10px]" style={{ color: muted }}>Loading buckets…</span>}
-                </label>
+                    {testingBackblazeCredentials ? 'Testing credentials…' : 'Test B2 credentials'}
+                  </button>
+                  {backblazeCredentialsTested && (
+                    <>
+                      <p role="status" className="text-[10px] text-emerald-400">Credentials verified. Select the bucket to associate with this account.</p>
+                      <label className="block space-y-1">
+                        <span className="text-[10px] font-black uppercase">Accessible bucket</span>
+                        <select
+                          aria-label="New Backblaze bucket"
+                          value={newBackblazeBucketName}
+                          onChange={(event) => setNewBackblazeBucketName(event.target.value)}
+                          disabled={savingBackblazeConnection}
+                          className="h-9 w-full border px-2 text-xs"
+                          style={{ backgroundColor: surface, borderColor: border }}
+                        >
+                          <option value="">Select bucket</option>
+                          {newBackblazeBuckets.map((bucket) => {
+                            const bucketName = bucket.bucketName || bucket.name || '';
+                            return <option key={bucket.bucketId || bucket.id || bucketName} value={bucketName}>{bucketName}</option>;
+                          })}
+                        </select>
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => void saveNewBackblazeConnection()}
+                        disabled={savingBackblazeConnection || !newBackblazeBucketName}
+                        className="h-9 px-3 text-xs font-bold text-black disabled:opacity-50"
+                        style={{ backgroundColor: accent }}
+                      >
+                        {savingBackblazeConnection ? 'Saving connection…' : 'Save account and use it'}
+                      </button>
+                    </>
+                  )}
+                </div>
               </div>
             )}
             {loadingStorage ? (
@@ -615,8 +935,10 @@ export function WorkspaceCreateDialog({
             <GoogleDriveWorkspacePicker
               userId={effectiveUserId}
               connection={googleDriveConnection}
-              connectGoogleDrive={storageService.connectGoogleDrive}
-              listGoogleDriveFolders={storageService.listGoogleDriveFolders}
+              connectGoogleDrive={canAuthorizeGoogleDrive ? storageService.connectGoogleDrive : undefined}
+              listGoogleDriveFolders={storageService.listGoogleDriveFolders
+                ? (connectionId, parentFolderId) => storageService.listGoogleDriveFolders!(connectionId, parentFolderId, effectiveUserId)
+                : undefined}
               selectedFolder={googleDriveFolder}
               onConnected={(connection) => {
                 if (connection.provider !== 'google_drive') {
@@ -659,7 +981,7 @@ export function WorkspaceCreateDialog({
 
         <div className="mt-5 flex justify-end gap-2 border-t pt-3" style={{ borderColor: border }}>
           <button type="button" onClick={onClose} disabled={submitting} className="h-9 border px-3 text-xs" style={{ borderColor: border }}>Cancel</button>
-          <button type="submit" disabled={submitting || loadingStorage || loadingBackblazeAccounts || loadingBackblazeBuckets || !availableOptions.length || !name.trim()} className="h-9 px-4 text-xs font-black uppercase text-black disabled:opacity-50" style={{ backgroundColor: accent }}>
+          <button type="submit" disabled={submitting || loadingStorage || testingBackblazeCredentials || savingBackblazeConnection || !availableOptions.length || !name.trim()} className="h-9 px-4 text-xs font-black uppercase text-black disabled:opacity-50" style={{ backgroundColor: accent }}>
             {submitting ? 'Creating…' : 'Create Workspace'}
           </button>
         </div>

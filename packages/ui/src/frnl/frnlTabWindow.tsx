@@ -59,12 +59,20 @@ export const frnlTabWindow: React.FC<FrnlTabWindowProps> = ({
       handleSelect(tab);
     },
   }), [tabs, onTabChange]);
+  const semanticProperties = useMemo(
+    () => ({
+      activeTabId: activeId,
+      tabs: tabs.map((tab) => ({ id: tab.id, label: tab.label, disabled: Boolean(tab.disabled) })),
+    }),
+    [activeId, tabs],
+  );
+
   useFrnlComponent({
     id: resolvedId,
     definition: frnlTabWindowDefinition,
     store,
     state: 'active',
-    properties: { activeTabId: activeId, tabs: tabs.map((tab) => ({ id: tab.id, label: tab.label, disabled: Boolean(tab.disabled) })) },
+    properties: semanticProperties,
     handlers,
   });
   const { setInspectionText } = useBottomStrip();

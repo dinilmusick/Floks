@@ -17,8 +17,8 @@ export interface GoogleDriveFolder {
 export interface GoogleDriveWorkspacePickerProps {
   userId: string;
   connection?: GoogleDriveConnection;
-  connectGoogleDrive?: (userId: string) => Promise<GoogleDriveConnection>;
-  listGoogleDriveFolders?: (connectionId: string, parentFolderId?: string) => Promise<GoogleDriveFolder[]>;
+  connectGoogleDrive?: (userId: string) => Promise<GoogleDriveConnection | void>;
+  listGoogleDriveFolders?: (connectionId: string, parentFolderId?: string, userId?: string) => Promise<GoogleDriveFolder[]>;
   onConnected: (connection: GoogleDriveConnection) => void;
   onSelectFolder: (folder: GoogleDriveFolder) => void;
   selectedFolder?: GoogleDriveFolder | null;
@@ -89,7 +89,7 @@ export function GoogleDriveWorkspacePicker({
     setLoading(true);
     setError(null);
     try {
-      const items = await listGoogleDriveFolders(connectionId, parentFolderId);
+      const items = await listGoogleDriveFolders(connectionId, parentFolderId, userId);
       setFolders(Array.isArray(items) ? items.filter((item) => item && typeof item.id === 'string' && typeof item.name === 'string') : []);
     } catch (reason) {
       setFolders([]);
@@ -97,7 +97,7 @@ export function GoogleDriveWorkspacePicker({
     } finally {
       setLoading(false);
     }
-  }, [listGoogleDriveFolders]);
+  }, [listGoogleDriveFolders, userId]);
 
   useEffect(() => {
     setFolderPath([]);
@@ -117,7 +117,11 @@ export function GoogleDriveWorkspacePicker({
     setStatus(null);
     try {
       const connected = await connectGoogleDrive(userId);
-      if (!connected || typeof connected.id !== 'string' || !connected.id || connected.id === 'google_drive') {
+      if (!connected) {
+        setStatus('Google Drive authorization started. Complete the Google sign-in to return to workspace creation.');
+        return;
+      }
+      if (typeof connected.id !== 'string' || !connected.id || connected.id === 'google_drive') {
         throw new Error('The Google Drive authorization service returned an invalid connection.');
       }
       onConnected(connected);
@@ -136,7 +140,7 @@ export function GoogleDriveWorkspacePicker({
     setLoading(true);
     setError(null);
     try {
-      const items = await listGoogleDriveFolders?.(connection.id, folder.id);
+      const items = await listGoogleDriveFolders?.(connection.id, folder.id, userId);
       setFolders(Array.isArray(items) ? items : []);
       setFolderPath((current) => [...current, { id: folder.id, name: folder.name }]);
     } catch (reason) {
@@ -153,7 +157,7 @@ export function GoogleDriveWorkspacePicker({
     setLoading(true);
     setError(null);
     try {
-      const items = await listGoogleDriveFolders?.(connection.id, parentFolderId);
+      const items = await listGoogleDriveFolders?.(connection.id, parentFolderId, userId);
       setFolders(Array.isArray(items) ? items : []);
       setFolderPath(nextPath);
     } catch (reason) {
@@ -179,10 +183,10 @@ export function GoogleDriveWorkspacePicker({
         <button
           type="button"
           onClick={handleConnect}
-          disabled={connecting}
+          disabled={connecting || !connectGoogleDrive}
           className="border px-3 py-2 text-xs font-bold disabled:opacity-50"
         >
-          {connecting ? 'Connecting to Google…' : 'Connect Google Drive'}
+          {connecting ? 'Connecting to Google…' : connectGoogleDrive ? 'Connect Google Drive' : 'Google Drive authorization unavailable'}
         </button>
       </section>
     );
