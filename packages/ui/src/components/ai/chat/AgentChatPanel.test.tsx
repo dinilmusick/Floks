@@ -56,6 +56,24 @@ describe('Agent Chat bottom strip', () => {
     expect(onInvoke).not.toHaveBeenCalled();
   });
 
+  it('resumes an endpoint clarification directly instead of falling back to the app agent', async () => {
+    const onInvoke = vi.fn()
+      .mockResolvedValueOnce({ kind: 'needs_input', text: 'Which SKU?', invocationId: 'endpoint-inv-9' })
+      .mockResolvedValueOnce(completed);
+    const dialog = launch({ appAgentId: 'app-1', onInvoke });
+    const composer = within(dialog).getByRole('textbox', { name: 'Agent message' });
+    fireEvent.change(composer, { target: { value: '@Warehouse' } });
+    fireEvent.click(within(dialog).getByRole('option', { name: /Warehouse Helper/ }));
+    fireEvent.change(composer, { target: { value: '@Warehouse Helper check stock' } });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Send message' }));
+    await waitFor(() => expect(within(dialog).getByText('Which SKU?')).toBeTruthy());
+    fireEvent.change(composer, { target: { value: 'SKU-23' } });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Send message' }));
+    await waitFor(() => expect(onInvoke).toHaveBeenNthCalledWith(2, {
+      targetId: 'endpoint-1', targetKind: 'endpoint', prompt: 'SKU-23', resumeInvocationId: 'endpoint-inv-9',
+    }));
+  });
+
   it('resumes a typed clarification on the same invocation', async () => {
     const onInvoke = vi.fn()
       .mockResolvedValueOnce({ kind: 'needs_input', text: 'Which date?', invocationId: 'inv-123' })
