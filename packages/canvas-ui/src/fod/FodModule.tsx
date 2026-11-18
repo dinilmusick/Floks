@@ -1,6 +1,6 @@
 'use client';
 import React,{useEffect,useMemo,useRef,useState} from 'react';
-interface FodNodeDefinition {type:string;label:string;description:string;category:string;group:string;inputs:Array<{id:string;name:string;direction:string;dataType:string}>;outputs:Array<{id:string;name:string;direction:string;dataType:string}>;metadata?:Record<string,any>;}
+export interface FodNodeDefinition {type:string;label:string;description:string;category:string;group:string;inputs:Array<{id:string;name:string;direction:string;dataType:string}>;outputs:Array<{id:string;name:string;direction:string;dataType:string}>;metadata?:Record<string,any>;}
 interface FodFlow {id:string;name:string;description?:string;version:number;createdAt:string;updatedAt:string;nodes:any[];edges:any[];viewport?:any;metadata?:Record<string,unknown>;}
 import {FrnlEditableNodeGraph} from '../frnl-editable-node-graph/index.js';
 
@@ -10,6 +10,14 @@ export interface FodRuntimeLike {
   saveFlow(flow:FodFlow):Promise<FodFlow>;
   deleteFlow(id:string):Promise<boolean>;
   executeFlow(id:string):Promise<{success:boolean;output:unknown;errors:Array<{message:string}>}>;
+  /**
+   * Return only operations authorized for the active principal AND workspace.
+   * The application backend must derive this list from Luth-scoped discovery;
+   * these descriptions do not themselves grant permission to invoke a node.
+   */
+  listAuthorizedNodeDefinitions?(workspaceId:string):Promise<FodNodeDefinition[]>;
+  /** Called on grant, publication, deployment-lease or session changes. */
+  subscribeAuthorizedNodeChanges?(workspaceId:string,onChange:()=>void):()=>void;
 }
 
 export interface FodModuleProps {
@@ -49,6 +57,50 @@ function WorkspaceFlows({runtime,nodeDefinitions,workspaceId,className}:FodModul
   const [selected,setSelected]=useState<Set<string>>(new Set());
   const [message,setMessage]=useState('');
   const [running,setRunning]=useState(false);
+  const [authorizedNodes,setAuthorizedNodes]=useState<FodNodeDefinition[]>([]);
+
+  useEffect(() => {
+    let alive = true;
+    let revision = 0;
+    const refresh = () => {
+      const request = ++revision;
+      // Fail closed immediately on an invalidation, account switch or revoke.
+      setAuthorizedNodes([]);
+      if (!runtime.listAuthorizedNodeDefinitions) return;
+      void runtime.listAuthorizedNodeDefinitions(workspaceId).then(definitions => {
+        if (!alive || request !== revision) return;
+        if (!Array.isArray(definitions)) { setAuthorizedNodes([]); return; }
+        const seen = new Set(nodeDefinitions.map(definition => definition.type));
+        const scoped: FodNodeDefinition[] = [];
+        for (const definition of definitions) {
+          const meta = definition?.metadata;
+          // A remote handle requires an unambiguous canonical app, workspace
+          // and operation. Never project anonymous or colliding node types.
+          if (!definition?.type || !meta ||
+              typeof meta.appId !== 'string' || !meta.appId.trim() ||
+              typeof meta.targetWorkspaceId !== 'string' || !meta.targetWorkspaceId.trim() ||
+              typeof meta.operationId !== 'string' || !meta.operationId.trim() ||
+              seen.has(definition.type)) continue;
+          seen.add(definition.type);
+          scoped.push(definition);
+        }
+        setAuthorizedNodes(scoped);
+      }).catch(() => {
+        if (alive && request === revision) {
+          setAuthorizedNodes([]);
+          setMessage('Authorized app operations unavailable');
+        }
+      });
+    };
+    refresh();
+    const unsubscribe = runtime.subscribeAuthorizedNodeChanges?.(workspaceId, refresh);
+    return () => { alive = false; ++revision; unsubscribe?.(); };
+  }, [runtime,workspaceId,nodeDefinitions]);
+
+  const visibleNodeDefinitions=useMemo(
+    () => [...nodeDefinitions,...authorizedNodes],
+    [nodeDefinitions,authorizedNodes]
+  );
 
   const refresh = async () => {
     const saved = await runtime.listFlows();
@@ -79,7 +131,7 @@ function WorkspaceFlows({runtime,nodeDefinitions,workspaceId,className}:FodModul
     if (flow && drafts.current.has(flow.id)) drafts.current.set(flow.id, flow);
   }, [flow]);
 
-  const graphNodes=useMemo(()=>flow?toGraphNodes(flow,nodeDefinitions):[],[flow,nodeDefinitions]);
+  const graphNodes=useMemo(()=>flow?toGraphNodes(flow,visibleNodeDefinitions):[],[flow,visibleNodeDefinitions]);
   const graphEdges=useMemo(()=>flow?toGraphEdges(flow):[],[flow]);
 
   const updateNodes=(next:any[])=>{
@@ -126,9 +178,14 @@ function WorkspaceFlows({runtime,nodeDefinitions,workspaceId,className}:FodModul
 
   const grouped=useMemo(()=>{
     const groups=new Map<string,FodNodeDefinition[]>();
-    for(const node of nodeDefinitions){const group=groups.get(node.group) ?? [];group.push(node);groups.set(node.group,group);}
+    for(const node of visibleNodeDefinitions){
+      const appId=node.metadata?.appId;
+      const group=(typeof appId==='string' && appId.trim()) ? `App ${appId} / ${node.group}` : node.group;
+      const current=groups.get(group) ?? [];
+      current.push(node);groups.set(group,current);
+    }
     return [...groups.entries()].sort(([a],[b])=>a.localeCompare(b));
-  },[nodeDefinitions]);
+  },[visibleNodeDefinitions]);
 
   return <div className={className} style={{display:'grid',gridTemplateColumns:'220px 1fr',gridTemplateRows:'44px 1fr',height:'100%',minHeight:500}}>
     <div style={{gridColumn:'1 / -1',display:'flex',alignItems:'center',gap:8,padding:'6px 10px',borderBottom:'1px solid var(--skipo-border,#333)',background:'var(--skipo-matte-bg,#111)'}}>
@@ -141,7 +198,7 @@ function WorkspaceFlows({runtime,nodeDefinitions,workspaceId,className}:FodModul
       {grouped.map(([group,nodes])=><section key={group}><h4 style={{margin:'8px 0'}}>{group}</h4>{nodes.map(node=><button key={node.type} type='button' style={{display:'block',width:'100%',textAlign:'left',marginBottom:4}} onClick={()=>{
         if(!flow)return;
         const id=`${node.type}-${Date.now()}`;
-        setFlow({...flow,nodes:[...flow.nodes,{id,type:node.type,position:{x:100+flow.nodes.length*24,y:100+flow.nodes.length*24},data:{endpointId:node.metadata?.endpointId,apiId:node.metadata?.apiId}}]});
+        setFlow({...flow,nodes:[...flow.nodes,{id,type:node.type,position:{x:100+flow.nodes.length*24,y:100+flow.nodes.length*24},data:{endpointId:node.metadata?.endpointId,apiId:node.metadata?.apiId,appId:node.metadata?.appId,targetWorkspaceId:node.metadata?.targetWorkspaceId,operationId:node.metadata?.operationId,operationVersion:node.metadata?.operationVersion}}]});
       }}>{node.label}</button>)}</section>)}
     </aside>
     <main style={{minWidth:0,minHeight:0}}>
