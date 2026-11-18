@@ -124,7 +124,7 @@ export function AgentChatPanel({ targets, appAgentId, onInvoke, onClose }: Agent
             placeholder="Message or @agent" disabled={busy} aria-label="Agent message" />
           {error && <p role="alert" className="text-xs text-red-600">{error}</p>}
           <div className="mt-2 flex justify-end">
-            <BaseButton type="button" onClick={() => void send()} disabled={!canSend} title="Send message">
+            <BaseButton type="button" onClick={() => void send()} disabled={!canSend} title="Send message" aria-label="Send message">
               <Send size={14} /> Send
             </BaseButton>
           </div>
