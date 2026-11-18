@@ -79,7 +79,7 @@ export const AppShell = forwardRef<HTMLDivElement, AppShellProps>(({
           {footer !== undefined ? footer : (!disableBottomStrip && <BottomStrip {...bottomStripProps}
             rightSlot={<>{bottomStripProps?.rightSlot}<AgentChatDock key={agentChat?.scopeKey ?? 'unbound'}
               scopeKey={agentChat?.scopeKey} targets={agentChat?.targets ?? []}
-              appAgentId={agentChat?.appAgentId} onInvoke={agentChat?.onInvoke} /></>}
+              appAgentId={agentChat?.appAgentId} onInvoke={agentChat?.onInvoke} onCancel={agentChat?.onCancel} /></>}
           />)}
         </div>
       </div>
