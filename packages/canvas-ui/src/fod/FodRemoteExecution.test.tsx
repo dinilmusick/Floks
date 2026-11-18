@@ -4,8 +4,12 @@ import {act,cleanup,fireEvent,render,screen,waitFor} from '@testing-library/reac
 import {afterEach,expect,it,vi} from 'vitest';
 import {FodModule,type FodNodeDefinition,type FodRuntimeLike} from './FodModule.js';
 vi.mock('../frnl-editable-node-graph/index.js',()=>({
-  FrnlEditableNodeGraph:(props:{nodes:Array<{id:string}>;onSelectionChange:(ids:Set<string>)=>void})=>
-    <button type='button' onClick={()=>props.onSelectionChange(new Set(props.nodes.slice(0,1).map(n=>n.id)))}>Select graph node</button>
+  FrnlEditableNodeGraph:(props:{nodes:Array<{id:string}>;edges:unknown[];onSelectionChange:(ids:Set<string>)=>void;onEdgesChange:(edges:unknown[])=>void})=>
+    <><button type='button' onClick={()=>props.onSelectionChange(new Set(props.nodes.slice(0,1).map(n=>n.id)))}>Select graph node</button>
+    <button type='button' onClick={()=>{if(props.nodes.length>=3)props.onEdgesChange([
+      {id:'fan-1',source:props.nodes[0].id,sourceSocket:'result',target:props.nodes[1].id,targetSocket:'count'},
+      {id:'fan-2',source:props.nodes[0].id,sourceSocket:'result',target:props.nodes[2].id,targetSocket:'count'},
+    ]);}}>Wire fan-out</button></>
 }));
 afterEach(cleanup);
 const descriptor=(appId:string,version='v1',surface='raw.backend'):FodNodeDefinition=>({
@@ -92,4 +96,44 @@ it('requires separate active-window consent before frontend operation execution'
   fireEvent.click(screen.getByRole('button',{name:'Run'}));
   await screen.findByText(/Active frontend window consent required/);
   expect(mock.invoke).not.toHaveBeenCalled();
+});
+it('selecting a graph node is navigation, never an invocation',async()=>{
+  const mock=mockRuntime(async()=>[descriptor('skipo-one')]);
+  render(<FodModule workspaceId='source-workspace' scopeKey='authorized' runtime={mock.runtime} nodeDefinitions={[]}/>);
+  await screen.findByRole('button',{name:'skipo-one calculate'});
+  fireEvent.click(screen.getByRole('button',{name:'New flow'}));
+  fireEvent.click(screen.getByRole('button',{name:'skipo-one calculate'}));
+  fireEvent.click(screen.getByRole('button',{name:'Select graph node'}));
+  expect(mock.invoke).not.toHaveBeenCalled();
+  expect(mock.runtime.executeFlow).not.toHaveBeenCalled();
+});
+it('persists two typed fan-out branches before invoking the owning backend',async()=>{
+  const mock=mockRuntime(async()=>[descriptor('skipo-one'),descriptor('skipo-two'),descriptor('skipo-three')]);
+  render(<FodModule workspaceId='source-workspace' scopeKey='authorized' runtime={mock.runtime} nodeDefinitions={[]}/>);
+  await screen.findByRole('button',{name:'skipo-one calculate'});
+  fireEvent.click(screen.getByRole('button',{name:'New flow'}));
+  for(const app of ['skipo-one','skipo-two','skipo-three'])
+    fireEvent.click(screen.getByRole('button',{name:`${app} calculate`}));
+  fireEvent.click(screen.getByRole('button',{name:'Wire fan-out'}));
+  fireEvent.click(screen.getByRole('button',{name:'Run'}));
+  await waitFor(()=>expect(mock.invoke).toHaveBeenCalledTimes(1));
+  expect(mock.stored[0].edges).toHaveLength(2);
+  expect(mock.stored[0].edges.map(edge=>edge.source)).toEqual([
+    mock.stored[0].nodes[0].id,mock.stored[0].nodes[0].id,
+  ]);
+  expect(mock.invoke.mock.calls[0][0].handles).toHaveLength(3);
+});
+it('filters target workspace without leaking operations from another target',async()=>{
+  const first={...descriptor('skipo-one'),metadata:{...descriptor('skipo-one').metadata,targetWorkspaceId:'workspace-one'}};
+  const second={...descriptor('skipo-two'),metadata:{...descriptor('skipo-two').metadata,targetWorkspaceId:'workspace-two'}};
+  const mock=mockRuntime(async()=>[first,second]);
+  render(<FodModule workspaceId='source-workspace' scopeKey='authorized' runtime={mock.runtime} nodeDefinitions={[]}/>);
+  await screen.findByRole('button',{name:'skipo-one calculate'});
+  fireEvent.change(screen.getByRole('combobox',{name:'Remote application'}),{target:{value:'skipo-one'}});
+  expect(screen.getByRole('button',{name:'skipo-one calculate'})).toBeTruthy();
+  expect(screen.queryByRole('button',{name:'skipo-two calculate'})).toBeNull();
+  fireEvent.change(screen.getByRole('combobox',{name:'Remote application'}),{target:{value:''}});
+  fireEvent.change(screen.getByRole('combobox',{name:'Target workspace'}),{target:{value:'workspace-two'}});
+  expect(screen.queryByRole('button',{name:'skipo-one calculate'})).toBeNull();
+  expect(screen.getByRole('button',{name:'skipo-two calculate'})).toBeTruthy();
 });
