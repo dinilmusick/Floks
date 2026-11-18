@@ -18,7 +18,7 @@ const descriptor=(appId:string,version='v1',surface='raw.backend'):FodNodeDefini
 const result={success:true,output:{result:3},errors:[]};
 const mockRuntime=(discover:NonNullable<FodRuntimeLike['listAuthorizedNodeDefinitions']>)=>{
   const stored:Array<Awaited<ReturnType<FodRuntimeLike['saveFlow']>>>=[];
-  const invoke=vi.fn(async()=>result);
+  const invoke=vi.fn(async(_request:{flowId:string;sourceWorkspaceId:string;handles:Array<{appId:string;targetWorkspaceId:string;operationId:string;operationVersion:string}>},_options:{signal:AbortSignal})=>result);
   const runtime:FodRuntimeLike={
     listFlows:async()=>stored,
     getFlow:async id=>stored.find(flow=>flow.id===id)??null,
@@ -44,8 +44,8 @@ it('places/configures/saves/reloads and invokes a pinned remote handle through t
   });
   ui.unmount();
   render(<FodModule workspaceId='source-workspace' scopeKey='user-a/grants-1' runtime={mock.runtime} nodeDefinitions={[]}/>);
-  await screen.findByRole('button',{name:'Run'});
   await screen.findByRole('button',{name:'skipo-one calculate'});
+  await waitFor(()=>expect(screen.getByRole('button',{name:'Run'}).hasAttribute('disabled')).toBe(false));
   fireEvent.click(screen.getByRole('button',{name:'Run'}));
   await waitFor(()=>expect(mock.invoke).toHaveBeenCalledTimes(1));
   expect(mock.invoke.mock.calls[0][0]).toMatchObject({
