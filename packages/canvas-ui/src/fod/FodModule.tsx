@@ -3,6 +3,7 @@ import React,{useEffect,useMemo,useRef,useState} from 'react';
 export interface FodNodeDefinition {type:string;label:string;description:string;category:string;group:string;inputs:Array<{id:string;name:string;direction:string;dataType:string}>;outputs:Array<{id:string;name:string;direction:string;dataType:string}>;metadata?:Record<string,any>;}
 interface FodFlow {id:string;name:string;description?:string;version:number;createdAt:string;updatedAt:string;nodes:any[];edges:any[];viewport?:any;metadata?:Record<string,unknown>;}
 import {FrnlEditableNodeGraph} from '../frnl-editable-node-graph/index.js';
+import {filterRemoteDefinitions,isRemoteGraphNode,validateRemoteGraph,type RemoteGraphHandle} from './remoteGraphContract.js';
 
 export interface FodRuntimeLike {
   listFlows():Promise<FodFlow[]>;
@@ -10,6 +11,10 @@ export interface FodRuntimeLike {
   saveFlow(flow:FodFlow):Promise<FodFlow>;
   deleteFlow(id:string):Promise<boolean>;
   executeFlow(id:string):Promise<{success:boolean;output:unknown;errors:Array<{message:string}>}>;
+  /** Kloks BackendFacade must reauthorize all target-side and nested calls. */
+  executeAuthorizedRemoteFlow?(request:{flowId:string;sourceWorkspaceId:string;handles:RemoteGraphHandle[]},options:{signal:AbortSignal}):ReturnType<FodRuntimeLike['executeFlow']>;
+  /** Live frontend action requires separately scoped, active-window approval. */
+  authorizeActiveFrontendWindow?(request:{sourceWorkspaceId:string;handles:RemoteGraphHandle[]},options:{signal:AbortSignal}):Promise<boolean>;
   /**
    * Return only operations authorized for the active principal AND workspace.
    * The application backend must derive this list from Luth-scoped discovery;
@@ -25,6 +30,8 @@ export interface FodModuleProps {
   nodeDefinitions:FodNodeDefinition[];
   workspaceId:string;
   className?:string;
+  /** Host-derived principal/session/grant epoch; must never contain bearer tokens. */
+  scopeKey?:string;
 }
 
 function toGraphNodes(flow:FodFlow,nodeDefinitions:FodNodeDefinition[]):any[]{
@@ -32,7 +39,7 @@ function toGraphNodes(flow:FodFlow,nodeDefinitions:FodNodeDefinition[]):any[]{
   return flow.nodes.map(node=>{
     const def=defs.get(node.type);
     return {
-      id:node.id,type:node.type,label:def?.label ?? String(node.data.label ?? node.type),
+      id:node.id,type:node.type,label:def?.label ?? (isRemoteGraphNode(node) ? 'Unavailable remote operation (permission/version required)' : String(node.data?.label ?? node.type)),
       position:node.position,data:node.data,
       inputs:(def?.inputs ?? []).map(port=>({id:port.id,label:port.name,type:'input',dataType:port.dataType})),
       outputs:(def?.outputs ?? []).map(port=>({id:port.id,label:port.name,type:'output',dataType:port.dataType})),
@@ -46,10 +53,10 @@ function toGraphEdges(flow:FodFlow):any[]{
 }
 
 export function FodModule(props:FodModuleProps){
-  return <WorkspaceFlows key={props.workspaceId} {...props} />;
+  return <WorkspaceFlows key={`${props.workspaceId}:${props.scopeKey ?? ''}`} {...props} />;
 }
 
-function WorkspaceFlows({runtime,nodeDefinitions,workspaceId,className}:FodModuleProps){
+function WorkspaceFlows({runtime,nodeDefinitions,workspaceId,className,scopeKey}:FodModuleProps){
   const drafts = useRef(new Map<string, FodFlow>());
   const [flows,setFlows]=useState<FodFlow[]>([]);
   const [activeId,setActiveId]=useState<string|null>(null);
@@ -58,33 +65,23 @@ function WorkspaceFlows({runtime,nodeDefinitions,workspaceId,className}:FodModul
   const [message,setMessage]=useState('');
   const [running,setRunning]=useState(false);
   const [authorizedNodes,setAuthorizedNodes]=useState<FodNodeDefinition[]>([]);
+  const permissionEpoch=useRef(0);
+  const runningAbort=useRef<AbortController|null>(null);
 
   useEffect(() => {
     let alive = true;
     let revision = 0;
     const refresh = () => {
       const request = ++revision;
+      permissionEpoch.current++;
+      runningAbort.current?.abort();
       // Fail closed immediately on an invalidation, account switch or revoke.
       setAuthorizedNodes([]);
       if (!runtime.listAuthorizedNodeDefinitions) return;
       void runtime.listAuthorizedNodeDefinitions(workspaceId).then(definitions => {
         if (!alive || request !== revision) return;
         if (!Array.isArray(definitions)) { setAuthorizedNodes([]); return; }
-        const seen = new Set(nodeDefinitions.map(definition => definition.type));
-        const scoped: FodNodeDefinition[] = [];
-        for (const definition of definitions) {
-          const meta = definition?.metadata;
-          // A remote handle requires an unambiguous canonical app, workspace
-          // and operation. Never project anonymous or colliding node types.
-          if (!definition?.type || !meta ||
-              typeof meta.appId !== 'string' || !meta.appId.trim() ||
-              typeof meta.targetWorkspaceId !== 'string' || !meta.targetWorkspaceId.trim() ||
-              typeof meta.operationId !== 'string' || !meta.operationId.trim() ||
-              seen.has(definition.type)) continue;
-          seen.add(definition.type);
-          scoped.push(definition);
-        }
-        setAuthorizedNodes(scoped);
+        setAuthorizedNodes(filterRemoteDefinitions(definitions,nodeDefinitions.map(definition=>definition.type)));
       }).catch(() => {
         if (alive && request === revision) {
           setAuthorizedNodes([]);
@@ -94,8 +91,8 @@ function WorkspaceFlows({runtime,nodeDefinitions,workspaceId,className}:FodModul
     };
     refresh();
     const unsubscribe = runtime.subscribeAuthorizedNodeChanges?.(workspaceId, refresh);
-    return () => { alive = false; ++revision; unsubscribe?.(); };
-  }, [runtime,workspaceId,nodeDefinitions]);
+    return () => { alive = false; ++revision; permissionEpoch.current++; runningAbort.current?.abort(); unsubscribe?.(); };
+  }, [runtime,workspaceId,nodeDefinitions,scopeKey]);
 
   const visibleNodeDefinitions=useMemo(
     () => [...nodeDefinitions,...authorizedNodes],
@@ -174,7 +171,42 @@ function WorkspaceFlows({runtime,nodeDefinitions,workspaceId,className}:FodModul
     if(!next.edges.some(item=>item.source===edge.source&&item.target===edge.target&&item.sourceHandle===edge.sourceHandle&&item.targetHandle===edge.targetHandle))next={...next,edges:[...next.edges,edge]};
     setFlow(next);
   };
-  const run=async()=>{if(!flow)return;setRunning(true);try{await save();const result=await runtime.executeFlow(flow.id);setMessage(result.success?'Execution completed':result.errors?.[0]?.message ?? 'Execution failed');}catch(error){setMessage(String(error));}finally{setRunning(false);}};
+  const run=async()=>{
+    if(!flow)return;
+    const epoch=permissionEpoch.current;
+    const abort=new AbortController();
+    runningAbort.current=abort;
+    setRunning(true);
+    try{
+      // Preserve saved graph even after a grant, version, or deployment expires.
+      await save();
+      if(abort.signal.aborted || epoch!==permissionEpoch.current) throw new Error('Authorization changed; retry');
+      const remoteNodes=flow.nodes.filter(isRemoteGraphNode);
+      let result:Awaited<ReturnType<FodRuntimeLike['executeFlow']>>;
+      if(remoteNodes.length){
+        if(!runtime.listAuthorizedNodeDefinitions || !runtime.executeAuthorizedRemoteFlow)
+          throw new Error('Remote execution unavailable: authenticated Kloks BackendFacade required');
+        const fresh=await runtime.listAuthorizedNodeDefinitions(workspaceId);
+        if(abort.signal.aborted || epoch!==permissionEpoch.current) throw new Error('Authorization changed; retry');
+        const scoped=filterRemoteDefinitions(fresh,nodeDefinitions.map(definition=>definition.type));
+        const check=validateRemoteGraph(flow.nodes,scoped);
+        if(!check.ok) throw new Error(check.message ?? 'Remote operation denied');
+        if(check.requiresWindowConsent){
+          if(!runtime.authorizeActiveFrontendWindow ||
+            !await runtime.authorizeActiveFrontendWindow({sourceWorkspaceId:workspaceId,handles:check.handles},{signal:abort.signal}))
+              throw new Error('Active frontend window consent required');
+        }
+        if(abort.signal.aborted || epoch!==permissionEpoch.current) throw new Error('Authorization changed; retry');
+        result=await runtime.executeAuthorizedRemoteFlow(
+          {flowId:flow.id,sourceWorkspaceId:workspaceId,handles:check.handles},{signal:abort.signal});
+      }else{
+        result=await runtime.executeFlow(flow.id);
+      }
+      if(abort.signal.aborted || epoch!==permissionEpoch.current) throw new Error('Authorization changed; retry');
+      setMessage(result.success?'Execution completed':result.errors?.[0]?.message ?? 'Execution failed');
+    }catch(error){setMessage(String(error));}
+    finally{if(runningAbort.current===abort)runningAbort.current=null;setRunning(false);}
+  };
 
   const grouped=useMemo(()=>{
     const groups=new Map<string,FodNodeDefinition[]>();
