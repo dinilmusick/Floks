@@ -36,10 +36,18 @@ export function AgentChatPanel({ targets, appAgentId, onInvoke, onCancel, onClos
   const controller = useRef<AbortController | null>(null);
   const currentRequest = useRef<{ targetId: string; targetKind: AgentChatTarget['kind']; invocationId?: string } | null>(null);
   const targetsRef = useRef(targets);
+  const onCancelRef = useRef(onCancel);
   targetsRef.current = targets;
+  onCancelRef.current = onCancel;
   useEffect(() => () => {
+    // Scope changes and panel unmounts cannot retain an in-flight reply.
+    // Ask the authorized host to cancel; its remote runtime must reauthorize.
+    const active = currentRequest.current;
     requestRevision.current++;
     controller.current?.abort();
+    if (active && onCancelRef.current) {
+      void Promise.resolve().then(() => onCancelRef.current?.(active)).catch(() => {});
+    }
   }, []);
   const sequence = () => `agent-chat-${++nextId.current}`;
   useEffect(() => { textarea.current?.focus(); }, []);
