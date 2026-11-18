@@ -43,7 +43,7 @@ export function AgentChatDock(props: AgentChatDockProps) {
       {open && typeof document !== 'undefined' && createPortal(
         <div id={panelId} key={scope ?? 'unbound'}>
           <AgentChatPanel targets={targets} appAgentId={active ? props.appAgentId : undefined}
-            onInvoke={active ? props.onInvoke : undefined} onClose={() => setOpenedForScope(null)} />
+            onInvoke={active ? props.onInvoke : undefined} onCancel={active ? props.onCancel : undefined} onClose={() => setOpenedForScope(null)} />
         </div>,
         document.body
       )}
