@@ -3,7 +3,7 @@ import React,{useEffect,useMemo,useRef,useState} from 'react';
 export interface FodNodeDefinition {type:string;label:string;description:string;category:string;group:string;inputs:Array<{id:string;name:string;direction:string;dataType:string}>;outputs:Array<{id:string;name:string;direction:string;dataType:string}>;metadata?:Record<string,any>;}
 interface FodFlow {id:string;name:string;description?:string;version:number;createdAt:string;updatedAt:string;nodes:any[];edges:any[];viewport?:any;metadata?:Record<string,unknown>;}
 import {FrnlEditableNodeGraph} from '../frnl-editable-node-graph/index.js';
-import {filterRemoteDefinitions,isRemoteGraphNode,validateRemoteGraph,type RemoteGraphHandle} from './remoteGraphContract.js';
+import {filterRemoteDefinitions,isRemoteGraphNode,readRemoteHandle,validateRemoteGraph,type RemoteGraphHandle} from './remoteGraphContract.js';
 
 export interface FodRuntimeLike {
   listFlows():Promise<FodFlow[]>;
@@ -37,7 +37,11 @@ export interface FodModuleProps {
 function toGraphNodes(flow:FodFlow,nodeDefinitions:FodNodeDefinition[]):any[]{
   const defs=new Map(nodeDefinitions.map(def=>[def.type,def]));
   return flow.nodes.map(node=>{
-    const def=defs.get(node.type);
+    const candidate=defs.get(node.type);
+    const saved=isRemoteGraphNode(node)?readRemoteHandle(node.data):null;
+    const current=candidate && isRemoteGraphNode(node)?readRemoteHandle(candidate.metadata):null;
+    const def=saved && (!current || Object.keys(saved).some(key=>saved[key as keyof typeof saved]!==current[key as keyof typeof current]))
+      ? undefined : candidate;
     return {
       id:node.id,type:node.type,label:def?.label ?? (isRemoteGraphNode(node) ? 'Unavailable remote operation (permission/version required)' : String(node.data?.label ?? node.type)),
       position:node.position,data:node.data,
@@ -208,6 +212,19 @@ function WorkspaceFlows({runtime,nodeDefinitions,workspaceId,className,scopeKey}
     finally{if(runningAbort.current===abort)runningAbort.current=null;setRunning(false);}
   };
 
+  const selectedRemote=flow?.nodes.find(node=>selected.has(node.id) && isRemoteGraphNode(node));
+  const selectedDefinition=selectedRemote && visibleNodeDefinitions.find(definition=>{
+    if(definition.type!==selectedRemote.type)return false;
+    const stored=readRemoteHandle(selectedRemote.data),live=readRemoteHandle(definition.metadata);
+    return !!stored && !!live && Object.keys(stored).every(key=>stored[key as keyof typeof stored]===live[key as keyof typeof live]);
+  });
+  const configureInput=(key:string,value:unknown)=>{
+    if(!flow || !selectedRemote)return;
+    const configured={...(selectedRemote.data?.configuredInputs ?? {})};
+    if(value===undefined)delete configured[key];else configured[key]=value;
+    setFlow({...flow,nodes:flow.nodes.map(node=>node.id===selectedRemote.id
+      ? {...node,data:{...node.data,configuredInputs:configured}}:node)});
+  };
   const grouped=useMemo(()=>{
     const groups=new Map<string,FodNodeDefinition[]>();
     for(const node of visibleNodeDefinitions){
@@ -232,6 +249,24 @@ function WorkspaceFlows({runtime,nodeDefinitions,workspaceId,className,scopeKey}
         const id=`${node.type}-${Date.now()}`;
         setFlow({...flow,nodes:[...flow.nodes,{id,type:node.type,position:{x:100+flow.nodes.length*24,y:100+flow.nodes.length*24},data:{endpointId:node.metadata?.endpointId,apiId:node.metadata?.apiId,appId:node.metadata?.appId,targetWorkspaceId:node.metadata?.targetWorkspaceId,operationId:node.metadata?.operationId,operationVersion:node.metadata?.operationVersion}}]});
       }}>{node.label}</button>)}</section>)}
+      {selectedRemote && <section aria-label='Remote node configuration' style={{borderTop:'1px solid var(--skipo-border,#333)',paddingTop:10,marginTop:12}}>
+        <strong>Remote operation</strong>
+        <div style={{fontSize:12,overflowWrap:'anywhere'}}>{selectedRemote.data?.appId} / {selectedRemote.data?.operationId} @ {selectedRemote.data?.operationVersion}</div>
+        {!selectedDefinition ? <p>Operation unavailable or contract changed. Saved node data is retained.</p>
+        : selectedDefinition.inputs.map(port=><label key={port.id} style={{display:'block',marginTop:8}}>
+          {port.name} ({port.dataType})
+          {port.dataType==='boolean'
+            ? <select aria-label={port.name} value={String(selectedRemote.data?.configuredInputs?.[port.id] ?? '')} onChange={e=>configureInput(port.id,e.target.value===''?undefined:e.target.value==='true')}>
+                <option value=''>Unset</option><option value='true'>True</option><option value='false'>False</option>
+              </select>
+            : port.dataType==='object' || port.dataType==='array'
+              ? <textarea aria-label={port.name} defaultValue={JSON.stringify(selectedRemote.data?.configuredInputs?.[port.id] ?? (port.dataType==='array'?[]:{}))}
+                  onBlur={e=>{try{configureInput(port.id,JSON.parse(e.target.value));}catch{setMessage('Invalid JSON input for '+port.name);}}}/>
+              : <input aria-label={port.name} type={port.dataType==='number'?'number':'text'}
+                  value={String(selectedRemote.data?.configuredInputs?.[port.id] ?? '')}
+                  onChange={e=>configureInput(port.id,e.target.value===''?undefined:port.dataType==='number'?Number(e.target.value):e.target.value)}/>}
+        </label>)}
+      </section>}
     </aside>
     <main style={{minWidth:0,minHeight:0}}>
       {flow ? <FrnlEditableNodeGraph nodes={graphNodes} edges={graphEdges} selectedNodeIds={selected} onSelectionChange={setSelected} onNodesChange={updateNodes} onEdgesChange={updateEdges} magneticEnabled autoSolidifyEnabled={false} signalTelemetryEnabled onMagneticTraceSolidify={addMagneticEdge} onPredictiveSolidify={(_id,ghost)=>solidifyGhost(ghost)} onPredictiveSolidifyAll={(ghosts)=>ghosts?.forEach(solidifyGhost)} onPredictiveSolidifyAllForNode={(_nodeId,ghosts)=>ghosts?.forEach(solidifyGhost)} /> : <div style={{padding:30}}>Create or select a flow.</div>}
