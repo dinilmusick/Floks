@@ -47,10 +47,13 @@ export function filterRemoteDefinitions<T extends RemoteGraphDefinition>(
   definitions: readonly T[], localTypes: readonly string[] = []
 ): T[] {
   const seen = new Set(localTypes);
+  const counts = new Map<string, number>();
+  for (const definition of definitions) if (definition && typeof definition.type === 'string')
+    counts.set(definition.type, (counts.get(definition.type) ?? 0) + 1);
   const result: T[] = [];
   if (!Array.isArray(definitions)) return result;
   for (const definition of definitions) {
-    if (!definition || !text(definition.type) || seen.has(definition.type) ||
+    if (!definition || !text(definition.type) || seen.has(definition.type) || counts.get(definition.type) !== 1 ||
         !readRemoteHandle(definition.metadata) ||
         !portsValid(definition.inputs, 'input') || !portsValid(definition.outputs, 'output')) continue;
     seen.add(definition.type);
