@@ -53,21 +53,31 @@ export function useLuthAuth(config: LuthAuthConfig): UseLuthAuthResult {
   const [loading, setLoading] = useState(true);
   const [initializing, setInitializing] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // Older focus/online refreshes must never restore a session after sign-out.
+  const sessionRevision = useRef(0);
+  const signingOut = useRef(false);
 
   const refresh = useCallback(async (options: { silent?: boolean } = {}) => {
+    if (signingOut.current) return { authenticated: false } as LuthSessionResult;
+    const revision = ++sessionRevision.current;
     if (!options.silent) setLoading(true);
     setError(null);
     try {
       const next = await client.getSession();
+      if (revision !== sessionRevision.current || signingOut.current) {
+        return { authenticated: false } as LuthSessionResult;
+      }
       setSession(next);
       return next;
     } catch (cause) {
       const message = cause instanceof Error ? cause.message : 'Unable to retrieve the Luth session.';
-      setError(message);
+      if (revision === sessionRevision.current && !signingOut.current) setError(message);
       throw cause;
     } finally {
-      if (!options.silent) setLoading(false);
-      setInitializing(false);
+      if (revision === sessionRevision.current && !signingOut.current) {
+        if (!options.silent) setLoading(false);
+        setInitializing(false);
+      }
     }
   }, [client]);
 
@@ -78,6 +88,8 @@ export function useLuthAuth(config: LuthAuthConfig): UseLuthAuthResult {
     window.addEventListener('focus', revalidate);
     window.addEventListener('online', revalidate);
     return () => {
+      // Invalidate requests issued for the previous app/client or mounted hook.
+      ++sessionRevision.current;
       window.removeEventListener('focus', revalidate);
       window.removeEventListener('online', revalidate);
     };
@@ -99,16 +111,21 @@ export function useLuthAuth(config: LuthAuthConfig): UseLuthAuthResult {
   );
 
   const signOut = useCallback(async () => {
+    // Fence all requests before awaiting network sign-out and hide protected UI
+    // immediately, including when Luth reports a network/session error.
+    signingOut.current = true;
+    ++sessionRevision.current;
+    setSession({ authenticated: false });
     setLoading(true);
     setError(null);
     try {
       await client.signOut();
-      setSession({ authenticated: false });
     } catch (cause) {
       const message = cause instanceof Error ? cause.message : 'Luth sign-out failed.';
       setError(message);
       throw cause;
     } finally {
+      signingOut.current = false;
       setLoading(false);
     }
   }, [client]);
