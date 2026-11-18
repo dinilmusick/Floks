@@ -247,4 +247,33 @@ describe('Agent Chat bottom strip', () => {
     await waitFor(() => expect(within(dialog).getByRole('alert').textContent).toContain('denied'));
     expect(within(dialog).queryByText('Private backend details')).toBeNull();
   });
+
+  it('aborts the old remote call immediately when a workspace scope changes', async () => {
+    let finish!: (value: { kind: 'completed'; text: string }) => void;
+    const onInvoke = vi.fn().mockImplementation(() => new Promise(resolve => { finish = resolve; }));
+    const onCancel = vi.fn().mockResolvedValue(undefined);
+    const shell = (scopeKey: string) => <AppShell agentChat={{
+      scopeKey, targets, appAgentId: 'app-1', onInvoke, onCancel,
+    }}><div>App canvas</div></AppShell>;
+    const app = render(shell('user-a:workspace-a:session-1:grants-1'));
+    fireEvent.click(screen.getByRole('button', { name: 'Agent Chat' }));
+    const dialog = screen.getByRole('dialog', { name: 'Agent Chat' });
+    fireEvent.change(within(dialog).getByRole('textbox', { name: 'Agent message' }), {
+      target: { value: 'private request' },
+    });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Send message' }));
+    await waitFor(() => expect(onInvoke).toHaveBeenCalledTimes(1));
+    const signal = onInvoke.mock.calls[0][1].signal as AbortSignal;
+    expect(signal.aborted).toBe(false);
+    app.rerender(shell('user-a:workspace-b:session-2:grants-2'));
+    expect(screen.queryByRole('dialog', { name: 'Agent Chat' })).toBeNull();
+    expect(signal.aborted).toBe(true);
+    await waitFor(() => expect(onCancel).toHaveBeenCalledWith({
+      targetId: 'app-1', targetKind: 'app',
+    }));
+    finish({ kind: 'completed', text: 'Private result from workspace A' });
+    fireEvent.click(screen.getByRole('button', { name: 'Agent Chat' }));
+    const newDialog = screen.getByRole('dialog', { name: 'Agent Chat' });
+    expect(within(newDialog).queryByText('Private result from workspace A')).toBeNull();
+  });
 });
