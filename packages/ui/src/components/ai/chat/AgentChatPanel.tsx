@@ -6,26 +6,41 @@ import { BaseTextarea } from '../../base/BaseTextarea.js';
 import { DirectChatMessageList, type ChatMessage } from './DirectChatMessageList.js';
 import {
   agentChatLabel, matchAgentMentions, selectedAgentIsValid,
-  type AgentChatInvoker, type AgentChatTarget,
+  type AgentChatInvoker, type AgentChatTarget, type AgentChatCanceller, type AgentChatClarificationField,
 } from './AgentChatTypes.js';
 
 export interface AgentChatPanelProps {
   targets: readonly AgentChatTarget[];
   appAgentId?: string;
   onInvoke?: AgentChatInvoker;
+  /** Host-side cancellation of an authenticated invocation. */
+  onCancel?: AgentChatCanceller;
   onClose: () => void;
 }
 
-export function AgentChatPanel({ targets, appAgentId, onInvoke, onClose }: AgentChatPanelProps) {
+export function AgentChatPanel({ targets, appAgentId, onInvoke, onCancel, onClose }: AgentChatPanelProps) {
   const [draft, setDraft] = useState('');
   const [selected, setSelected] = useState<AgentChatTarget | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
-  const [continuation, setContinuation] = useState<{ targetId: string; invocationId: string } | null>(null);
+  const [continuation, setContinuation] = useState<{
+    targetId: string; targetKind: AgentChatTarget['kind']; invocationId: string;
+    fields?: readonly AgentChatClarificationField[];
+  } | null>(null);
+  const [fieldValues, setFieldValues] = useState<Record<string, string | boolean>>({});
   const textarea = useRef<HTMLTextAreaElement>(null);
   const nextId = useRef(0);
   const inFlight = useRef(false);
+  const requestRevision = useRef(0);
+  const controller = useRef<AbortController | null>(null);
+  const currentRequest = useRef<{ targetId: string; targetKind: AgentChatTarget['kind']; invocationId?: string } | null>(null);
+  const targetsRef = useRef(targets);
+  targetsRef.current = targets;
+  useEffect(() => () => {
+    requestRevision.current++;
+    controller.current?.abort();
+  }, []);
   const sequence = () => `agent-chat-${++nextId.current}`;
   useEffect(() => { textarea.current?.focus(); }, []);
 
@@ -37,9 +52,17 @@ export function AgentChatPanel({ targets, appAgentId, onInvoke, onClose }: Agent
     return matchAgentMentions(targets, mentionQuery).slice(0, 8);
   }, [hasMention, mentionQuery, selected, targets]);
   const appAgent = targets.find(t => t.kind === 'app' && t.id === appAgentId);
-  const continuationTarget = continuation && targets.find(t => t.id === continuation.targetId);
-  const activeTarget = selectedAgentIsValid(selected, targets) ? selected : continuationTarget || appAgent;
-  const canSend = !!onInvoke && !!activeTarget && !busy && !!draft.trim();
+  const continuationTarget = continuation && targets.find(t =>
+    t.id === continuation.targetId && t.kind === continuation.targetKind);
+  // Never route a revoked mention or continuation to the default app agent.
+  const activeTarget = selected
+    ? (selectedAgentIsValid(selected, targets) ? selected : undefined)
+    : continuation ? continuationTarget : appAgent;
+  const unavailable = (!!selected && !selectedAgentIsValid(selected, targets)) ||
+    (!!continuation && !continuationTarget);
+  const hasTypedFields = !!continuation?.fields?.length;
+  const canSend = !!onInvoke && !!activeTarget && !unavailable && !busy &&
+    (!!draft.trim() || hasTypedFields);
   const addMessage = (role: ChatMessage['role'], content: string) =>
     setMessages(items => [...items, { id: sequence(), role, content }]);
 
@@ -48,8 +71,26 @@ export function AgentChatPanel({ targets, appAgentId, onInvoke, onClose }: Agent
     setDraft(`${prefix}@${agentChatLabel(agent)} `);
     setSelected(agent);
     setContinuation(null);
+    setFieldValues({});
     setError('');
     textarea.current?.focus();
+  };
+
+  const cancel = () => {
+    const active = currentRequest.current;
+    requestRevision.current++;
+    controller.current?.abort();
+    controller.current = null;
+    currentRequest.current = null;
+    inFlight.current = false;
+    setBusy(false);
+    setContinuation(null);
+    setFieldValues({});
+    if (active && onCancel) {
+      void Promise.resolve().then(() => onCancel(active)).catch(() => {
+        setError('Unable to confirm remote cancellation.');
+      });
+    }
   };
 
   const send = async () => {
@@ -58,30 +99,87 @@ export function AgentChatPanel({ targets, appAgentId, onInvoke, onClose }: Agent
     const prompt = token ? draft.replace(token, ' ').replace(/ {2,}/g, ' ').trim() : draft.trim();
     const count = (draft.match(/(^|\s)@/g) ?? []).length;
     if (count > 1) { setError('Choose one agent per message.'); return; }
-    if (count > 0 && !selected) { setError('Select an agent from the list.'); return; }
-    if (!prompt) { setError('Enter a message for the agent.'); return; }
-    const resume = continuation?.targetId === activeTarget.id ? continuation.invocationId : undefined;
-    const request = { targetId: activeTarget.id, targetKind: activeTarget.kind, prompt, ...(resume ? { resumeInvocationId: resume } : {}) };
-    addMessage('user', draft.trim());
+    if (count > 0 && !selected && !continuation) { setError('Select an agent from the list.'); return; }
+    if (unavailable || !targetsRef.current.some(t => t.id === activeTarget.id && t.kind === activeTarget.kind)) {
+      setError('This agent is no longer available. Refresh the authorized agent list.');
+      return;
+    }
+    const fields = continuation?.fields ?? [];
+    const parameters: Record<string, string | number | boolean> = {};
+    for (const field of fields) {
+      const raw = fieldValues[field.key];
+      if (field.type === 'boolean') {
+        parameters[field.key] = raw === true;
+      } else if (field.type === 'number') {
+        if (raw === undefined || raw === '') {
+          if (field.required) { setError(`Enter ${field.label}.`); return; }
+          continue;
+        }
+        const parsed = Number(raw);
+        if (!Number.isFinite(parsed)) { setError(`${field.label} must be a number.`); return; }
+        parameters[field.key] = parsed;
+      } else {
+        const value = typeof raw === 'string' ? raw.trim() : '';
+        if (!value) { if (field.required) { setError(`Enter ${field.label}.`); return; } continue; }
+        parameters[field.key] = value;
+      }
+    }
+    if (!prompt && !fields.length) { setError('Enter a message for the agent.'); return; }
+    const resume = continuation?.targetId === activeTarget.id &&
+      continuation.targetKind === activeTarget.kind ? continuation.invocationId : undefined;
+    const request = { targetId: activeTarget.id, targetKind: activeTarget.kind, prompt,
+      ...(resume ? { resumeInvocationId: resume } : {}),
+      ...(fields.length ? { parameters } : {}) };
+    addMessage('user', prompt || 'Submitted clarification fields');
     setDraft('');
     setSelected(null);
     setError('');
     inFlight.current = true;
     setBusy(true);
+    const revision = ++requestRevision.current;
+    const abort = new AbortController();
+    controller.current = abort;
+    currentRequest.current = { targetId: activeTarget.id, targetKind: activeTarget.kind,
+      ...(resume ? { invocationId: resume } : {}) };
     try {
-      const reply = await onInvoke(request);
+      // Legacy invokers remain compatible. Cancellation-aware hosts accept an AbortSignal.
+      const reply = onCancel ? await onInvoke(request, { signal: abort.signal }) : await onInvoke(request);
+      if (revision !== requestRevision.current || abort.signal.aborted) return;
+      if (!targetsRef.current.some(t => t.id === activeTarget.id && t.kind === activeTarget.kind)) {
+        setContinuation(null);
+        setFieldValues({});
+        setError('The agent is no longer authorized or available.');
+        return;
+      }
       if (reply.kind === 'needs_input' && reply.invocationId) {
-        setContinuation({ targetId: activeTarget.id, invocationId: reply.invocationId });
+        // UI hints are advisory; authoritative parsing and validation remain server-side.
+        const seen = new Set<string>();
+        const fields = (reply.fields ?? []).filter(field => {
+          if (!/^[a-zA-Z][a-zA-Z0-9_]{0,63}$/.test(field.key) || seen.has(field.key) ||
+            !['text', 'number', 'boolean'].includes(field.type) || !field.label.trim()) return false;
+          seen.add(field.key); return true;
+        }).slice(0, 16);
+        setContinuation({ targetId: activeTarget.id, targetKind: activeTarget.kind,
+          invocationId: reply.invocationId, fields });
+        setFieldValues({});
       } else {
         setContinuation(null);
+        setFieldValues({});
       }
-      addMessage('assistant', reply.text);
+      if (reply.kind === 'failed') setError('Agent request failed or was denied.');
+      else addMessage('assistant', reply.text);
     } catch {
+      if (revision !== requestRevision.current || abort.signal.aborted) return;
       setContinuation(null);
-      addMessage('system', 'Agent request failed. Check the connection or permissions.');
+      setFieldValues({});
+      setError('Agent request failed. Check the connection or permissions.');
     } finally {
-      inFlight.current = false;
-      setBusy(false);
+      if (revision === requestRevision.current) {
+        inFlight.current = false;
+        controller.current = null;
+        currentRequest.current = null;
+        setBusy(false);
+      }
     }
   };
 
