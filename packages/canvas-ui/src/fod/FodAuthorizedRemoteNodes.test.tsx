@@ -32,10 +32,10 @@ it('uses workspace-authorized discovery rather than showing remote operations fr
     { ...remote('other', 'private'), metadata: { operationId:'private' } },
   ]));
   const ownerB = makeRuntime(vi.fn(async () => [remote('kone', 'mine')]));
-  const { rerender } = render(<FodModule workspaceId="w-a" runtime={ownerA} nodeDefinitions={[]} />);
+  const { rerender } = render(<FodModule scopeKey='principal-session-grant-epoch' workspaceId="w-a" runtime={ownerA} nodeDefinitions={[]} />);
   await screen.findByRole('button', {name:'aiko: mine'});
   expect(screen.queryByRole('button', {name:'other: private'})).toBeNull();
-  rerender(<FodModule workspaceId="w-b" runtime={ownerB} nodeDefinitions={[]} />);
+  rerender(<FodModule scopeKey='principal-session-grant-epoch' workspaceId="w-b" runtime={ownerB} nodeDefinitions={[]} />);
   await screen.findByRole('button', {name:'kone: mine'});
   expect(screen.queryByRole('button', {name:'aiko: mine'})).toBeNull();
   expect(ownerA.listAuthorizedNodeDefinitions).toHaveBeenCalledWith('w-a');
@@ -59,7 +59,7 @@ it('immediately removes revoked definitions and ignores stale asynchronous disco
       return () => { onChange = undefined; };
     }),
   };
-  render(<FodModule workspaceId="workspace-001" runtime={runtime} nodeDefinitions={[]} />);
+  render(<FodModule scopeKey='principal-session-grant-epoch' workspaceId="workspace-001" runtime={runtime} nodeDefinitions={[]} />);
   await screen.findByRole('button', {name:'aiko: first'});
   await act(async () => { onChange?.(); });
   await waitFor(() => expect(screen.queryByRole('button', {name:'aiko: first'})).toBeNull());
@@ -76,7 +76,7 @@ it('saves exact canonical remote operation coordinates in workflow nodes', async
     ...makeRuntime(async () => [remote('kone','trigger')]),
     saveFlow: async flow => { saved.push(flow); return flow; },
   };
-  render(<FodModule workspaceId="workspace-001" runtime={runtime} nodeDefinitions={[]} />);
+  render(<FodModule scopeKey='principal-session-grant-epoch' workspaceId="workspace-001" runtime={runtime} nodeDefinitions={[]} />);
   await screen.findByRole('button', {name:'kone: trigger'});
   fireEvent.click(screen.getByRole('button', {name:'New flow'}));
   fireEvent.click(screen.getByRole('button', {name:'kone: trigger'}));
