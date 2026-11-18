@@ -81,6 +81,7 @@ function WorkspaceFlows({runtime,nodeDefinitions,workspaceId,className,scopeKey}
       runningAbort.current?.abort();
       // Fail closed immediately on an invalidation, account switch or revoke.
       setAuthorizedNodes([]);
+      if (!scopeKey) { setMessage('Authenticated graph scope required for remote discovery'); return; }
       if (!runtime.listAuthorizedNodeDefinitions) return;
       void runtime.listAuthorizedNodeDefinitions(workspaceId).then(definitions => {
         if (!alive || request !== revision) return;
@@ -188,7 +189,7 @@ function WorkspaceFlows({runtime,nodeDefinitions,workspaceId,className,scopeKey}
       const remoteNodes=flow.nodes.filter(isRemoteGraphNode);
       let result:Awaited<ReturnType<FodRuntimeLike['executeFlow']>>;
       if(remoteNodes.length){
-        if(!runtime.listAuthorizedNodeDefinitions || !runtime.executeAuthorizedRemoteFlow)
+        if(!scopeKey || !runtime.listAuthorizedNodeDefinitions || !runtime.executeAuthorizedRemoteFlow)
           throw new Error('Remote execution unavailable: authenticated Kloks BackendFacade required');
         const fresh=await runtime.listAuthorizedNodeDefinitions(workspaceId);
         if(abort.signal.aborted || epoch!==permissionEpoch.current) throw new Error('Authorization changed; retry');
@@ -247,7 +248,8 @@ function WorkspaceFlows({runtime,nodeDefinitions,workspaceId,className,scopeKey}
       {grouped.map(([group,nodes])=><section key={group}><h4 style={{margin:'8px 0'}}>{group}</h4>{nodes.map(node=><button key={node.type} type='button' style={{display:'block',width:'100%',textAlign:'left',marginBottom:4}} onClick={()=>{
         if(!flow)return;
         const id=`${node.type}-${Date.now()}`;
-        setFlow({...flow,nodes:[...flow.nodes,{id,type:node.type,position:{x:100+flow.nodes.length*24,y:100+flow.nodes.length*24},data:{endpointId:node.metadata?.endpointId,apiId:node.metadata?.apiId,appId:node.metadata?.appId,targetWorkspaceId:node.metadata?.targetWorkspaceId,operationId:node.metadata?.operationId,operationVersion:node.metadata?.operationVersion}}]});
+        const remoteHandle=readRemoteHandle(node.metadata);
+        setFlow({...flow,nodes:[...flow.nodes,{id,type:node.type,position:{x:100+flow.nodes.length*24,y:100+flow.nodes.length*24},data:{endpointId:node.metadata?.endpointId,apiId:node.metadata?.apiId,...(remoteHandle ?? {})}}]});
       }}>{node.label}</button>)}</section>)}
       {selectedRemote && <section aria-label='Remote node configuration' style={{borderTop:'1px solid var(--skipo-border,#333)',paddingTop:10,marginTop:12}}>
         <strong>Remote operation</strong>
