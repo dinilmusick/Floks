@@ -147,4 +147,104 @@ describe('Agent Chat bottom strip', () => {
     }));
   });
 
+
+  it('fails closed instead of rerouting a revoked selected endpoint to the app agent', () => {
+    const onInvoke = vi.fn().mockResolvedValue(completed);
+    const shell = (currentTargets: AgentChatTarget[]) =>
+      <AppShell agentChat={{ scopeKey: 'scope-a', targets: currentTargets, appAgentId: 'app-1', onInvoke }}>
+        <div>App canvas</div>
+      </AppShell>;
+    const app = render(shell(targets));
+    fireEvent.click(screen.getByRole('button', { name: 'Agent Chat' }));
+    let dialog = screen.getByRole('dialog', { name: 'Agent Chat' });
+    const composer = within(dialog).getByRole('textbox', { name: 'Agent message' });
+    fireEvent.change(composer, { target: { value: '@Warehouse' } });
+    fireEvent.click(within(dialog).getByRole('option', { name: /Warehouse Helper/ }));
+    app.rerender(shell([targets[0]]));
+    dialog = screen.getByRole('dialog', { name: 'Agent Chat' });
+    expect(within(dialog).getByRole('alert').textContent).toContain('unavailable');
+    expect(within(dialog).getByRole('button', { name: 'Send message' }).hasAttribute('disabled')).toBe(true);
+    expect(onInvoke).not.toHaveBeenCalled();
+  });
+
+  it('cannot redirect a revoked pending clarification to a different app agent', async () => {
+    const onInvoke = vi.fn().mockResolvedValueOnce({
+      kind: 'needs_input', text: 'Which SKU?', invocationId: 'sensitive-continuation',
+    });
+    const shell = (currentTargets: AgentChatTarget[]) =>
+      <AppShell agentChat={{ scopeKey: 'scope-a', targets: currentTargets, appAgentId: 'app-1', onInvoke }}>
+        <div>App canvas</div>
+      </AppShell>;
+    const app = render(shell(targets));
+    fireEvent.click(screen.getByRole('button', { name: 'Agent Chat' }));
+    let dialog = screen.getByRole('dialog', { name: 'Agent Chat' });
+    const composer = within(dialog).getByRole('textbox', { name: 'Agent message' });
+    fireEvent.change(composer, { target: { value: '@Warehouse' } });
+    fireEvent.click(within(dialog).getByRole('option', { name: /Warehouse Helper/ }));
+    fireEvent.change(composer, { target: { value: '@Warehouse Helper check stock' } });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Send message' }));
+    await waitFor(() => expect(within(dialog).getByText('Which SKU?')).toBeTruthy());
+    app.rerender(shell([targets[0]]));
+    dialog = screen.getByRole('dialog', { name: 'Agent Chat' });
+    expect(within(dialog).getByRole('alert').textContent).toContain('unavailable');
+    expect(within(dialog).getByRole('button', { name: 'Send message' }).hasAttribute('disabled')).toBe(true);
+    expect(onInvoke).toHaveBeenCalledTimes(1);
+  });
+
+  it('sends typed clarification values on the same invocation ID', async () => {
+    const onInvoke = vi.fn().mockResolvedValueOnce({
+      kind: 'needs_input', text: 'How many?', invocationId: 'typed-inv',
+      fields: [{ key: 'count', label: 'Count', type: 'number', required: true }],
+    }).mockResolvedValueOnce(completed);
+    const dialog = launch({ appAgentId: 'app-1', onInvoke });
+    fireEvent.change(within(dialog).getByRole('textbox', { name: 'Agent message' }), {
+      target: { value: 'Count inventory' },
+    });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Send message' }));
+    await waitFor(() => expect(within(dialog).getByText('How many?')).toBeTruthy());
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Send message' }));
+    expect(within(dialog).getByRole('alert').textContent).toContain('Enter Count');
+    fireEvent.change(within(dialog).getByRole('spinbutton', { name: /Count/ }), { target: { value: '7' } });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Send message' }));
+    await waitFor(() => expect(onInvoke).toHaveBeenNthCalledWith(2, {
+      targetId: 'app-1', targetKind: 'app', prompt: '',
+      resumeInvocationId: 'typed-inv', parameters: { count: 7 },
+    }));
+  });
+
+  it('cancels an in-flight invocation and ignores its late response', async () => {
+    let finish!: (value: { kind: 'completed'; text: string }) => void;
+    const onInvoke = vi.fn().mockImplementation(() => new Promise(resolve => { finish = resolve; }));
+    const onCancel = vi.fn().mockResolvedValue(undefined);
+    render(<AppShell agentChat={{ scopeKey: 'scope-a', targets, appAgentId: 'app-1', onInvoke, onCancel }}>
+      <div>App canvas</div>
+    </AppShell>);
+    fireEvent.click(screen.getByRole('button', { name: 'Agent Chat' }));
+    const dialog = screen.getByRole('dialog', { name: 'Agent Chat' });
+    fireEvent.change(within(dialog).getByRole('textbox', { name: 'Agent message' }), {
+      target: { value: 'Generate report' },
+    });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Send message' }));
+    await waitFor(() => expect(onInvoke).toHaveBeenCalledTimes(1));
+    const options = onInvoke.mock.calls[0][1];
+    expect(options.signal.aborted).toBe(false);
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Cancel agent request' }));
+    expect(options.signal.aborted).toBe(true);
+    await waitFor(() => expect(onCancel).toHaveBeenCalledWith({
+      targetId: 'app-1', targetKind: 'app',
+    }));
+    finish({ kind: 'completed', text: 'Late private result' });
+    await waitFor(() => expect(within(dialog).queryByText('Late private result')).toBeNull());
+  });
+
+  it('surfaces denied or failed invocations without injecting a success transcript', async () => {
+    const onInvoke = vi.fn().mockResolvedValue({ kind: 'failed', text: 'Private backend details' });
+    const dialog = launch({ appAgentId: 'app-1', onInvoke });
+    fireEvent.change(within(dialog).getByRole('textbox', { name: 'Agent message' }), {
+      target: { value: 'Blocked call' },
+    });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Send message' }));
+    await waitFor(() => expect(within(dialog).getByRole('alert').textContent).toContain('denied'));
+    expect(within(dialog).queryByText('Private backend details')).toBeNull();
+  });
 });
