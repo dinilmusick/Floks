@@ -32,7 +32,7 @@ export function readRemoteHandle(value: unknown): RemoteGraphHandle | null {
 }
 export function isRemoteGraphNode(node: RemoteSavedNode): boolean {
   return node.type.startsWith('remote.') ||
-    Boolean(node.data && fields.some(field => own(node.data as object, field)));
+    Boolean(node.data && fields.some(field => own(node.data as object, field) && (node.data as Record<string, unknown>)[field] != null));
 }
 export function isLiveFrontendDefinition(definition: RemoteGraphDefinition): boolean {
   return definition.metadata?.surface === 'raw.frontend.session' ||
