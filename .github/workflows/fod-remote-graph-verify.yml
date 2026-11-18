@@ -1,0 +1,48 @@
+name: Floks FOD remote graph exact-head verification
+
+on:
+  push:
+    branches:
+      - atax/floks-typed-remote-graph-20261119
+  pull_request:
+    branches:
+      - atax/graph-remote-contract-guard-20261118
+
+permissions:
+  contents: read
+
+concurrency:
+  group: floks-fod-graph-${{ github.ref }}-${{ github.event.pull_request.head.sha || github.sha }}
+  cancel-in-progress: true
+
+jobs:
+  graph-contracts:
+    name: Exact-SHA graph contracts / typecheck / build
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout requested commit
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '22'
+      - name: Enable canonical pnpm version
+        run: |
+          corepack enable
+          corepack prepare pnpm@10.33.0 --activate
+      - name: Install locked dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Verify checked-out head
+        run: |
+          ACTUAL="$(git rev-parse HEAD)"
+          echo "Verified source commit: $ACTUAL"
+          test "$ACTUAL" = "${{ github.event.pull_request.head.sha || github.sha }}"
+      - name: FOD exact-head Vitest regressions
+        run: pnpm exec vitest run packages/canvas-ui/src/fod/remoteGraphContract.test.ts packages/canvas-ui/src/fod/remoteGraphConnections.test.ts packages/canvas-ui/src/fod/FodAuthorizedRemoteNodes.test.tsx packages/canvas-ui/src/fod/FodRemoteExecution.test.tsx
+      - name: Canvas UI typecheck
+        run: pnpm --filter @floks/canvas-ui run typecheck
+      - name: Canvas UI build
+        run: pnpm --filter @floks/canvas-ui run build
