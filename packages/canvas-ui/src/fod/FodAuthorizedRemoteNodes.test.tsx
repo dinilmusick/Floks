@@ -86,3 +86,16 @@ it('saves exact canonical remote operation coordinates in workflow nodes', async
     appId: 'kone', targetWorkspaceId: 'workspace-001', operationId: 'trigger', operationVersion: 'v1'
   });
 });
+
+it('lists all six eligible raw and agent surfaces from authenticated discovery', async () => {
+  const surfaces=['raw.backend','raw.workflow','agent.endpoint','agent.workflow','raw.frontend.session','agent.app'];
+  const definitions=surfaces.map((surface,index):FodNodeDefinition=>({
+    ...remote(`app-${index}`,`op-${index}`),
+    category:surface,
+    metadata:{...remote(`app-${index}`,`op-${index}`).metadata,surface},
+  }));
+  render(<FodModule scopeKey='authenticated-principal/grants' workspaceId='source-w' runtime={makeRuntime(async()=>definitions)} nodeDefinitions={[]}/>);
+  for(let index=0;index<surfaces.length;index++) {
+    expect(await screen.findByRole('button',{name:`app-${index}: op-${index}`})).toBeTruthy();
+  }
+});
