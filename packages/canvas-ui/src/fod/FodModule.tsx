@@ -4,6 +4,7 @@ export interface FodNodeDefinition {type:string;label:string;description:string;
 interface FodFlow {id:string;name:string;description?:string;version:number;createdAt:string;updatedAt:string;nodes:any[];edges:any[];viewport?:any;metadata?:Record<string,unknown>;}
 import {FrnlEditableNodeGraph} from '../frnl-editable-node-graph/index.js';
 import {filterRemoteDefinitions,isRemoteGraphNode,readRemoteHandle,validateRemoteGraph,type RemoteGraphHandle} from './remoteGraphContract.js';
+import {readRemotePortSnapshot,remotePortFingerprint,snapshotRemotePorts,validateRemoteConnections} from './remoteGraphConnections.js';
 
 export interface FodRuntimeLike {
   listFlows():Promise<FodFlow[]>;
@@ -40,14 +41,21 @@ function toGraphNodes(flow:FodFlow,nodeDefinitions:FodNodeDefinition[]):any[]{
     const candidate=defs.get(node.type);
     const saved=isRemoteGraphNode(node)?readRemoteHandle(node.data):null;
     const current=candidate && isRemoteGraphNode(node)?readRemoteHandle(candidate.metadata):null;
-    const def=saved && (!current || Object.keys(saved).some(key=>saved[key as keyof typeof saved]!==current[key as keyof typeof current]))
+    const incompatiblePorts=Boolean(saved && candidate && node.data?.remotePortSignature &&
+      node.data.remotePortSignature!==remotePortFingerprint(candidate));
+    const def=saved && (!current || incompatiblePorts || Object.keys(saved).some(key=>saved[key as keyof typeof saved]!==current[key as keyof typeof current]))
       ? undefined : candidate;
+    // Retain the original visible sockets on unavailable nodes, without treating
+    // these stored labels as a live authority to execute anything.
+    const retained=saved ? readRemotePortSnapshot(node.data?.remotePorts):null;
+    const inputs=def?.inputs ?? retained?.inputs ?? [];
+    const outputs=def?.outputs ?? retained?.outputs ?? [];
     return {
-      id:node.id,type:node.type,label:def?.label ?? (isRemoteGraphNode(node) ? 'Unavailable remote operation (permission/version required)' : String(node.data?.label ?? node.type)),
+      id:node.id,type:node.type,label:def?.label ?? (isRemoteGraphNode(node) ? 'Unavailable remote operation (permission/version/ports changed)' : String(node.data?.label ?? node.type)),
       position:node.position,data:node.data,
-      inputs:(def?.inputs ?? []).map(port=>({id:port.id,label:port.name,type:'input',dataType:port.dataType})),
-      outputs:(def?.outputs ?? []).map(port=>({id:port.id,label:port.name,type:'output',dataType:port.dataType})),
-      width:190,height:Math.max(90,60+Math.max(def?.inputs.length ?? 0,def?.outputs.length ?? 0)*24)
+      inputs:inputs.map(port=>({id:port.id,label:port.name,type:'input',dataType:port.dataType})),
+      outputs:outputs.map(port=>({id:port.id,label:port.name,type:'output',dataType:port.dataType})),
+      width:190,height:Math.max(90,60+Math.max(inputs.length,outputs.length)*24)
     };
   });
 }
@@ -69,6 +77,8 @@ function WorkspaceFlows({runtime,nodeDefinitions,workspaceId,className,scopeKey}
   const [message,setMessage]=useState('');
   const [running,setRunning]=useState(false);
   const [authorizedNodes,setAuthorizedNodes]=useState<FodNodeDefinition[]>([]);
+  const [remoteAppFilter,setRemoteAppFilter]=useState('');
+  const [remoteWorkspaceFilter,setRemoteWorkspaceFilter]=useState('');
   const permissionEpoch=useRef(0);
   const runningAbort=useRef<AbortController|null>(null);
 
@@ -138,7 +148,14 @@ function WorkspaceFlows({runtime,nodeDefinitions,workspaceId,className,scopeKey}
 
   const updateNodes=(next:any[])=>{
     if(!flow)return;
-    const nextFlow:FodFlow={...flow,nodes:next.map(node=>({...flow.nodes.find(item=>item.id===node.id),id:node.id,type:node.type,position:node.position,data:node.data}))};
+    const nextFlow:FodFlow={...flow,nodes:next.map(node=>{
+      const prior=flow.nodes.find(item=>item.id===node.id);
+      // A graph drag/selection callback must never erase or rewrite pinned
+      // remote coordinates or typed configurations saved in node.data.
+      const data=prior && isRemoteGraphNode(prior)
+        ? {...(node.data ?? {}),...(prior.data ?? {})} : node.data;
+      return {...prior,id:node.id,type:prior && isRemoteGraphNode(prior)?prior.type:node.type,position:node.position,data};
+    })};
     setFlow(nextFlow);
   };
   const updateEdges=(next:any[])=>{
@@ -196,6 +213,10 @@ function WorkspaceFlows({runtime,nodeDefinitions,workspaceId,className,scopeKey}
         const scoped=filterRemoteDefinitions(fresh,nodeDefinitions.map(definition=>definition.type));
         const check=validateRemoteGraph(flow.nodes,scoped);
         if(!check.ok) throw new Error(check.message ?? 'Remote operation denied');
+        const wiring=validateRemoteConnections(flow.nodes,flow.edges,[...nodeDefinitions,...scoped]);
+        if(!wiring.ok) throw new Error(wiring.message ?? 'Remote graph connections denied');
+        // Kloks must load the just-saved source workflow by flowId/workspaceId,
+        // use its typed edges for fan-out and reauthorize every remote target.
         if(check.requiresWindowConsent){
           if(!runtime.authorizeActiveFrontendWindow ||
             !await runtime.authorizeActiveFrontendWindow({sourceWorkspaceId:workspaceId,handles:check.handles},{signal:abort.signal}))
@@ -217,7 +238,8 @@ function WorkspaceFlows({runtime,nodeDefinitions,workspaceId,className,scopeKey}
   const selectedDefinition=selectedRemote && visibleNodeDefinitions.find(definition=>{
     if(definition.type!==selectedRemote.type)return false;
     const stored=readRemoteHandle(selectedRemote.data),live=readRemoteHandle(definition.metadata);
-    return !!stored && !!live && Object.keys(stored).every(key=>stored[key as keyof typeof stored]===live[key as keyof typeof live]);
+    return !!stored && !!live && Object.keys(stored).every(key=>stored[key as keyof typeof stored]===live[key as keyof typeof live]) &&
+      (!selectedRemote.data?.remotePortSignature || selectedRemote.data.remotePortSignature===remotePortFingerprint(definition));
   });
   const configureInput=(key:string,value:unknown)=>{
     if(!flow || !selectedRemote)return;
@@ -226,16 +248,23 @@ function WorkspaceFlows({runtime,nodeDefinitions,workspaceId,className,scopeKey}
     setFlow({...flow,nodes:flow.nodes.map(node=>node.id===selectedRemote.id
       ? {...node,data:{...node.data,configuredInputs:configured}}:node)});
   };
+  const remoteApps=useMemo(()=>[...new Set(authorizedNodes.map(node=>String(node.metadata?.appId ?? '')))].filter(Boolean).sort(),[authorizedNodes]);
+  const remoteWorkspaces=useMemo(()=>[...new Set(authorizedNodes.filter(node=>!remoteAppFilter || node.metadata?.appId===remoteAppFilter)
+    .map(node=>String(node.metadata?.targetWorkspaceId ?? '')))].filter(Boolean).sort(),[authorizedNodes,remoteAppFilter]);
   const grouped=useMemo(()=>{
     const groups=new Map<string,FodNodeDefinition[]>();
     for(const node of visibleNodeDefinitions){
       const appId=node.metadata?.appId;
-      const group=(typeof appId==='string' && appId.trim()) ? `App ${appId} / ${node.group}` : node.group;
+      const targetWorkspaceId=node.metadata?.targetWorkspaceId;
+      if(typeof appId==='string' && (remoteAppFilter && appId!==remoteAppFilter ||
+          remoteWorkspaceFilter && targetWorkspaceId!==remoteWorkspaceFilter)) continue;
+      const group=(typeof appId==='string' && appId.trim())
+        ? `App ${appId} / workspace ${targetWorkspaceId} / ${node.group} / ${node.category}` : node.group;
       const current=groups.get(group) ?? [];
       current.push(node);groups.set(group,current);
     }
     return [...groups.entries()].sort(([a],[b])=>a.localeCompare(b));
-  },[visibleNodeDefinitions]);
+  },[visibleNodeDefinitions,remoteAppFilter,remoteWorkspaceFilter]);
 
   return <div className={className} style={{display:'grid',gridTemplateColumns:'220px 1fr',gridTemplateRows:'44px 1fr',height:'100%',minHeight:500}}>
     <div style={{gridColumn:'1 / -1',display:'flex',alignItems:'center',gap:8,padding:'6px 10px',borderBottom:'1px solid var(--skipo-border,#333)',background:'var(--skipo-matte-bg,#111)'}}>
@@ -245,11 +274,21 @@ function WorkspaceFlows({runtime,nodeDefinitions,workspaceId,className,scopeKey}
       <button type='button' onClick={()=>void save().catch(error=>setMessage(String(error)))} disabled={!flow?.name.trim()}>Save as App Workflow</button><button type='button' onClick={()=>void run()} disabled={!flow||running}>{running?'Running…':'Run'}</button><span>{message}</span>
     </div>
     <aside style={{overflow:'auto',padding:10,borderRight:'1px solid var(--skipo-border,#333)'}}>
+      <label style={{display:'block',fontSize:12}}>Remote application
+        <select aria-label='Remote application' value={remoteApps.includes(remoteAppFilter)?remoteAppFilter:''} onChange={event=>{setRemoteAppFilter(event.target.value);setRemoteWorkspaceFilter('');}}>
+          <option value=''>All authorized apps</option>{remoteApps.map(app=><option key={app} value={app}>{app}</option>)}
+        </select>
+      </label>
+      <label style={{display:'block',fontSize:12}}>Target workspace
+        <select aria-label='Target workspace' value={remoteWorkspaces.includes(remoteWorkspaceFilter)?remoteWorkspaceFilter:''} onChange={event=>setRemoteWorkspaceFilter(event.target.value)}>
+          <option value=''>All authorized workspaces</option>{remoteWorkspaces.map(workspace=><option key={workspace} value={workspace}>{workspace}</option>)}
+        </select>
+      </label>
       {grouped.map(([group,nodes])=><section key={group}><h4 style={{margin:'8px 0'}}>{group}</h4>{nodes.map(node=><button key={node.type} type='button' style={{display:'block',width:'100%',textAlign:'left',marginBottom:4}} onClick={()=>{
         if(!flow)return;
         const id=`${node.type}-${Date.now()}`;
         const remoteHandle=readRemoteHandle(node.metadata);
-        setFlow({...flow,nodes:[...flow.nodes,{id,type:node.type,position:{x:100+flow.nodes.length*24,y:100+flow.nodes.length*24},data:{endpointId:node.metadata?.endpointId,apiId:node.metadata?.apiId,...(remoteHandle ?? {})}}]});
+        setFlow({...flow,nodes:[...flow.nodes,{id,type:node.type,position:{x:100+flow.nodes.length*24,y:100+flow.nodes.length*24},data:{endpointId:node.metadata?.endpointId,apiId:node.metadata?.apiId,...(remoteHandle ? {...remoteHandle,remotePortSignature:remotePortFingerprint(node),remotePorts:snapshotRemotePorts(node)} : {})}}]});
       }}>{node.label}</button>)}</section>)}
       {selectedRemote && <section aria-label='Remote node configuration' style={{borderTop:'1px solid var(--skipo-border,#333)',paddingTop:10,marginTop:12}}>
         <strong>Remote operation</strong>
