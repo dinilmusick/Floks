@@ -40,4 +40,20 @@ describe('remote graph security and persistence contract',()=>{
     const live={...a,metadata:{...a.metadata,surface:'raw.frontend.session'}};
     expect(validateRemoteGraph([node(a)],[live]).requiresWindowConsent).toBe(true);
   });
+  it('retains only currently leased operations in scoped discovery',()=>{
+    const a=def();
+    const current={...a,metadata:{...a.metadata,leaseExpiresAt:'2999-01-01T00:00:00.000Z'}};
+    const expired={...a,metadata:{...a.metadata,leaseExpiresAt:'2000-01-01T00:00:00.000Z'}};
+    const malformed={...a,metadata:{...a.metadata,leaseExpiresAt:'invalid'}};
+    expect(filterRemoteDefinitions([current])).toHaveLength(1);
+    expect(filterRemoteDefinitions([expired])).toHaveLength(0);
+    expect(filterRemoteDefinitions([malformed])).toHaveLength(0);
+    // The authoritative target still enforces lease and grant validity.
+  });
+  it('fails closed for configured values of an unsupported schema type',()=>{
+    const a=def();
+    const complex={...a,inputs:[{id:'opaque',name:'Opaque',direction:'input',dataType:'unrecognized-schema'}]};
+    const saved={...node(a),data:{...node(a).data,configuredInputs:{opaque:'not-verified'}}};
+    expect(validateRemoteGraph([saved],[complex]).message).toMatch(/invalid typed input/);
+  });
 });
