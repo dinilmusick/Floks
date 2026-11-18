@@ -38,6 +38,17 @@ export function isLiveFrontendDefinition(definition: RemoteGraphDefinition): boo
   return definition.metadata?.surface === 'raw.frontend.session' ||
     definition.category === 'frontend-session' || definition.category === 'frontend-operation';
 }
+/**
+ * Client lease expiry is only an additional availability filter, never proof of
+ * authorization. BackendFacade must recheck expiry and revocation on invocation.
+ */
+function leaseCurrent(metadata?: Record<string, unknown>): boolean {
+  const expiration = metadata?.leaseExpiresAt ?? metadata?.expiresAt;
+  if (expiration === undefined) return true;
+  if (typeof expiration !== 'string') return false;
+  const timestamp = Date.parse(expiration);
+  return Number.isFinite(timestamp) && timestamp > Date.now();
+}
 function portsValid(ports: RemoteGraphPort[], direction: 'input' | 'output'): boolean {
   return Array.isArray(ports) && ports.every(port => port && text(port.id) &&
     text(port.dataType) && text(port.name) && port.direction === direction) &&
@@ -55,6 +66,7 @@ export function filterRemoteDefinitions<T extends RemoteGraphDefinition>(
   for (const definition of definitions) {
     if (!definition || !text(definition.type) || seen.has(definition.type) || counts.get(definition.type) !== 1 ||
         !readRemoteHandle(definition.metadata) ||
+        !leaseCurrent(definition.metadata) ||
         !portsValid(definition.inputs, 'input') || !portsValid(definition.outputs, 'output')) continue;
     seen.add(definition.type);
     result.push(definition);
@@ -71,7 +83,7 @@ function inputIsType(value: unknown,type: string): boolean {
     case 'boolean': return typeof value === 'boolean';
     case 'object': return !!value && typeof value === 'object' && !Array.isArray(value);
     case 'array': return Array.isArray(value);
-    default: return true; // Target validates opaque/advanced schemas.
+    default: return false; // Unknown configured values cannot bypass client type checks; target still revalidates.
   }
 }
 /** Reconcile saved handles against fresh principal/workspace-scoped discovery before dispatch. */
