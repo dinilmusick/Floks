@@ -42,7 +42,7 @@ jobs:
           echo "Verified source commit: $ACTUAL"
           test "$ACTUAL" = "${{ github.event.pull_request.head.sha || github.sha }}"
       - name: FOD exact-head Vitest regressions
-        run: pnpm exec vitest run packages/canvas-ui/src/fod/remoteGraphContract.test.ts packages/canvas-ui/src/fod/remoteGraphConnections.test.ts packages/canvas-ui/src/fod/FodAuthorizedRemoteNodes.test.tsx packages/canvas-ui/src/fod/FodRemoteExecution.test.tsx
+        run: pnpm exec vitest run packages/canvas-ui/src/fod/remoteGraphContract.test.ts packages/canvas-ui/src/fod/remoteGraphConnections.test.ts packages/canvas-ui/src/fod/remoteKloksInvocation.test.ts packages/canvas-ui/src/fod/FodAuthorizedRemoteNodes.test.tsx packages/canvas-ui/src/fod/FodRemoteExecution.test.tsx
       - name: Canvas UI typecheck
         run: pnpm --filter @floks/canvas-ui run typecheck
       - name: Canvas UI build
