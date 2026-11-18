@@ -25,6 +25,7 @@ export function AgentChatPanel({ targets, appAgentId, onInvoke, onClose }: Agent
   const [continuation, setContinuation] = useState<{ targetId: string; invocationId: string } | null>(null);
   const textarea = useRef<HTMLTextAreaElement>(null);
   const nextId = useRef(0);
+  const inFlight = useRef(false);
   const sequence = () => `agent-chat-${++nextId.current}`;
   useEffect(() => { textarea.current?.focus(); }, []);
 
@@ -36,7 +37,8 @@ export function AgentChatPanel({ targets, appAgentId, onInvoke, onClose }: Agent
     return matchAgentMentions(targets, mentionQuery).slice(0, 8);
   }, [hasMention, mentionQuery, selected, targets]);
   const appAgent = targets.find(t => t.kind === 'app' && t.id === appAgentId);
-  const activeTarget = selectedAgentIsValid(selected, targets) ? selected : appAgent;
+  const continuationTarget = continuation && targets.find(t => t.id === continuation.targetId);
+  const activeTarget = selectedAgentIsValid(selected, targets) ? selected : continuationTarget || appAgent;
   const canSend = !!onInvoke && !!activeTarget && !busy && !!draft.trim();
   const addMessage = (role: ChatMessage['role'], content: string) =>
     setMessages(items => [...items, { id: sequence(), role, content }]);
@@ -51,7 +53,7 @@ export function AgentChatPanel({ targets, appAgentId, onInvoke, onClose }: Agent
   };
 
   const send = async () => {
-    if (!canSend || !activeTarget || !onInvoke) return;
+    if (!canSend || !activeTarget || !onInvoke || inFlight.current) return;
     const token = selected && `@${agentChatLabel(selected)}`;
     const prompt = token ? draft.replace(token, ' ').replace(/ {2,}/g, ' ').trim() : draft.trim();
     const count = (draft.match(/(^|\s)@/g) ?? []).length;
@@ -64,6 +66,7 @@ export function AgentChatPanel({ targets, appAgentId, onInvoke, onClose }: Agent
     setDraft('');
     setSelected(null);
     setError('');
+    inFlight.current = true;
     setBusy(true);
     try {
       const reply = await onInvoke(request);
@@ -77,6 +80,7 @@ export function AgentChatPanel({ targets, appAgentId, onInvoke, onClose }: Agent
       setContinuation(null);
       addMessage('system', 'Agent request failed. Check the connection or permissions.');
     } finally {
+      inFlight.current = false;
       setBusy(false);
     }
   };
