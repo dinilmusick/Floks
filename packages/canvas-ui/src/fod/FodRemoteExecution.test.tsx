@@ -30,7 +30,7 @@ const mockRuntime=(discover:NonNullable<FodRuntimeLike['listAuthorizedNodeDefini
 };
 it('places/configures/saves/reloads and invokes a pinned remote handle through the authorized backend',async()=>{
   const mock=mockRuntime(async()=>[descriptor('skipo-one'),descriptor('skipo-two')]);
-  const ui=render(<FodModule workspaceId='source-workspace' scopeKey='user-a/grants-1' runtime={mock.runtime} nodeDefinitions={[]}/>);
+  const ui=render(<FodModule scopeKey='principal-session-grant-epoch' workspaceId='source-workspace' scopeKey='user-a/grants-1' runtime={mock.runtime} nodeDefinitions={[]}/>);
   await screen.findByRole('button',{name:'skipo-one calculate'});
   fireEvent.click(screen.getByRole('button',{name:'New flow'}));
   fireEvent.click(screen.getByRole('button',{name:'skipo-one calculate'}));
@@ -43,7 +43,7 @@ it('places/configures/saves/reloads and invokes a pinned remote handle through t
     operationVersion:'v1',configuredInputs:{count:3}
   });
   ui.unmount();
-  render(<FodModule workspaceId='source-workspace' scopeKey='user-a/grants-1' runtime={mock.runtime} nodeDefinitions={[]}/>);
+  render(<FodModule scopeKey='principal-session-grant-epoch' workspaceId='source-workspace' scopeKey='user-a/grants-1' runtime={mock.runtime} nodeDefinitions={[]}/>);
   await screen.findByRole('button',{name:'skipo-one calculate'});
   await waitFor(()=>expect(screen.getByRole('button',{name:'Run'}).hasAttribute('disabled')).toBe(false));
   fireEvent.click(screen.getByRole('button',{name:'Run'}));
@@ -57,7 +57,7 @@ it('places/configures/saves/reloads and invokes a pinned remote handle through t
 it('rejects a stale version without invoking after reload',async()=>{
   let version='v1';
   const mock=mockRuntime(async()=>[descriptor('skipo-two',version)]);
-  render(<FodModule workspaceId='source-workspace' runtime={mock.runtime} nodeDefinitions={[]}/>);
+  render(<FodModule scopeKey='principal-session-grant-epoch' workspaceId='source-workspace' runtime={mock.runtime} nodeDefinitions={[]}/>);
   await screen.findByRole('button',{name:'skipo-two calculate'});
   fireEvent.click(screen.getByRole('button',{name:'New flow'}));
   fireEvent.click(screen.getByRole('button',{name:'skipo-two calculate'}));
@@ -73,7 +73,7 @@ it('treats revocation during execution as invalidation, not a successful result'
   const mock=mockRuntime(async()=>[descriptor('skipo-one')]);
   mock.runtime.executeAuthorizedRemoteFlow=vi.fn(async()=>await new Promise<typeof result>(resolve=>{complete=resolve;}));
   mock.runtime.subscribeAuthorizedNodeChanges=(_workspace,callback)=>{invalidate=callback;return()=>{invalidate=undefined;};};
-  render(<FodModule workspaceId='source-workspace' runtime={mock.runtime} nodeDefinitions={[]}/>);
+  render(<FodModule scopeKey='principal-session-grant-epoch' workspaceId='source-workspace' runtime={mock.runtime} nodeDefinitions={[]}/>);
   await screen.findByRole('button',{name:'skipo-one calculate'});
   fireEvent.click(screen.getByRole('button',{name:'New flow'}));
   fireEvent.click(screen.getByRole('button',{name:'skipo-one calculate'}));
@@ -85,7 +85,7 @@ it('treats revocation during execution as invalidation, not a successful result'
 });
 it('requires separate active-window consent before frontend operation execution',async()=>{
   const mock=mockRuntime(async()=>[descriptor('skipo-two','v1','raw.frontend.session')]);
-  render(<FodModule workspaceId='source-workspace' runtime={mock.runtime} nodeDefinitions={[]}/>);
+  render(<FodModule scopeKey='principal-session-grant-epoch' workspaceId='source-workspace' runtime={mock.runtime} nodeDefinitions={[]}/>);
   await screen.findByRole('button',{name:'skipo-two calculate'});
   fireEvent.click(screen.getByRole('button',{name:'New flow'}));
   fireEvent.click(screen.getByRole('button',{name:'skipo-two calculate'}));
