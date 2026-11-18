@@ -59,6 +59,51 @@ describe('useLuthAuth lifecycle', () => {
     expect(result.current.session.authenticated).toBe(false);
   });
 
+  it('does not restore authenticated UI from a focus refresh that resolves after sign-out', async () => {
+    const user = { id: 'late-user', email: 'late@example.test', name: 'Late User' };
+    let resolveStale!: (value: { authenticated: boolean; user: typeof user }) => void;
+    const staleSession = new Promise<{ authenticated: boolean; user: typeof user }>((resolve) => {
+      resolveStale = resolve;
+    });
+    mocks.client.getSession
+      .mockResolvedValueOnce({ authenticated: true, user })
+      .mockImplementationOnce(() => staleSession);
+    const { result } = renderHook(() => useLuthAuth({
+      ecosystemId: 'ultrst-armada',
+      applicationId: 'test-app',
+    }));
+    await waitFor(() => expect(result.current.session.authenticated).toBe(true));
+    act(() => { window.dispatchEvent(new Event('focus')); });
+    await waitFor(() => expect(mocks.client.getSession).toHaveBeenCalledTimes(2));
+
+    await act(async () => { await result.current.signOut(); });
+    expect(result.current.session.authenticated).toBe(false);
+    expect(result.current.user).toBeUndefined();
+
+    await act(async () => {
+      resolveStale({ authenticated: true, user });
+      await staleSession;
+    });
+    expect(result.current.session.authenticated).toBe(false);
+    expect(result.current.user).toBeUndefined();
+  });
+
+  it('keeps the app unauthenticated while sign-out is pending and suppresses revalidation', async () => {
+    const user = { id: 'pending-user', email: 'pending@example.test', name: 'Pending User' };
+    let finishSignOut!: () => void;
+    mocks.client.signOut.mockImplementationOnce(() => new Promise<void>((resolve) => { finishSignOut = resolve; }));
+    mocks.client.getSession.mockResolvedValueOnce({ authenticated: true, user });
+    const { result } = renderHook(() => useLuthAuth({ ecosystemId: 'ultrst-armada', applicationId: 'test-app' }));
+    await waitFor(() => expect(result.current.session.authenticated).toBe(true));
+    let signOutPromise!: Promise<void>;
+    act(() => { signOutPromise = result.current.signOut(); });
+    expect(result.current.session.authenticated).toBe(false);
+    act(() => { window.dispatchEvent(new Event('focus')); });
+    expect(mocks.client.getSession).toHaveBeenCalledTimes(1);
+    await act(async () => { finishSignOut(); await signOutPromise; });
+    expect(result.current.session.authenticated).toBe(false);
+  });
+
   it('registers new accounts through the canonical Luth client and hydrates the returned session', async () => {
     const user = { id: 'luth-user-2', email: 'new@example.test', name: 'New User' };
     mocks.client.getSession
