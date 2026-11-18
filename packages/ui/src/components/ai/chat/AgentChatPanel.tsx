@@ -77,7 +77,10 @@ export function AgentChatPanel({ targets, appAgentId, onInvoke, onCancel, onClos
   };
 
   const cancel = () => {
-    const active = currentRequest.current;
+    const active = currentRequest.current ?? (continuation ? {
+      targetId: continuation.targetId, targetKind: continuation.targetKind,
+      invocationId: continuation.invocationId,
+    } : null);
     requestRevision.current++;
     controller.current?.abort();
     controller.current = null;
@@ -99,7 +102,7 @@ export function AgentChatPanel({ targets, appAgentId, onInvoke, onCancel, onClos
     const prompt = token ? draft.replace(token, ' ').replace(/ {2,}/g, ' ').trim() : draft.trim();
     const count = (draft.match(/(^|\s)@/g) ?? []).length;
     if (count > 1) { setError('Choose one agent per message.'); return; }
-    if (count > 0 && !selected && !continuation) { setError('Select an agent from the list.'); return; }
+    if (count > 0 && !selected) { setError('Select an agent from the list.'); return; }
     if (unavailable || !targetsRef.current.some(t => t.id === activeTarget.id && t.kind === activeTarget.kind)) {
       setError('This agent is no longer available. Refresh the authorized agent list.');
       return;
