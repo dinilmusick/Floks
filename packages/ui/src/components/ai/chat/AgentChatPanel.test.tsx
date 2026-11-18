@@ -10,8 +10,9 @@ const targets: AgentChatTarget[] = [
 ];
 const completed = { kind: 'completed' as const, text: 'Done.' };
 
-function launch(props: { targets?: AgentChatTarget[]; appAgentId?: string; onInvoke?: AgentChatInvoker } = {}) {
-  render(<AppShell agentChat={{ targets: props.targets ?? targets, appAgentId: props.appAgentId, onInvoke: props.onInvoke }}>
+function launch(props: { targets?: AgentChatTarget[]; appAgentId?: string; onInvoke?: AgentChatInvoker; scopeKey?: string } = {}) {
+  render(<AppShell agentChat={{ scopeKey: props.scopeKey ?? 'user-a:workspace-a:session-1:grants-1',
+    targets: props.targets ?? targets, appAgentId: props.appAgentId, onInvoke: props.onInvoke }}>
     <div>App canvas</div>
   </AppShell>);
   fireEvent.click(screen.getByRole('button', { name: 'Agent Chat' }));
@@ -87,4 +88,63 @@ describe('Agent Chat bottom strip', () => {
     fireEvent.click(within(dialog).getByRole('button', { name: 'Send message' }));
     await waitFor(() => expect(onInvoke).toHaveBeenNthCalledWith(2, { targetId: 'app-1', targetKind: 'app', prompt: 'Tomorrow', resumeInvocationId: 'inv-123' }));
   });
+
+  it('fails closed when no verified scope is bound even if an invoker is provided', () => {
+    const onInvoke = vi.fn().mockResolvedValue(completed);
+    render(<AppShell agentChat={{ targets, appAgentId: 'app-1', onInvoke }}><div>App canvas</div></AppShell>);
+    fireEvent.click(screen.getByRole('button', { name: 'Agent Chat' }));
+    const dialog = screen.getByRole('dialog', { name: 'Agent Chat' });
+    expect(within(dialog).getByText('No agents configured.')).toBeTruthy();
+    expect(within(dialog).queryByRole('textbox')).toBeNull();
+    expect(onInvoke).not.toHaveBeenCalled();
+  });
+
+  it('closes and destroys prior chat transcript on authenticated workspace change', async () => {
+    const onInvoke = vi.fn().mockResolvedValue({ kind: 'completed', text: 'Private workspace A result' });
+    const renderShell = (scopeKey: string) =>
+      <AppShell agentChat={{ scopeKey, targets, appAgentId: 'app-1', onInvoke }}><div>App canvas</div></AppShell>;
+    const app = render(renderShell('user-a:workspace-a:session-1:grants-1'));
+    fireEvent.click(screen.getByRole('button', { name: 'Agent Chat' }));
+    const dialog = screen.getByRole('dialog', { name: 'Agent Chat' });
+    fireEvent.change(within(dialog).getByRole('textbox', { name: 'Agent message' }), { target: { value: 'private message' } });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Send message' }));
+    await waitFor(() => expect(within(dialog).getByText('Private workspace A result')).toBeTruthy());
+    app.rerender(renderShell('user-a:workspace-b:session-1:grants-1'));
+    expect(screen.queryByRole('dialog', { name: 'Agent Chat' })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Agent Chat' }));
+    const newDialog = screen.getByRole('dialog', { name: 'Agent Chat' });
+    expect(within(newDialog).queryByText('Private workspace A result')).toBeNull();
+    expect(within(newDialog).queryByText('private message')).toBeNull();
+  });
+
+  it('invalidates a pending clarification when authorization revision changes', async () => {
+    const onInvoke = vi.fn()
+      .mockResolvedValueOnce({ kind: 'needs_input', text: 'Which account?', invocationId: 'old-invocation' })
+      .mockResolvedValueOnce(completed);
+    const shell = (scopeKey: string, enabled = true) =>
+      <AppShell agentChat={{ scopeKey, targets: enabled ? targets : [],
+        appAgentId: enabled ? 'app-1' : undefined,
+        onInvoke: enabled ? onInvoke : undefined }}><div>App canvas</div></AppShell>;
+    const app = render(shell('user-a:workspace-a:session-1:grants-1'));
+    fireEvent.click(screen.getByRole('button', { name: 'Agent Chat' }));
+    let dialog = screen.getByRole('dialog', { name: 'Agent Chat' });
+    fireEvent.change(within(dialog).getByRole('textbox', { name: 'Agent message' }), { target: { value: 'run report' } });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Send message' }));
+    await waitFor(() => expect(within(dialog).getByText('Which account?')).toBeTruthy());
+    app.rerender(shell('user-a:workspace-a:session-1:grants-2', false));
+    expect(screen.queryByRole('dialog', { name: 'Agent Chat' })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Agent Chat' }));
+    dialog = screen.getByRole('dialog', { name: 'Agent Chat' });
+    expect(within(dialog).getByText('No agents configured.')).toBeTruthy();
+    expect(onInvoke).toHaveBeenCalledTimes(1);
+    app.rerender(shell('user-a:workspace-a:session-1:grants-3'));
+    fireEvent.click(screen.getByRole('button', { name: 'Agent Chat' }));
+    dialog = screen.getByRole('dialog', { name: 'Agent Chat' });
+    fireEvent.change(within(dialog).getByRole('textbox', { name: 'Agent message' }), { target: { value: 'new report' } });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Send message' }));
+    await waitFor(() => expect(onInvoke).toHaveBeenNthCalledWith(2, {
+      targetId: 'app-1', targetKind: 'app', prompt: 'new report',
+    }));
+  });
+
 });
