@@ -5,7 +5,7 @@ import path from 'node:path';
 
 describe('embedded Aiko UI',()=>{
  it('contains agent execution, custom agent authoring, and Aiko Engine key synchronization surfaces',()=>{
-  const source=readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)),'AikoModule.tsx'),'utf8');
+  const source=['AikoModule.tsx','AgentWorkspace.tsx'].map(file => readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)),file),'utf8')).join('\n');
   expect(source).toContain('AikoRuntimeLike');
   expect(source).toContain('executeAgent');
   expect(source).toContain('syncFromAikoEngine');
