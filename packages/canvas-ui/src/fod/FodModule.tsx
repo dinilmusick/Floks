@@ -106,7 +106,10 @@ function WorkspaceFlows({runtime,nodeDefinitions,workspaceId,className,scopeKey}
     };
     refresh();
     const unsubscribe = runtime.subscribeAuthorizedNodeChanges?.(workspaceId, refresh);
-    return () => { alive = false; ++revision; permissionEpoch.current++; runningAbort.current?.abort(); unsubscribe?.(); };
+    // Host should push immediate grant/lease/session invalidations; periodic
+    // revalidation also retires descriptors if a push signal is lost.
+    const fallbackRefresh=scopeKey ? setInterval(refresh,30_000) : null;
+    return () => { alive = false; ++revision; permissionEpoch.current++; runningAbort.current?.abort(); if(fallbackRefresh!==null)clearInterval(fallbackRefresh); unsubscribe?.(); };
   }, [runtime,workspaceId,nodeDefinitions,scopeKey]);
 
   const visibleNodeDefinitions=useMemo(
@@ -251,20 +254,22 @@ function WorkspaceFlows({runtime,nodeDefinitions,workspaceId,className,scopeKey}
   const remoteApps=useMemo(()=>[...new Set(authorizedNodes.map(node=>String(node.metadata?.appId ?? '')))].filter(Boolean).sort(),[authorizedNodes]);
   const remoteWorkspaces=useMemo(()=>[...new Set(authorizedNodes.filter(node=>!remoteAppFilter || node.metadata?.appId===remoteAppFilter)
     .map(node=>String(node.metadata?.targetWorkspaceId ?? '')))].filter(Boolean).sort(),[authorizedNodes,remoteAppFilter]);
+  const selectedApp=remoteApps.includes(remoteAppFilter) ? remoteAppFilter : '';
+  const selectedWorkspace=remoteWorkspaces.includes(remoteWorkspaceFilter) ? remoteWorkspaceFilter : '';
   const grouped=useMemo(()=>{
     const groups=new Map<string,FodNodeDefinition[]>();
     for(const node of visibleNodeDefinitions){
       const appId=node.metadata?.appId;
       const targetWorkspaceId=node.metadata?.targetWorkspaceId;
-      if(typeof appId==='string' && (remoteAppFilter && appId!==remoteAppFilter ||
-          remoteWorkspaceFilter && targetWorkspaceId!==remoteWorkspaceFilter)) continue;
+      if(typeof appId==='string' && (selectedApp && appId!==selectedApp ||
+          selectedWorkspace && targetWorkspaceId!==selectedWorkspace)) continue;
       const group=(typeof appId==='string' && appId.trim())
         ? `App ${appId} / workspace ${targetWorkspaceId} / ${node.group} / ${node.category}` : node.group;
       const current=groups.get(group) ?? [];
       current.push(node);groups.set(group,current);
     }
     return [...groups.entries()].sort(([a],[b])=>a.localeCompare(b));
-  },[visibleNodeDefinitions,remoteAppFilter,remoteWorkspaceFilter]);
+  },[visibleNodeDefinitions,selectedApp,selectedWorkspace]);
 
   return <div className={className} style={{display:'grid',gridTemplateColumns:'220px 1fr',gridTemplateRows:'44px 1fr',height:'100%',minHeight:500}}>
     <div style={{gridColumn:'1 / -1',display:'flex',alignItems:'center',gap:8,padding:'6px 10px',borderBottom:'1px solid var(--skipo-border,#333)',background:'var(--skipo-matte-bg,#111)'}}>
@@ -275,12 +280,12 @@ function WorkspaceFlows({runtime,nodeDefinitions,workspaceId,className,scopeKey}
     </div>
     <aside style={{overflow:'auto',padding:10,borderRight:'1px solid var(--skipo-border,#333)'}}>
       <label style={{display:'block',fontSize:12}}>Remote application
-        <select aria-label='Remote application' value={remoteApps.includes(remoteAppFilter)?remoteAppFilter:''} onChange={event=>{setRemoteAppFilter(event.target.value);setRemoteWorkspaceFilter('');}}>
+        <select aria-label='Remote application' value={selectedApp} onChange={event=>{setRemoteAppFilter(event.target.value);setRemoteWorkspaceFilter('');}}>
           <option value=''>All authorized apps</option>{remoteApps.map(app=><option key={app} value={app}>{app}</option>)}
         </select>
       </label>
       <label style={{display:'block',fontSize:12}}>Target workspace
-        <select aria-label='Target workspace' value={remoteWorkspaces.includes(remoteWorkspaceFilter)?remoteWorkspaceFilter:''} onChange={event=>setRemoteWorkspaceFilter(event.target.value)}>
+        <select aria-label='Target workspace' value={selectedWorkspace} onChange={event=>setRemoteWorkspaceFilter(event.target.value)}>
           <option value=''>All authorized workspaces</option>{remoteWorkspaces.map(workspace=><option key={workspace} value={workspace}>{workspace}</option>)}
         </select>
       </label>
