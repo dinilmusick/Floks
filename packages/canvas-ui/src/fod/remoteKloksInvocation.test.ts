@@ -22,7 +22,7 @@ describe('Kloks published workflow graph adapter',()=>{
     expect(()=>toKloksPublishedWorkflowCall({...handle,operationId:'../private'})).toThrow();
   });
   it('invokes only the canonical BackendFacade command and passes no caller-supplied grant',async()=>{
-    const execute=vi.fn(async()=>({success:true,output:{done:true}}));
+    const execute=vi.fn(async(_operation:string,_payload:unknown)=>({success:true,output:{done:true}}));
     const domain=vi.fn(()=>({execute}));
     const result=await invokeKloksPublishedWorkflow({domain},handle,{count:2});
     expect(domain).toHaveBeenCalledExactlyOnceWith('fod');
