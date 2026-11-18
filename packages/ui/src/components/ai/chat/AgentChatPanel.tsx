@@ -185,19 +185,22 @@ export function AgentChatPanel({ targets, appAgentId, onInvoke, onCancel, onClos
 
   return (
     <section role="dialog" aria-label="Agent Chat" aria-modal="false"
-      onKeyDown={e => { e.stopPropagation(); if (e.key === 'Escape') onClose(); }}
+      onKeyDown={e => { e.stopPropagation(); if (e.key === 'Escape') { if (busy) cancel(); onClose(); } }}
       onPointerDown={e => e.stopPropagation()} onWheel={e => e.stopPropagation()}
       className="fixed bottom-10 right-3 z-[1000] flex flex-col overflow-hidden rounded-lg border border-slate-500 bg-white text-slate-900 shadow-2xl dark:bg-slate-950 dark:text-slate-100"
       style={{ width: 'min(440px, calc(100vw - 24px))', height: 'min(560px, calc(100vh - 64px))' }}>
       <header className="flex items-center justify-between border-b border-slate-300 px-3 py-2 dark:border-slate-700">
         <strong>Agent Chat</strong>
-        <BaseButton type="button" variant="ghost" title="Close chat" aria-label="Close chat" onClick={onClose}><X size={16} /></BaseButton>
+        <BaseButton type="button" variant="ghost" title="Close chat" aria-label="Close chat" onClick={() => { if (busy) cancel(); onClose(); }}><X size={16} /></BaseButton>
       </header>
       <DirectChatMessageList messages={messages} isStreaming={busy} className="flex-1 min-h-0" />
       {!targets.length || !onInvoke ? (
         <p role="status" className="p-3 text-xs text-slate-500">No agents configured.</p>
       ) : (
         <div className="border-t border-slate-300 p-3 dark:border-slate-700">
+          {unavailable && <p role="alert" className="mb-2 text-xs text-red-600">
+            The selected agent is unavailable. Refresh your authorized agents.
+          </p>}
           <p className="mb-2 text-xs" aria-live="polite">
             {selected ? `To: ${agentChatLabel(selected)}` : appAgent ? `To: ${agentChatLabel(appAgent)}` : 'Mention an agent with @'}
           </p>
@@ -211,6 +214,22 @@ export function AgentChatPanel({ targets, appAgentId, onInvoke, onCancel, onClos
               ))}
             </div>
           )}
+          {continuation?.fields?.map(field => (
+            <label key={field.key} className="mb-2 block text-xs">
+              <span>{field.label}{field.required ? ' (required)' : ''}</span>
+              {field.type === 'boolean' ? (
+                <input type="checkbox" className="ml-2" checked={fieldValues[field.key] === true}
+                  disabled={busy || unavailable}
+                  onChange={e => setFieldValues(values => ({ ...values, [field.key]: e.target.checked }))} />
+              ) : (
+                <input type={field.type === 'number' ? 'number' : 'text'}
+                  value={String(fieldValues[field.key] ?? '')}
+                  disabled={busy || unavailable}
+                  onChange={e => setFieldValues(values => ({ ...values, [field.key]: e.target.value }))}
+                  className="mt-1 block w-full rounded border border-slate-400 bg-transparent p-2" />
+              )}
+            </label>
+          ))}
           <BaseTextarea ref={textarea} rows={2} value={draft}
             onChange={e => {
               const text = e.target.value;
@@ -219,9 +238,16 @@ export function AgentChatPanel({ targets, appAgentId, onInvoke, onCancel, onClos
               setError('');
             }}
             onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); void send(); } }}
-            placeholder="Message or @agent" disabled={busy} aria-label="Agent message" />
+            placeholder={hasTypedFields ? 'Optional clarification note' : 'Message or @agent'}
+            disabled={busy || unavailable} aria-label="Agent message" />
           {error && <p role="alert" className="text-xs text-red-600">{error}</p>}
-          <div className="mt-2 flex justify-end">
+          <div className="mt-2 flex justify-end gap-2">
+            {onCancel && (busy || !!continuation) && (
+              <BaseButton type="button" variant="ghost" onClick={cancel}
+                title="Cancel agent request" aria-label="Cancel agent request">
+                Cancel
+              </BaseButton>
+            )}
             <BaseButton type="button" onClick={() => void send()} disabled={!canSend} title="Send message" aria-label="Send message">
               <Send size={14} /> Send
             </BaseButton>
