@@ -134,15 +134,21 @@ jobs:
       - name: Produce and inspect actual candidate tarball
         run: |
           set -euo pipefail
-          npm pack --pack-destination "$RUNNER_TEMP"
-          test -n "$(find "$RUNNER_TEMP" -maxdepth 1 -name '*.tgz' -print -quit)"
+          mkdir -p "$RUNNER_TEMP/ultrst-release"
+          npm pack --pack-destination "$RUNNER_TEMP/ultrst-release"
+          sha256sum "$RUNNER_TEMP/ultrst-release"/*.tgz
+          test -n "$(find "$RUNNER_TEMP/ultrst-release" -maxdepth 1 -name '*.tgz' -print -quit)"
 
       - name: Publish new version via npm OIDC (no long-lived npm token)
         if: >-
           steps.registry.outputs.exists == 'false' &&
           github.event_name == 'workflow_dispatch' &&
           inputs.publish
-        run: npm publish --provenance --access public
+        run: |
+          set -euo pipefail
+          archive="$(find "$RUNNER_TEMP/ultrst-release" -maxdepth 1 -name '*.tgz' -print -quit)"
+          test -n "$archive"
+          npm publish "$archive" --provenance --access public
 
       - name: Verify public registry artifact independently
         if: >-
