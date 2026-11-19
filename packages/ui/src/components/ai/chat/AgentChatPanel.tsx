@@ -153,8 +153,10 @@ export function AgentChatPanel({ targets, appAgentId, onInvoke, onCancel, onClos
     currentRequest.current = { targetId: activeTarget.id, targetKind: activeTarget.kind,
       ...(resume ? { invocationId: resume } : {}) };
     try {
-      // Legacy invokers remain compatible. Cancellation-aware hosts accept an AbortSignal.
-      const reply = onCancel ? await onInvoke(request, { signal: abort.signal }) : await onInvoke(request);
+      // Always forward AbortSignal, including for hosts without a remote
+      // cancellation endpoint. Legacy invokers safely ignore the extra option;
+      // missing onCancel must never disable local request abort/disposal.
+      const reply = await onInvoke(request, { signal: abort.signal });
       if (revision !== requestRevision.current || abort.signal.aborted) return;
       if (!targetsRef.current.some(t => t.id === activeTarget.id && t.kind === activeTarget.kind)) {
         setContinuation(null);
