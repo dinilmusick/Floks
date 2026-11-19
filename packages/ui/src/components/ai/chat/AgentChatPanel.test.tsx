@@ -33,7 +33,7 @@ describe('Agent Chat bottom strip', () => {
     const dialog = launch({ appAgentId: 'app-1', onInvoke });
     fireEvent.change(within(dialog).getByRole('textbox', { name: 'Agent message' }), { target: { value: 'Summarize today' } });
     fireEvent.click(within(dialog).getByRole('button', { name: 'Send message' }));
-    await waitFor(() => expect(onInvoke).toHaveBeenCalledWith({ targetId: 'app-1', targetKind: 'app', prompt: 'Summarize today' }));
+    await waitFor(() => expect(onInvoke.mock.calls[0][0]).toEqual({ targetId: 'app-1', targetKind: 'app', prompt: 'Summarize today' }));
     expect(within(dialog).getByText('Done.')).toBeTruthy();
   });
 
@@ -45,7 +45,7 @@ describe('Agent Chat bottom strip', () => {
     fireEvent.click(within(dialog).getByRole('option', { name: /Warehouse Helper/ }));
     fireEvent.change(composer, { target: { value: 'please @Warehouse Helper check stock' } });
     fireEvent.click(within(dialog).getByRole('button', { name: 'Send message' }));
-    await waitFor(() => expect(onInvoke).toHaveBeenCalledWith({ targetId: 'endpoint-1', targetKind: 'endpoint', prompt: 'please check stock' }));
+    await waitFor(() => expect(onInvoke.mock.calls[0][0]).toEqual({ targetId: 'endpoint-1', targetKind: 'endpoint', prompt: 'please check stock' }));
   });
 
   it('rejects an unresolved mention instead of incorrectly invoking the app agent', () => {
@@ -70,7 +70,7 @@ describe('Agent Chat bottom strip', () => {
     await waitFor(() => expect(within(dialog).getByText('Which SKU?')).toBeTruthy());
     fireEvent.change(composer, { target: { value: 'SKU-23' } });
     fireEvent.click(within(dialog).getByRole('button', { name: 'Send message' }));
-    await waitFor(() => expect(onInvoke).toHaveBeenNthCalledWith(2, {
+    await waitFor(() => expect(onInvoke.mock.calls[1][0]).toEqual({
       targetId: 'endpoint-1', targetKind: 'endpoint', prompt: 'SKU-23', resumeInvocationId: 'endpoint-inv-9',
     }));
   });
@@ -86,7 +86,7 @@ describe('Agent Chat bottom strip', () => {
     await waitFor(() => expect(within(dialog).getByText('Which date?')).toBeTruthy());
     fireEvent.change(composer, { target: { value: 'Tomorrow' } });
     fireEvent.click(within(dialog).getByRole('button', { name: 'Send message' }));
-    await waitFor(() => expect(onInvoke).toHaveBeenNthCalledWith(2, { targetId: 'app-1', targetKind: 'app', prompt: 'Tomorrow', resumeInvocationId: 'inv-123' }));
+    await waitFor(() => expect(onInvoke.mock.calls[1][0]).toEqual({ targetId: 'app-1', targetKind: 'app', prompt: 'Tomorrow', resumeInvocationId: 'inv-123' }));
   });
 
   it('fails closed when no verified scope is bound even if an invoker is provided', () => {
@@ -142,7 +142,7 @@ describe('Agent Chat bottom strip', () => {
     dialog = screen.getByRole('dialog', { name: 'Agent Chat' });
     fireEvent.change(within(dialog).getByRole('textbox', { name: 'Agent message' }), { target: { value: 'new report' } });
     fireEvent.click(within(dialog).getByRole('button', { name: 'Send message' }));
-    await waitFor(() => expect(onInvoke).toHaveBeenNthCalledWith(2, {
+    await waitFor(() => expect(onInvoke.mock.calls[1][0]).toEqual({
       targetId: 'app-1', targetKind: 'app', prompt: 'new report',
     }));
   });
@@ -206,7 +206,7 @@ describe('Agent Chat bottom strip', () => {
     expect(within(dialog).getByRole('alert').textContent).toContain('Enter Count');
     fireEvent.change(within(dialog).getByRole('spinbutton', { name: /Count/ }), { target: { value: '7' } });
     fireEvent.click(within(dialog).getByRole('button', { name: 'Send message' }));
-    await waitFor(() => expect(onInvoke).toHaveBeenNthCalledWith(2, {
+    await waitFor(() => expect(onInvoke.mock.calls[1][0]).toEqual({
       targetId: 'app-1', targetKind: 'app', prompt: '',
       resumeInvocationId: 'typed-inv', parameters: { count: 7 },
     }));
