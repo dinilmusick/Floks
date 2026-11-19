@@ -2,6 +2,7 @@
 import React, { forwardRef } from 'react';
 import { BottomStripProvider } from '../bottom-strip/BottomStripContext.js';
 import { BottomStrip, type BottomStripProps } from '../bottom-strip/BottomStrip.js';
+import { AgentChatDock, type AgentChatDockProps } from '../ai/chat/AgentChatDock.js';
 import '../../styles/layout.css';
 
 export interface AppShellProps extends React.HTMLAttributes<HTMLDivElement> {
@@ -9,6 +10,7 @@ export interface AppShellProps extends React.HTMLAttributes<HTMLDivElement> {
   sidebar?: React.ReactNode;
   footer?: React.ReactNode;
   bottomStripProps?: BottomStripProps;
+  agentChat?: AgentChatDockProps;
   disableBottomStrip?: boolean;
   workspaceGate?: React.ReactNode;
 }
@@ -22,6 +24,7 @@ export const AppShell = forwardRef<HTMLDivElement, AppShellProps>(({
   sidebar,
   footer,
   bottomStripProps,
+  agentChat,
   disableBottomStrip = false,
   workspaceGate,
   children,
@@ -73,7 +76,11 @@ export const AppShell = forwardRef<HTMLDivElement, AppShellProps>(({
           >
             {children}
           </main>
-          {footer !== undefined ? footer : (!disableBottomStrip && <BottomStrip {...bottomStripProps} />)}
+          {footer !== undefined ? footer : (!disableBottomStrip && <BottomStrip {...bottomStripProps}
+            rightSlot={<>{bottomStripProps?.rightSlot}<AgentChatDock key={agentChat?.scopeKey ?? 'unbound'}
+              scopeKey={agentChat?.scopeKey} targets={agentChat?.targets ?? []}
+              appAgentId={agentChat?.appAgentId} onInvoke={agentChat?.onInvoke} onCancel={agentChat?.onCancel} /></>}
+          />)}
         </div>
       </div>
     </BottomStripProvider>

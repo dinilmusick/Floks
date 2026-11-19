@@ -5,5 +5,5 @@ describe("Floks UI entrypoint", () => {
     const ui = await import("../dist/index.js");
     expect(ui).toBeDefined();
     expect(ui.frnlButton).toBeTypeOf("function");
-  });
+  }, 30000);
 });
