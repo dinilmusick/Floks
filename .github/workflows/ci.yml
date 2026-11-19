@@ -13,7 +13,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 0
+          persist-credentials: false
+      - name: Assert immutable source SHA and dependency lock
+        shell: bash
+        env:
+          EXPECTED_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+          sha256sum package.json pnpm-lock.yaml
       - name: Check whitespace errors in the change set
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
@@ -39,5 +49,22 @@ jobs:
         run: pnpm test:consumer-browser
       - name: Verify packed Node, Worker and server consumer boundaries
         run: pnpm test:consumer-server
-      - name: Inspect published package contents
-        run: npm pack --dry-run
+      - name: Verify historical public npm tarball integrity and real exports
+        env:
+          EXPECTED_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          PUBLIC_ARTIFACT_VERSION: 2.0.8
+        run: node scripts/verify-public-npm-artifact.mjs
+      - name: Pack exact-source release candidate and record checksum
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/release-evidence
+          npm pack --pack-destination artifacts/release-evidence
+          sha256sum artifacts/release-evidence/*.tgz > artifacts/release-evidence/candidate-sha256.txt
+      - name: Upload independently inspectable npm artifact evidence
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: floks-release-candidate-and-registry-evidence
+          path: artifacts/release-evidence/
+          retention-days: 14
+          if-no-files-found: warn
