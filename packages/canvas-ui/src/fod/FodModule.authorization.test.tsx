@@ -54,15 +54,18 @@ describe('FOD graph authorization refresh during remote execution',()=>{
     const signal=executeAuthorizedRemoteFlow.mock.calls[0][1].signal;
     expect(signal.aborted).toBe(false);
     expect(hooks.poll).toBeTruthy();
+    // FOD revalidates once on opening the canvas and again immediately
+    // before execution. The passive poll is a third independent read.
+    const prePollChecks = listAuthorizedNodeDefinitions.mock.calls.length;
 
     await act(async()=>{hooks.poll?.(); await Promise.resolve();});
-    await waitFor(()=>expect(listAuthorizedNodeDefinitions).toHaveBeenCalledTimes(2));
+    await waitFor(()=>expect(listAuthorizedNodeDefinitions).toHaveBeenCalledTimes(prePollChecks + 1));
     expect(signal.aborted).toBe(false);
     expect(screen.getByRole('button',{name:'Authorized workflow'})).toBeTruthy();
 
     listAuthorizedNodeDefinitions.mockResolvedValue([]);
     await act(async()=>{hooks.poll?.(); await Promise.resolve();});
-    await waitFor(()=>expect(listAuthorizedNodeDefinitions).toHaveBeenCalledTimes(3));
+    await waitFor(()=>expect(listAuthorizedNodeDefinitions).toHaveBeenCalledTimes(prePollChecks + 2));
     expect(signal.aborted).toBe(true);
     expect(screen.queryByRole('button',{name:'Authorized workflow'})).toBeNull();
     ui.unmount();
