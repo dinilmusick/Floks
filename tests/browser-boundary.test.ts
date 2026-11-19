@@ -21,8 +21,14 @@ describe("Floks browser/server dependency boundary", () => {
       expect(pkg.peerDependencies ?? {}).not.toHaveProperty("@ultrst-armada/kloks");
       expect(pkg.peerDependencies ?? {}).not.toHaveProperty("@ultrst-armada/krnl");
     }
-    expect(rootPkg.dependencies["@dinilmusick/gutts"]).toMatch(/^\^2\./);
-    expect(uiPkg.dependencies["@dinilmusick/gutts"]).toMatch(/^\^2\./);
+    // Exact, verified auth dependency pins are valid (and preferable for
+    // security-critical releases); the lockfile owns the installed version.
+    for (const pkg of [rootPkg, uiPkg]) {
+      const spec = pkg.dependencies["@dinilmusick/gutts"];
+      expect(spec).toMatch(/^\^?2\.\d+\.\d+$/);
+      const [, minor, patch] = spec.replace(/^\^/, "").split(".").map(Number);
+      expect(minor > 2 || (minor === 2 && patch >= 3)).toBe(true);
+    }
     expect(rootPkg.dependencies["@ultrst-armada/frnlts"]).toMatch(/^\^0\.5\./);
   });
 
