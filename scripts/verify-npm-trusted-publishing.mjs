@@ -9,7 +9,7 @@ if (!/npm publish --provenance --access public/.test(workflow)) failures.push('P
 if (/NPM_TOKEN|NODE_AUTH_TOKEN|_authToken/.test(workflow)) failures.push('Long-lived npm token authentication is forbidden in the release workflow.');
 // Release reproducibility is a verified contract, not merely an OIDC keyword match.
 for (const required of [
-  'ref: ${{ github.event.workflow_run.head_sha || github.sha }}',
+  'ref: ${{ github.sha }}',
   'test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"',
   'pnpm install --frozen-lockfile',
   'pnpm run typecheck',
@@ -17,11 +17,13 @@ for (const required of [
   'pnpm run test:consumer-browser',
   'pnpm run test:consumer-server',
   'npm pack --pack-destination',
+  "github.ref == 'refs/heads/main'",
+  "inputs.publish",
   "steps.registry.outputs.exists == 'false'",
 ]) {
   if (!workflow.includes(required)) failures.push('Missing exact-head or package release gate: ' + required);
 }
-for (const forbidden of ['npm-check-updates', 'git push', 'pnpm install --lockfile-only', '--no-frozen-lockfile']) {
+for (const forbidden of ['npm-check-updates', 'git push', 'pnpm install --lockfile-only', '--no-frozen-lockfile', 'workflow_run:', 'schedule:']) {
   if (workflow.includes(forbidden)) failures.push('Unsafe hidden dependency mutation in release: ' + forbidden);
 }
 if (/^  (?:schedule|push):/m.test(workflow)) {
