@@ -27,9 +27,9 @@ afterEach(()=>vi.restoreAllMocks());
 
 describe('FOD graph authorization refresh during remote execution',()=>{
   it('does not abort active work during unchanged passive polling, but aborts when the grant is removed',async()=>{
-    let poll: (()=>void)|null=null;
+    const hooks: {poll?:()=>void}={};
     vi.spyOn(globalThis,'setInterval').mockImplementation(((handler:()=>void,delay:number) => {
-      if(delay===30_000) poll=handler;
+      if(delay===30_000) hooks.poll=handler;
       return 1 as any;
     }) as any);
     const listAuthorizedNodeDefinitions=vi.fn(async()=>[definition]);
@@ -53,15 +53,15 @@ describe('FOD graph authorization refresh during remote execution',()=>{
     await waitFor(()=>expect(executeAuthorizedRemoteFlow).toHaveBeenCalledOnce());
     const signal=executeAuthorizedRemoteFlow.mock.calls[0][1].signal;
     expect(signal.aborted).toBe(false);
-    expect(poll).toBeTruthy();
+    expect(hooks.poll).toBeTruthy();
 
-    await act(async()=>{poll!(); await Promise.resolve();});
+    await act(async()=>{hooks.poll?.(); await Promise.resolve();});
     await waitFor(()=>expect(listAuthorizedNodeDefinitions).toHaveBeenCalledTimes(2));
     expect(signal.aborted).toBe(false);
     expect(screen.getByRole('button',{name:'Authorized workflow'})).toBeTruthy();
 
     listAuthorizedNodeDefinitions.mockResolvedValue([]);
-    await act(async()=>{poll!(); await Promise.resolve();});
+    await act(async()=>{hooks.poll?.(); await Promise.resolve();});
     await waitFor(()=>expect(listAuthorizedNodeDefinitions).toHaveBeenCalledTimes(3));
     expect(signal.aborted).toBe(true);
     expect(screen.queryByRole('button',{name:'Authorized workflow'})).toBeNull();
@@ -69,21 +69,21 @@ describe('FOD graph authorization refresh during remote execution',()=>{
   });
 
   it('immediately denies a push revocation instead of awaiting stale catalogue refresh',async()=>{
-    let invalidate: (()=>void)|null=null;
+    const hooks: {invalidate?:()=>void}={};
     const listAuthorizedNodeDefinitions=vi.fn(async()=>[definition]);
     const runtime:FodRuntimeLike={
       listFlows:vi.fn(async()=>[flow]),getFlow:vi.fn(async()=>flow),
       saveFlow:vi.fn(async(value)=>value),deleteFlow:vi.fn(async()=>true),
       executeFlow:vi.fn(async()=>({success:false,output:null,errors:[]})),
       listAuthorizedNodeDefinitions,
-      subscribeAuthorizedNodeChanges:vi.fn((_workspaceId,onChange)=>{invalidate=onChange;return ()=>{};}),
+      subscribeAuthorizedNodeChanges:vi.fn((_workspaceId,onChange)=>{hooks.invalidate=onChange;return ()=>{};}),
     };
     const view=render(<FodModule runtime={runtime} nodeDefinitions={[]}
       workspaceId="source-a" scopeKey="principal-a/session-a/grant-1"/>);
     await waitFor(()=>expect(screen.getByRole('button',{name:'Authorized workflow'})).toBeTruthy());
-    const pending = new Promise<ReturnType<typeof definition>[]>(()=>{});
+    const pending = new Promise<(typeof definition)[]>(()=>{});
     listAuthorizedNodeDefinitions.mockImplementation(async()=>await pending as any);
-    act(()=>{invalidate!();});
+    act(()=>{hooks.invalidate?.();});
     expect(screen.queryByRole('button',{name:'Authorized workflow'})).toBeNull();
     view.unmount();
   });
