@@ -1,6 +1,6 @@
 name: npm Release
 
-# Publishing is only from a successful main CI run or an explicit manual/release event.
+# Successful main CI audits release readiness but never publishes; only an explicit manual approval may publish.
 # Dependency upgrades and version bumps must be separately reviewed before this workflow.
 on:
   workflow_run:
@@ -14,8 +14,6 @@ on:
         required: true
         type: boolean
         default: false
-  release:
-    types: [published]
 
 permissions:
   contents: read
@@ -31,8 +29,7 @@ jobs:
       (github.event_name == 'workflow_run' &&
        github.event.workflow_run.conclusion == 'success' &&
        github.event.workflow_run.head_branch == 'main') ||
-      (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') ||
-      (github.event_name == 'release' && github.event.release.target_commitish == 'main')
+      (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main')
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
@@ -125,9 +122,8 @@ jobs:
       - name: Record exact-source provenance in release candidate
         if: >-
           steps.registry.outputs.exists == 'false' &&
-          (github.event_name == 'workflow_run' ||
-           github.event_name == 'release' ||
-           (github.event_name == 'workflow_dispatch' && inputs.publish))
+          github.event_name == 'workflow_dispatch' &&
+          inputs.publish
         env:
           SOURCE_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
         run: |
@@ -152,16 +148,13 @@ jobs:
       - name: Publish new version via npm OIDC (no long-lived npm token)
         if: >-
           steps.registry.outputs.exists == 'false' &&
-          (github.event_name == 'workflow_run' ||
-           github.event_name == 'release' ||
-           (github.event_name == 'workflow_dispatch' && inputs.publish))
+          github.event_name == 'workflow_dispatch' &&
+          inputs.publish
         run: npm publish --provenance --access public
 
       - name: Verify public registry artifact independently
         if: >-
           steps.registry.outputs.exists == 'true' ||
-          github.event_name == 'workflow_run' ||
-          github.event_name == 'release' ||
           (github.event_name == 'workflow_dispatch' && inputs.publish)
         shell: bash
         env:
