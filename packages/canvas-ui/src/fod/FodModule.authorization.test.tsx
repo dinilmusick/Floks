@@ -4,7 +4,9 @@ import {afterEach, describe, expect, it, vi} from 'vitest';
 import {FodModule, type FodRuntimeLike} from './FodModule.js';
 
 vi.mock('../frnl-editable-node-graph/index.js', () => ({
-  FrnlEditableNodeGraph: () => <div data-testid="graph-canvas"/>,
+  FrnlEditableNodeGraph: ({nodes}: {nodes: Array<{id:string;label:string}>}) => (
+    <div data-testid="graph-canvas">{nodes.map(node => <span key={node.id}>{node.label}</span>)}</div>
+  ),
 }));
 
 const definition = {
@@ -90,4 +92,65 @@ describe('FOD graph authorization refresh during remote execution',()=>{
     expect(screen.queryByRole('button',{name:'Authorized workflow'})).toBeNull();
     view.unmount();
   });
+  it('saves and reloads the exact remote target/version and port snapshot without invoking on navigation', async()=>{
+    let persisted: typeof flow | null = null;
+    const listAuthorizedNodeDefinitions=vi.fn(async()=>[definition]);
+    const executeAuthorizedRemoteFlow=vi.fn(async()=>({
+      success:true,output:'would be remote',errors:[],
+    }));
+    const runtime:FodRuntimeLike={
+      listFlows:vi.fn(async()=>persisted ? [persisted] : []),
+      getFlow:vi.fn(async()=>persisted),
+      saveFlow:vi.fn(async(value)=>{
+        persisted=JSON.parse(JSON.stringify(value));
+        return persisted!;
+      }),
+      deleteFlow:vi.fn(async()=>true),
+      executeFlow:vi.fn(async()=>({success:false,output:null,errors:[]})),
+      listAuthorizedNodeDefinitions,
+      executeAuthorizedRemoteFlow,
+    };
+    const mount=()=>render(<FodModule runtime={runtime}
+      nodeDefinitions={[]} workspaceId="source-a" scopeKey="luth-user-a:source-a:grant-1"/>);
+    const first=mount();
+    await waitFor(()=>expect(screen.getByRole('button',{name:'Authorized workflow'})).toBeTruthy());
+    fireEvent.click(screen.getByRole('button',{name:'New flow'}));
+    fireEvent.click(screen.getByRole('button',{name:'Authorized workflow'}));
+    fireEvent.click(screen.getByRole('button',{name:'Save as App Workflow'}));
+    await waitFor(()=>expect(runtime.saveFlow).toHaveBeenCalledOnce());
+    expect(persisted).toBeTruthy();
+    const original=(persisted as any).nodes[0].data;
+    expect({
+      appId:original.appId,
+      targetWorkspaceId:original.targetWorkspaceId,
+      operationId:original.operationId,
+      operationVersion:original.operationVersion,
+    }).toEqual({
+      appId:'app-a',targetWorkspaceId:'target-a',
+      operationId:'workflow-a',operationVersion:'v1',
+    });
+    expect(original.remotePorts).toEqual({inputs:[],outputs:[]});
+    expect(typeof original.remotePortSignature).toBe('string');
+    expect(executeAuthorizedRemoteFlow).not.toHaveBeenCalled();
+    first.unmount();
+
+    // Reload a flow after a source-workspace change or user revisit.
+    const reload=mount();
+    await waitFor(()=>expect(screen.getByText('Authorized workflow')).toBeTruthy());
+    expect(runtime.getFlow).toHaveBeenCalledWith((persisted as any).id);
+    expect(executeAuthorizedRemoteFlow).not.toHaveBeenCalled();
+    reload.unmount();
+
+    // A target silently reusing a display name at a new immutable revision
+    // must not rewrite the original saved operation or auto-run it.
+    listAuthorizedNodeDefinitions.mockResolvedValue([{
+      ...definition,metadata:{...definition.metadata,operationVersion:'v2'},
+    }]);
+    const stale=mount();
+    await waitFor(()=>expect(screen.getByText(/Unavailable remote operation/)).toBeTruthy());
+    expect((persisted as any).nodes[0].data.operationVersion).toBe('v1');
+    expect(executeAuthorizedRemoteFlow).not.toHaveBeenCalled();
+    stale.unmount();
+  });
+
 });
