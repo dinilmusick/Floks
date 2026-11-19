@@ -5,6 +5,7 @@ interface FodFlow {id:string;name:string;description?:string;version:number;crea
 import {FrnlEditableNodeGraph} from '../frnl-editable-node-graph/index.js';
 import {filterRemoteDefinitions,isRemoteGraphNode,readRemoteHandle,validateRemoteGraph,type RemoteGraphHandle} from './remoteGraphContract.js';
 import {readRemotePortSnapshot,remotePortFingerprint,snapshotRemotePorts,validateRemoteConnections} from './remoteGraphConnections.js';
+import {remoteAuthorizationFingerprint} from './remoteAuthorizationFingerprint.js';
 
 export interface FodRuntimeLike {
   listFlows():Promise<FodFlow[]>;
@@ -85,30 +86,50 @@ function WorkspaceFlows({runtime,nodeDefinitions,workspaceId,className,scopeKey}
   useEffect(() => {
     let alive = true;
     let revision = 0;
-    const refresh = () => {
-      const request = ++revision;
+    let authorizationFingerprint: string | null = null;
+    const revoke = () => {
       permissionEpoch.current++;
       runningAbort.current?.abort();
-      // Fail closed immediately on an invalidation, account switch or revoke.
       setAuthorizedNodes([]);
-      if (!scopeKey) { setMessage('Authenticated graph scope required for remote discovery'); return; }
-      if (!runtime.listAuthorizedNodeDefinitions) return;
+    };
+    const refresh = (invalidation = false) => {
+      const request = ++revision;
+      // A pushed permission/session invalidation must revoke immediately,
+      // before the replacement directory is fetched. Passive polling does
+      // not revoke an unchanged grant or abort an otherwise valid execution.
+      if (invalidation) { authorizationFingerprint = null; revoke(); }
+      if (!scopeKey) {
+        revoke();
+        setMessage('Authenticated graph scope required for remote discovery');
+        return;
+      }
+      if (!runtime.listAuthorizedNodeDefinitions) { revoke(); return; }
       void runtime.listAuthorizedNodeDefinitions(workspaceId).then(definitions => {
         if (!alive || request !== revision) return;
-        if (!Array.isArray(definitions)) { setAuthorizedNodes([]); return; }
-        setAuthorizedNodes(filterRemoteDefinitions(definitions,nodeDefinitions.map(definition=>definition.type)));
+        if (!Array.isArray(definitions)) {
+          authorizationFingerprint = null; revoke();
+          setMessage('Authorized app operations unavailable');
+          return;
+        }
+        const current = filterRemoteDefinitions(definitions,nodeDefinitions.map(definition=>definition.type));
+        const fingerprint = remoteAuthorizationFingerprint(current);
+        // A grant, target, operation version, port or consent surface
+        // change invalidates an active execution before updating the palette.
+        if (authorizationFingerprint !== null && fingerprint !== authorizationFingerprint) revoke();
+        authorizationFingerprint = fingerprint;
+        setAuthorizedNodes(current);
       }).catch(() => {
         if (alive && request === revision) {
-          setAuthorizedNodes([]);
+          authorizationFingerprint = null;
+          revoke();
           setMessage('Authorized app operations unavailable');
         }
       });
     };
     refresh();
-    const unsubscribe = runtime.subscribeAuthorizedNodeChanges?.(workspaceId, refresh);
-    // Host should push immediate grant/lease/session invalidations; periodic
-    // revalidation also retires descriptors if a push signal is lost.
-    const fallbackRefresh=scopeKey ? setInterval(refresh,30_000) : null;
+    const unsubscribe = runtime.subscribeAuthorizedNodeChanges?.(workspaceId, () => refresh(true));
+    // The fallback rechecks permission without clearing the editor every 30s.
+    const fallbackRefresh=scopeKey ? setInterval(() => refresh(),30_000) : null;
     return () => { alive = false; ++revision; permissionEpoch.current++; runningAbort.current?.abort(); if(fallbackRefresh!==null)clearInterval(fallbackRefresh); unsubscribe?.(); };
   }, [runtime,workspaceId,nodeDefinitions,scopeKey]);
 
