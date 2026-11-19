@@ -276,4 +276,23 @@ describe('Agent Chat bottom strip', () => {
     const newDialog = screen.getByRole('dialog', { name: 'Agent Chat' });
     expect(within(newDialog).queryByText('Private result from workspace A')).toBeNull();
   });
+  it('always propagates AbortSignal even when the app has no remote cancellation endpoint', async () => {
+    let finish!: (value: {kind: 'completed'; text: string}) => void;
+    const onInvoke = vi.fn().mockImplementation(() =>
+      new Promise(resolve => { finish = resolve; }));
+    const dialog = launch({appAgentId: 'app-1', onInvoke});
+    fireEvent.change(within(dialog).getByRole('textbox', {name: 'Agent message'}), {
+      target: {value: 'read a private workspace value'},
+    });
+    fireEvent.click(within(dialog).getByRole('button', {name: 'Send message'}));
+    await waitFor(() => expect(onInvoke).toHaveBeenCalledOnce());
+    const signal = onInvoke.mock.calls[0][1]?.signal as AbortSignal;
+    expect(signal).toBeDefined();
+    expect(signal.aborted).toBe(false);
+    fireEvent.click(within(dialog).getByRole('button', {name: 'Close chat'}));
+    expect(signal.aborted).toBe(true);
+    finish({kind: 'completed', text: 'late private response'});
+    expect(screen.queryByText('late private response')).toBeNull();
+  });
+
 });
