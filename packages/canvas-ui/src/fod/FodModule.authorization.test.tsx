@@ -136,7 +136,7 @@ describe('FOD graph authorization refresh during remote execution',()=>{
 
     // Reload a flow after a source-workspace change or user revisit.
     const reload=mount();
-    await waitFor(()=>expect(screen.getByText('Authorized workflow')).toBeTruthy());
+    await waitFor(()=>expect(screen.getByTestId('graph-canvas').textContent).toContain('Authorized workflow'));
     expect(runtime.getFlow).toHaveBeenCalledWith((persisted as any).id);
     expect(executeAuthorizedRemoteFlow).not.toHaveBeenCalled();
     reload.unmount();
