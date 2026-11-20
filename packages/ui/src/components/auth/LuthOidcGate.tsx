@@ -5,7 +5,6 @@ import {
   type LuthSessionResult,
 } from '@dinilmusick/gutts/auth';
 import { AuthLoadingScreen } from './AuthLoadingScreen.js';
-
 export interface ApplicationOidcAuth {
   client: ApplicationAuthClient;
   session: LuthSessionResult;
@@ -17,7 +16,6 @@ export interface ApplicationOidcAuth {
   signIn: (returnTo?: string) => void;
   signOut: () => Promise<void>;
 }
-
 /**
  * Canonical application identity gate. Browser receives only an opaque
  * app-origin cookie; Luth/Better Auth hosts the actual Google/email login.
@@ -32,7 +30,6 @@ export function useApplicationOidcAuth(): ApplicationOidcAuth {
   const [error, setError] = useState<string | null>(null);
   const revision = useRef(0);
   const signingOut = useRef(false);
-
   const refresh = useCallback(async () => {
     if (signingOut.current) return { authenticated: false } as LuthSessionResult;
     const expected = ++revision.current;
@@ -59,7 +56,6 @@ export function useApplicationOidcAuth(): ApplicationOidcAuth {
       }
     }
   }, [client]);
-
   useEffect(() => {
     void refresh().catch(() => undefined);
     if (typeof window === 'undefined') return;
@@ -72,7 +68,6 @@ export function useApplicationOidcAuth(): ApplicationOidcAuth {
       window.removeEventListener('online', retry);
     };
   }, [refresh]);
-
   const signOut = useCallback(async () => {
     signingOut.current = true;
     ++revision.current;
@@ -89,13 +84,11 @@ export function useApplicationOidcAuth(): ApplicationOidcAuth {
       setLoading(false);
     }
   }, [client]);
-
   return {
     client, session, user: session.user, loading, initializing, error, refresh, signOut,
     signIn: (returnTo?: string) => client.startSignIn(returnTo),
   };
 }
-
 export interface LuthOidcGateProps {
   appName?: string;
   authenticatedContent: React.ReactNode | ((auth: ApplicationOidcAuth) => React.ReactNode);
@@ -103,7 +96,6 @@ export interface LuthOidcGateProps {
   onAuthenticated?: (user: NonNullable<LuthSessionResult['user']>) => void;
   onContinueAsGuest?: () => void;
 }
-
 export function LuthOidcGate({
   appName = 'ULTRST APP',
   authenticatedContent,
@@ -123,7 +115,6 @@ export function LuthOidcGate({
       onAuthenticatedRef.current?.(auth.user);
     }
   }, [auth.session.authenticated, auth.user]);
-
   if (auth.initializing || auth.loading) {
     return <>{loadingContent ?? <AuthLoadingScreen label="VERIFYING SESSION..." />}</>;
   }
