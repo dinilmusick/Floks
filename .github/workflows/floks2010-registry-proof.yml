@@ -1,0 +1,32 @@
+name: Verify Floks exact npm release metadata
+on:
+  push:
+    branches:
+      - auth/floks2010-registry-proof-20261120
+permissions:
+  contents: read
+jobs:
+  prove:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          package-manager-cache: false
+      - name: Verify public exact-version lockfile metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+          tmp="$(mktemp -d)"
+          cd "$tmp"
+          printf '{"private":true,"name":"floks-registry-proof","version":"1.0.0","dependencies":{"@ultrst-armada/floks":"2.0.10"}}\n' > package.json
+          npm install --package-lock-only --ignore-scripts --no-audit --no-fund --legacy-peer-deps
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const lock=JSON.parse(fs.readFileSync('package-lock.json','utf8'));
+          const dep=lock.packages['node_modules/@ultrst-armada/floks'];
+          if (dep?.version!=='2.0.10' || !dep.integrity?.startsWith('sha512-') || !dep.resolved?.startsWith('https://registry.npmjs.org/')) throw new Error('Registry metadata invalid');
+          console.log('FLOKS_2010_EXACT_PUBLIC_PACKAGE '+JSON.stringify({version:dep.version,resolved:dep.resolved,integrity:dep.integrity}));
+          NODE
