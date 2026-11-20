@@ -5,6 +5,7 @@ import {
   type LuthSessionResult,
 } from '@dinilmusick/gutts/auth';
 import { AuthLoadingScreen } from './AuthLoadingScreen.js';
+import { GoogleSignInButton } from './GoogleSignInButton.js';
 export interface ApplicationOidcAuth {
   client: ApplicationAuthClient;
   session: LuthSessionResult;
@@ -139,23 +140,41 @@ export function LuthOidcGate({
           aria-label={`${appName} sign in`}
           className="w-full max-w-md border-2 border-[var(--skipo-border-color,#252d3d)] bg-[var(--skipo-surface,#121722)] shadow-[6px_6px_0px_var(--skipo-border-color,#252d3d)] p-6 my-auto"
         >
+          <div className="grid grid-cols-2 gap-2 mb-5" aria-label="Sign-in options">
+            <span className="py-2 text-[10px] font-black border-2 flex items-center justify-center bg-[var(--skipo-accent,#6366f1)] text-[var(--skipo-accent-fg,#000000)] border-[var(--skipo-accent,#6366f1)]">SIGN IN</span>
+            <span className="py-2 text-[10px] font-black border-2 flex items-center justify-center text-[var(--skipo-text-muted,#94a3b8)] border-[var(--skipo-border-color,#252d3d)]">CREATE ACCOUNT</span>
+          </div>
           <h1 className="font-black text-sm tracking-wider uppercase">SIGN IN TO WORKSPACE</h1>
           <p className="mt-2 mb-5 text-xs text-[var(--skipo-text-muted,#94a3b8)]">
             Access your workspace with your existing account or create one.
           </p>
           {auth.error && (
-            <p role="alert" className="mb-4 border-2 border-red-500/80 bg-red-950/30 p-3 text-xs text-red-300">
-              {auth.error}
-            </p>
+            <div role="alert" className="mb-4 border-2 border-red-500/80 bg-red-950/30 p-3 text-xs text-red-300 space-y-2">
+              <p>Session verification is unavailable. No authenticated workspace access will be granted until the service recovers.</p>
+              <p>{auth.error}</p>
+            </div>
           )}
+          <GoogleSignInButton
+            label="CONTINUE WITH GOOGLE"
+            onSignIn={() => auth.signIn()}
+            className="mb-3"
+          />
+          <div className="flex items-center gap-2 mb-3 text-[9px] text-[var(--skipo-text-muted,#94a3b8)]">
+            <span className="h-px flex-1 bg-[var(--skipo-border-color,#252d3d)]" />
+            OR
+            <span className="h-px flex-1 bg-[var(--skipo-border-color,#252d3d)]" />
+          </div>
           <button
             type="button"
             onClick={() => auth.signIn()}
-            disabled={Boolean(auth.error)}
-            className="disabled:opacity-50 disabled:cursor-not-allowed w-full py-3 px-4 text-xs font-black uppercase tracking-wide border-2 border-[var(--skipo-accent,#6366f1)] bg-[var(--skipo-accent,#6366f1)] text-[var(--skipo-accent-fg,#000000)] hover:brightness-110 transition-all cursor-pointer"
+            className="w-full py-3 px-4 text-xs font-black uppercase tracking-wide border-2 border-[var(--skipo-accent,#6366f1)] bg-[var(--skipo-accent,#6366f1)] text-[var(--skipo-accent-fg,#000000)] hover:brightness-110 transition-all cursor-pointer"
           >
-            CONTINUE WITH GOOGLE OR EMAIL
+            CONTINUE WITH EMAIL
           </button>
+          <p className="mt-3 text-[10px] leading-relaxed text-[var(--skipo-text-muted,#94a3b8)]">
+            Google, email sign-in and account registration are handled on the secure Luth identity page.
+            This application never asks for, stores, or transmits your password.
+          </p>
           {auth.error && (
             <button
               type="button"
