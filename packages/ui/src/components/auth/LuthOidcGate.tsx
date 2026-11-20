@@ -125,34 +125,76 @@ export function LuthOidcGate({
   }, [auth.session.authenticated, auth.user]);
 
   if (auth.initializing || auth.loading) {
-    return <>{loadingContent ?? <AuthLoadingScreen label="VERIFYING LUTH SESSION..." />}</>;
+    return <>{loadingContent ?? <AuthLoadingScreen label="VERIFYING SESSION..." />}</>;
   }
   if (auth.session.authenticated && auth.user) {
     return typeof authenticatedContent === 'function'
       ? <>{authenticatedContent(auth)}</> : <>{authenticatedContent}</>;
   }
   return (
-    <main className="min-h-screen flex items-center justify-center p-6 bg-[var(--skipo-bg,#0a0e17)] text-[var(--skipo-text,#f8fafc)]">
-      <section className="w-full max-w-md rounded-lg border border-[var(--skipo-border-color,#252d3d)] bg-[var(--skipo-surface,#121722)] p-6 space-y-5">
-        <h1 className="font-bold text-xl">{appName}</h1>
-        <p className="text-sm opacity-80">
-          Sign in securely through Luth. Google and email passwords are handled only by Luth.
-        </p>
-        {auth.error && <p role="alert" className="text-sm text-red-300">{auth.error}</p>}
-        <button type="button" onClick={() => auth.signIn()}
-          className="w-full rounded border border-[var(--skipo-accent,#6366f1)] px-4 py-3 font-semibold">
-          Continue with Luth (Google or email)
-        </button>
-        {auth.error && (
-          <button type="button" onClick={() => { void auth.refresh().catch(() => undefined); }}
-            className="w-full rounded border px-4 py-2 text-sm">Retry session</button>
-        )}
-        {onContinueAsGuest && (
-          <button type="button" onClick={onContinueAsGuest}
-            className="w-full rounded border px-4 py-2 text-sm">Continue as guest</button>
-        )}
-      </section>
-    </main>
+    <div
+      data-frnl-component="LuthOidcGate"
+      className="min-h-screen h-screen w-screen bg-[var(--skipo-bg,#0a0e17)] text-[var(--skipo-text,#f8fafc)] font-mono flex flex-col overflow-hidden"
+    >
+      <header className="border-b-2 border-[var(--skipo-border-color,#252d3d)] bg-[var(--skipo-surface,#121722)] px-6 py-3.5 flex items-center gap-3 shrink-0">
+        <div aria-hidden="true" className="w-8 h-8 shrink-0 bg-[var(--skipo-accent,#6366f1)] text-black font-black flex items-center justify-center text-xs rounded-sm">
+          ▲
+        </div>
+        <span className="text-sm font-black uppercase tracking-wider">{appName}</span>
+        <span className="text-[10px] text-[var(--skipo-text-muted,#94a3b8)] tracking-tight">WORKSPACE</span>
+      </header>
+      <main className="flex-1 flex items-center justify-center p-4 overflow-auto">
+        <section
+          aria-label={`${appName} sign in`}
+          className="w-full max-w-md border-2 border-[var(--skipo-border-color,#252d3d)] bg-[var(--skipo-surface,#121722)] shadow-[6px_6px_0px_var(--skipo-border-color,#252d3d)] p-6 my-auto"
+        >
+          <h1 className="font-black text-sm tracking-wider uppercase">SIGN IN TO WORKSPACE</h1>
+          <p className="mt-2 mb-5 text-xs text-[var(--skipo-text-muted,#94a3b8)]">
+            Access your workspace with your existing account or create one.
+          </p>
+          {auth.error && (
+            <p role="alert" className="mb-4 border-2 border-red-500/80 bg-red-950/30 p-3 text-xs text-red-300">
+              {auth.error}
+            </p>
+          )}
+          <button
+            type="button"
+            onClick={() => auth.signIn()}
+            className="w-full py-3 px-4 text-xs font-black uppercase tracking-wide border-2 border-[var(--skipo-accent,#6366f1)] bg-[var(--skipo-accent,#6366f1)] text-[var(--skipo-accent-fg,#000000)] hover:brightness-110 transition-all cursor-pointer"
+          >
+            CONTINUE WITH GOOGLE OR EMAIL
+          </button>
+          {auth.error && (
+            <button
+              type="button"
+              onClick={() => { void auth.refresh().catch(() => undefined); }}
+              className="mt-3 w-full border-2 border-[var(--skipo-border-color,#252d3d)] px-4 py-2 text-xs font-black uppercase"
+            >
+              RETRY SESSION
+            </button>
+          )}
+          {onContinueAsGuest && (
+            <>
+              <div aria-hidden="true" className="my-4 flex items-center gap-2 text-[9px] text-[var(--skipo-text-muted,#94a3b8)]">
+                <span className="h-px flex-1 bg-[var(--skipo-border-color,#252d3d)]" />
+                OR
+                <span className="h-px flex-1 bg-[var(--skipo-border-color,#252d3d)]" />
+              </div>
+              <button
+                type="button"
+                onClick={onContinueAsGuest}
+                className="w-full py-2 text-[10px] font-black border-2 border-[var(--skipo-border-color,#252d3d)] text-[var(--skipo-text-muted,#94a3b8)] hover:text-[var(--skipo-text,#f8fafc)] transition-colors cursor-pointer"
+              >
+                CONTINUE AS GUEST
+              </button>
+            </>
+          )}
+          <p className="mt-5 pt-3 border-t border-[var(--skipo-border-color,#252d3d)] text-center text-[10px] text-[var(--skipo-text-muted,#94a3b8)]">
+            {appName} WORKSPACE SYSTEM
+          </p>
+        </section>
+      </main>
+    </div>
   );
 }
 
