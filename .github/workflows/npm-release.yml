@@ -28,7 +28,7 @@ jobs:
       NODE_OPTIONS: --max-old-space-size=4096
     steps:
       - name: Checkout exact source commit (never moving main)
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           ref: ${{ github.sha }}
           persist-credentials: false
@@ -43,7 +43,7 @@ jobs:
           sha256sum package.json pnpm-lock.yaml
 
       - name: Set up Node.js with npm OIDC Trusted Publishing support
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: 22
           registry-url: https://registry.npmjs.org/
@@ -52,7 +52,7 @@ jobs:
         run: npm install --global npm@latest
 
       - name: Set up pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v5
         with:
           version: 10.33.0
 
@@ -158,23 +158,83 @@ jobs:
         env:
           PACKAGE_NAME: ${{ steps.package.outputs.name }}
           PACKAGE_VERSION: ${{ steps.package.outputs.version }}
+          SOURCE_SHA: ${{ github.sha }}
+          PUBLISHED_THIS_RUN: ${{ steps.registry.outputs.exists == 'false' && inputs.publish }}
         run: |
           set -euo pipefail
           tmp="$(mktemp -d)"
           trap 'rm -rf "$tmp"' EXIT
-          for attempt in $(seq 1 30); do
-            rm -f "$tmp"/*.tgz
-            if npm pack "${PACKAGE_NAME}@${PACKAGE_VERSION}" --pack-destination "$tmp" --prefer-online --registry=https://registry.npmjs.org/ >"$tmp/out" 2>"$tmp/err"; then
-              archive="$(find "$tmp" -maxdepth 1 -name '*.tgz' -print -quit)"
-              tar -xOzf "$archive" package/package.json >"$tmp/registry-package.json"
-              node -e 'const a=require(process.argv[1]); if(a.name!==process.env.PACKAGE_NAME || a.version!==process.env.PACKAGE_VERSION) process.exit(1)' "$tmp/registry-package.json"
-              echo "Registry tarball verified for ${PACKAGE_NAME}@${PACKAGE_VERSION}"
-              exit 0
+          # npm may accept OIDC publication before the exact version is visible
+          # through its registry/read replicas. Avoid npm pack's cached packument:
+          # fetch the exact-version registry JSON and its published tarball.
+          registry_url="$(node -e "process.stdout.write('https://registry.npmjs.org/' + encodeURIComponent(process.env.PACKAGE_NAME) + '/' + encodeURIComponent(process.env.PACKAGE_VERSION))")"
+          verified=false
+          for attempt in $(seq 1 60); do
+            if curl --fail --silent --show-error --location --max-time 20 \
+              --header 'Cache-Control: no-cache' \
+              --output "$tmp/registry.json" "$registry_url"; then
+              if node --input-type=module - "$tmp/registry.json" <<'NODE' > "$tmp/tarball-url"
+          import fs from 'node:fs';
+          const pkg = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
+          if (pkg.name !== process.env.PACKAGE_NAME || pkg.version !== process.env.PACKAGE_VERSION ||
+              typeof pkg.dist?.integrity !== 'string' || !pkg.dist.integrity.startsWith('sha512-')) {
+            process.exit(1);
+          }
+          const tarball = new URL(pkg.dist.tarball);
+          if (tarball.protocol !== 'https:' || tarball.hostname !== 'registry.npmjs.org') process.exit(1);
+          process.stdout.write(tarball.href);
+          NODE
+              then
+                if curl --fail --silent --show-error --location --max-time 30 \
+                  --output "$tmp/package.tgz" "$(cat "$tmp/tarball-url")" &&
+                  node --input-type=module - "$tmp/registry.json" "$tmp/package.tgz" <<'NODE'
+          import fs from 'node:fs';
+          import { createHash } from 'node:crypto';
+          const meta = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
+          const archive = fs.readFileSync(process.argv[3]);
+          const digest = 'sha512-' + createHash('sha512').update(archive).digest('base64');
+          if (digest !== meta.dist.integrity) throw new Error('Registry tarball integrity does not match exact-version metadata.');
+          NODE
+                then
+                  tar -xOzf "$tmp/package.tgz" package/package.json > "$tmp/package.json"
+                  node --input-type=module - "$tmp/package.json" <<'NODE'
+          import fs from 'node:fs';
+          const pkg = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
+          if (pkg.name !== process.env.PACKAGE_NAME || pkg.version !== process.env.PACKAGE_VERSION) {
+            throw new Error('Published tarball package name/version mismatch.');
+          }
+          NODE
+                  if tar -xOzf "$tmp/package.tgz" package/.krusbl-release-attestation.json > "$tmp/attestation.json" 2>/dev/null; then
+                    node --input-type=module - "$tmp/attestation.json" <<'NODE'
+          import fs from 'node:fs';
+          const attestation = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
+          if (attestation.packageName !== process.env.PACKAGE_NAME ||
+              attestation.version !== process.env.PACKAGE_VERSION ||
+              !/^[0-9a-f]{40}$/.test(attestation.sourceCommit)) {
+            throw new Error('Invalid source attestation in published archive.');
+          }
+          if (process.env.PUBLISHED_THIS_RUN === 'true' && attestation.sourceCommit !== process.env.SOURCE_SHA) {
+            throw new Error('New publication source SHA does not match exact workflow checkout.');
+          }
+          console.log('Registry artifact source SHA: ' + attestation.sourceCommit);
+          NODE
+                  elif [[ "$PUBLISHED_THIS_RUN" == "true" ]]; then
+                    echo "::error::Fresh publication is missing its source attestation." >&2
+                    exit 1
+                  fi
+                  echo "Verified public registry tarball and SHA-512 integrity for ${PACKAGE_NAME}@${PACKAGE_VERSION}"
+                  verified=true
+                  break
+                fi
+              fi
             fi
-            sleep 10
+            echo "::notice::npm registry has not yet exposed ${PACKAGE_NAME}@${PACKAGE_VERSION} (check ${attempt}/60)."
+            sleep 15
           done
-          cat "$tmp/err" >&2
-          exit 1
+          if [[ "$verified" != "true" ]]; then
+            echo "::error::npm publication may have been accepted, but exact-version metadata and tarball are not independently retrievable. Do not republish or bump the immutable version; retry this workflow with publish=false." >&2
+            exit 1
+          fi
 
       - name: Existing version is not evidence of this source release
         if: steps.registry.outputs.exists == 'true'
