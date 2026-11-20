@@ -26,6 +26,7 @@ describe('polished canonical OAuth login gate', () => {
     expect(gate).not.toContain('Continue with Luth');
     expect(gate).not.toContain('VERIFYING LUTH SESSION');
     expect(gate).toContain('VERIFYING SESSION...');
+    expect(gate).toContain('disabled={Boolean(auth.error)}');
     expect(gate).not.toContain('localStorage');
   });
 });

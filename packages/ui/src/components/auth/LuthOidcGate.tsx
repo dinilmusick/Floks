@@ -151,7 +151,8 @@ export function LuthOidcGate({
           <button
             type="button"
             onClick={() => auth.signIn()}
-            className="w-full py-3 px-4 text-xs font-black uppercase tracking-wide border-2 border-[var(--skipo-accent,#6366f1)] bg-[var(--skipo-accent,#6366f1)] text-[var(--skipo-accent-fg,#000000)] hover:brightness-110 transition-all cursor-pointer"
+            disabled={Boolean(auth.error)}
+            className="disabled:opacity-50 disabled:cursor-not-allowed w-full py-3 px-4 text-xs font-black uppercase tracking-wide border-2 border-[var(--skipo-accent,#6366f1)] bg-[var(--skipo-accent,#6366f1)] text-[var(--skipo-accent-fg,#000000)] hover:brightness-110 transition-all cursor-pointer"
           >
             CONTINUE WITH GOOGLE OR EMAIL
           </button>
