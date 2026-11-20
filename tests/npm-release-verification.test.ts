@@ -11,6 +11,24 @@ describe('Floks trusted npm release regression checks', () => {
     expect(workflow).toContain('uses: pnpm/action-setup@v5');
   });
 
+  it('installs pnpm before setup-node attempts automatic package-manager caching', () => {
+    const pnpmStep = workflow.indexOf('      - name: Set up pnpm');
+    const nodeStep = workflow.indexOf('      - name: Set up Node.js with npm OIDC Trusted Publishing support');
+    const verifyStep = workflow.indexOf('      - name: Verify npm and pnpm toolchains');
+    const updateNpmStep = workflow.indexOf('      - name: Update npm CLI for OIDC Trusted Publishing');
+    const frozenInstall = workflow.indexOf('      - name: Frozen dependency install');
+    expect(pnpmStep).toBeGreaterThan(0);
+    expect(nodeStep).toBeGreaterThan(pnpmStep);
+    expect(verifyStep).toBeGreaterThan(nodeStep);
+    expect(updateNpmStep).toBeGreaterThan(verifyStep);
+    expect(frozenInstall).toBeGreaterThan(updateNpmStep);
+    const setupNode = workflow.slice(nodeStep, verifyStep);
+    expect(setupNode).toContain('cache: pnpm');
+    expect(setupNode).toContain('node-version: 22');
+    expect(workflow.slice(verifyStep, updateNpmStep)).toContain('pnpm --version');
+    expect(workflow).toContain('pnpm install --frozen-lockfile');
+  });
+
   it('does not hide delayed npm registry propagation or retry immutable publishing', () => {
     expect(workflow).toContain('steps.registry.outputs.exists == \'false\'');
     expect(workflow).toContain('Cache-Control: no-cache');
