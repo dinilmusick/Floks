@@ -17,7 +17,10 @@ describe('polished canonical OAuth login gate', () => {
     expect(gate).toContain('border-b-2 border-[var(--skipo-border-color');
     expect(gate).toContain('shadow-[6px_6px_0px_var(--skipo-border-color');
     expect(gate).toContain('SIGN IN TO WORKSPACE');
-    expect(gate).toContain('CONTINUE WITH GOOGLE OR EMAIL');
+    expect(gate).toContain('CONTINUE WITH GOOGLE');
+    expect(gate).toContain('CONTINUE WITH EMAIL');
+    expect(gate).toContain('CREATE ACCOUNT');
+    expect(gate).toContain('<GoogleSignInButton');
     expect(gate).toContain('{appName} WORKSPACE SYSTEM');
   });
 
@@ -26,7 +29,11 @@ describe('polished canonical OAuth login gate', () => {
     expect(gate).not.toContain('Continue with Luth');
     expect(gate).not.toContain('VERIFYING LUTH SESSION');
     expect(gate).toContain('VERIFYING SESSION...');
-    expect(gate).toContain('disabled={Boolean(auth.error)}');
+    expect(gate).not.toContain('disabled={Boolean(auth.error)}');
+    expect(gate).toContain('Session verification is unavailable');
+    expect(gate).toContain('No authenticated workspace access');
+    expect(gate).toContain('CONTINUE WITH EMAIL');
+    expect(gate).not.toContain('<input type="password"');
     expect(gate).not.toContain('localStorage');
   });
 });
