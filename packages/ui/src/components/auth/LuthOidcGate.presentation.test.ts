@@ -30,10 +30,12 @@ describe('polished canonical OAuth login gate', () => {
     expect(gate).not.toContain('Continue with Luth');
     expect(gate).not.toContain('VERIFYING LUTH SESSION');
     expect(gate).toContain('VERIFYING SESSION...');
+    expect(gate).toContain('auth.session.authenticated && (auth.initializing || auth.loading)');
     expect(gate).not.toContain('disabled={Boolean(auth.error)}');
-    expect(gate).toContain('Session verification is unavailable');
-    expect(gate).toContain('No authenticated workspace access');
+    expect(gate).not.toContain('Session verification is unavailable');
+    expect(gate).not.toContain('No authenticated workspace access');
     expect(gate).toContain('CONTINUE WITH EMAIL');
+    expect(gate).not.toContain('RETRY SESSION');
     expect(gate).toContain('href="/api/auth/oidc/start"');
     expect(gate).not.toContain('onClick={() => auth.signIn()}');
     expect(gate).not.toContain('<input type="password"');
