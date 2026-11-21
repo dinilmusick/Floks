@@ -6,13 +6,15 @@ import {FrnlEditableNodeGraph} from '../frnl-editable-node-graph/index.js';
 import {filterRemoteDefinitions,isRemoteGraphNode,readRemoteHandle,validateRemoteGraph,type RemoteGraphHandle} from './remoteGraphContract.js';
 import {readRemotePortSnapshot,remotePortFingerprint,snapshotRemotePorts,validateRemoteConnections} from './remoteGraphConnections.js';
 import {remoteAuthorizationFingerprint} from './remoteAuthorizationFingerprint.js';
+import {authorizedRemoteCategories,filteredCapabilityPicker,remoteCapabilityCategory} from './remoteCapabilityPicker.js';
+import {remoteExecutionFeedback} from './remoteExecutionFeedback.js';
 
 export interface FodRuntimeLike {
   listFlows():Promise<FodFlow[]>;
   getFlow(id:string):Promise<FodFlow|null>;
   saveFlow(flow:FodFlow):Promise<FodFlow>;
   deleteFlow(id:string):Promise<boolean>;
-  executeFlow(id:string):Promise<{success:boolean;output:unknown;errors:Array<{message:string}>}>;
+  executeFlow(id:string):Promise<{success:boolean;output:unknown;errors:Array<{message:string;code?:string;status?:number}>}>;
   /** Kloks BackendFacade must reauthorize all target-side and nested calls. */
   executeAuthorizedRemoteFlow?(request:{flowId:string;sourceWorkspaceId:string;handles:RemoteGraphHandle[]},options:{signal:AbortSignal}):ReturnType<FodRuntimeLike['executeFlow']>;
   /** Live frontend action requires separately scoped, active-window approval. */
@@ -61,6 +63,8 @@ function toGraphNodes(flow:FodFlow,nodeDefinitions:FodNodeDefinition[]):any[]{
   });
 }
 
+class FodLocalValidationError extends Error {}
+
 function toGraphEdges(flow:FodFlow):any[]{
   return flow.edges.map(edge=>({id:edge.id,source:edge.source,sourceSocket:edge.sourceHandle ?? 'result',target:edge.target,targetSocket:edge.targetHandle ?? 'input'}));
 }
@@ -80,6 +84,7 @@ function WorkspaceFlows({runtime,nodeDefinitions,workspaceId,className,scopeKey}
   const [authorizedNodes,setAuthorizedNodes]=useState<FodNodeDefinition[]>([]);
   const [remoteAppFilter,setRemoteAppFilter]=useState('');
   const [remoteWorkspaceFilter,setRemoteWorkspaceFilter]=useState('');
+  const [remoteCategoryFilter,setRemoteCategoryFilter]=useState('');
   const permissionEpoch=useRef(0);
   const runningAbort=useRef<AbortController|null>(null);
 
@@ -219,6 +224,7 @@ function WorkspaceFlows({runtime,nodeDefinitions,workspaceId,className,scopeKey}
   };
   const run=async()=>{
     if(!flow)return;
+    const isRemoteExecution=flow.nodes.some(isRemoteGraphNode);
     const epoch=permissionEpoch.current;
     const abort=new AbortController();
     runningAbort.current=abort;
@@ -226,35 +232,40 @@ function WorkspaceFlows({runtime,nodeDefinitions,workspaceId,className,scopeKey}
     try{
       // Preserve saved graph even after a grant, version, or deployment expires.
       await save();
-      if(abort.signal.aborted || epoch!==permissionEpoch.current) throw new Error('Authorization changed; retry');
+      if(abort.signal.aborted || epoch!==permissionEpoch.current) throw new FodLocalValidationError('Authorization changed; retry');
       const remoteNodes=flow.nodes.filter(isRemoteGraphNode);
       let result:Awaited<ReturnType<FodRuntimeLike['executeFlow']>>;
       if(remoteNodes.length){
         if(!scopeKey || !runtime.listAuthorizedNodeDefinitions || !runtime.executeAuthorizedRemoteFlow)
-          throw new Error('Remote execution unavailable: authenticated Kloks BackendFacade required');
+          throw new FodLocalValidationError('Remote execution unavailable: authenticated Kloks BackendFacade required');
         const fresh=await runtime.listAuthorizedNodeDefinitions(workspaceId);
-        if(abort.signal.aborted || epoch!==permissionEpoch.current) throw new Error('Authorization changed; retry');
+        if(abort.signal.aborted || epoch!==permissionEpoch.current) throw new FodLocalValidationError('Authorization changed; retry');
         const scoped=filterRemoteDefinitions(fresh,nodeDefinitions.map(definition=>definition.type));
         const check=validateRemoteGraph(flow.nodes,scoped);
-        if(!check.ok) throw new Error(check.message ?? 'Remote operation denied');
+        if(!check.ok) throw new FodLocalValidationError(check.message ?? 'Remote operation denied');
         const wiring=validateRemoteConnections(flow.nodes,flow.edges,[...nodeDefinitions,...scoped]);
-        if(!wiring.ok) throw new Error(wiring.message ?? 'Remote graph connections denied');
+        if(!wiring.ok) throw new FodLocalValidationError(wiring.message ?? 'Remote graph connections denied');
         // Kloks must load the just-saved source workflow by flowId/workspaceId,
         // use its typed edges for fan-out and reauthorize every remote target.
         if(check.requiresWindowConsent){
           if(!runtime.authorizeActiveFrontendWindow ||
             !await runtime.authorizeActiveFrontendWindow({sourceWorkspaceId:workspaceId,handles:check.handles},{signal:abort.signal}))
-              throw new Error('Active frontend window consent required');
+              throw new FodLocalValidationError('Active frontend window consent required');
         }
-        if(abort.signal.aborted || epoch!==permissionEpoch.current) throw new Error('Authorization changed; retry');
+        if(abort.signal.aborted || epoch!==permissionEpoch.current) throw new FodLocalValidationError('Authorization changed; retry');
         result=await runtime.executeAuthorizedRemoteFlow(
           {flowId:flow.id,sourceWorkspaceId:workspaceId,handles:check.handles},{signal:abort.signal});
       }else{
         result=await runtime.executeFlow(flow.id);
       }
-      if(abort.signal.aborted || epoch!==permissionEpoch.current) throw new Error('Authorization changed; retry');
-      setMessage(result.success?'Execution completed':result.errors?.[0]?.message ?? 'Execution failed');
-    }catch(error){setMessage(String(error));}
+      if(abort.signal.aborted || epoch!==permissionEpoch.current) throw new FodLocalValidationError('Authorization changed; retry');
+      setMessage(result.success?'Execution completed':isRemoteExecution
+         ? remoteExecutionFeedback(result.errors?.[0]).message
+         : result.errors?.[0]?.message ?? 'Execution failed');
+    }catch(error){
+      setMessage(error instanceof FodLocalValidationError ? error.message
+        : isRemoteExecution ? remoteExecutionFeedback(error).message : String(error));
+    }
     finally{if(runningAbort.current===abort)runningAbort.current=null;setRunning(false);}
   };
 
@@ -277,20 +288,28 @@ function WorkspaceFlows({runtime,nodeDefinitions,workspaceId,className,scopeKey}
     .map(node=>String(node.metadata?.targetWorkspaceId ?? '')))].filter(Boolean).sort(),[authorizedNodes,remoteAppFilter]);
   const selectedApp=remoteApps.includes(remoteAppFilter) ? remoteAppFilter : '';
   const selectedWorkspace=remoteWorkspaces.includes(remoteWorkspaceFilter) ? remoteWorkspaceFilter : '';
+  const remoteCategories=useMemo(
+    ()=>authorizedRemoteCategories(authorizedNodes,{appId:selectedApp,workspaceId:selectedWorkspace}),
+    [authorizedNodes,selectedApp,selectedWorkspace]);
+  const selectedCategory=remoteCategories.includes(remoteCategoryFilter) ? remoteCategoryFilter : '';
+  const pickerNodes=useMemo(
+    ()=>filteredCapabilityPicker(nodeDefinitions,authorizedNodes,{
+      appId:selectedApp,workspaceId:selectedWorkspace,category:selectedCategory}),
+    [nodeDefinitions,authorizedNodes,selectedApp,selectedWorkspace,selectedCategory]);
   const grouped=useMemo(()=>{
     const groups=new Map<string,FodNodeDefinition[]>();
-    for(const node of visibleNodeDefinitions){
+    for(const node of pickerNodes){
       const appId=node.metadata?.appId;
       const targetWorkspaceId=node.metadata?.targetWorkspaceId;
       if(typeof appId==='string' && (selectedApp && appId!==selectedApp ||
           selectedWorkspace && targetWorkspaceId!==selectedWorkspace)) continue;
       const group=(typeof appId==='string' && appId.trim())
-        ? `App ${appId} / workspace ${targetWorkspaceId} / ${node.group} / ${node.category}` : node.group;
+        ? `App ${appId} / workspace ${targetWorkspaceId} / ${node.group} / ${remoteCapabilityCategory(node)}` : node.group;
       const current=groups.get(group) ?? [];
       current.push(node);groups.set(group,current);
     }
     return [...groups.entries()].sort(([a],[b])=>a.localeCompare(b));
-  },[visibleNodeDefinitions,selectedApp,selectedWorkspace]);
+  },[pickerNodes]);
 
   return <div className={className} style={{display:'grid',gridTemplateColumns:'220px 1fr',gridTemplateRows:'44px 1fr',height:'100%',minHeight:500}}>
     <div style={{gridColumn:'1 / -1',display:'flex',alignItems:'center',gap:8,padding:'6px 10px',borderBottom:'1px solid var(--skipo-border,#333)',background:'var(--skipo-matte-bg,#111)'}}>
@@ -308,6 +327,11 @@ function WorkspaceFlows({runtime,nodeDefinitions,workspaceId,className,scopeKey}
       <label style={{display:'block',fontSize:12}}>Target workspace
         <select aria-label='Target workspace' value={selectedWorkspace} onChange={event=>setRemoteWorkspaceFilter(event.target.value)}>
           <option value=''>All authorized workspaces</option>{remoteWorkspaces.map(workspace=><option key={workspace} value={workspace}>{workspace}</option>)}
+        </select>
+      </label>
+      <label style={{display:'block',fontSize:12}}>Remote capability category
+        <select aria-label='Remote capability category' value={selectedCategory} onChange={event=>setRemoteCategoryFilter(event.target.value)}>
+          <option value=''>All authorized categories</option>{remoteCategories.map(category=><option key={category} value={category}>{category}</option>)}
         </select>
       </label>
       {grouped.map(([group,nodes])=><section key={group}><h4 style={{margin:'8px 0'}}>{group}</h4>{nodes.map(node=><button key={node.type} type='button' style={{display:'block',width:'100%',textAlign:'left',marginBottom:4}} onClick={()=>{
