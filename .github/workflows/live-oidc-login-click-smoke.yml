@@ -1,44 +1,61 @@
-name: Verify live Aiko SRKL login click
+name: Verify live Google chooser and email login routes
 on:
   pull_request:
     paths: ['.github/workflows/live-oidc-login-click-smoke.yml']
 jobs:
   browser-login:
     runs-on: ubuntu-24.04
-    timeout-minutes: 10
+    timeout-minutes: 12
     steps:
-      - name: Install isolated headless browser
+      - name: Install headless Chromium
         run: |
           npm install --prefix /tmp/oidc-smoke --no-audit --no-fund --no-save playwright@1.56.1
           /tmp/oidc-smoke/node_modules/.bin/playwright install --with-deps chromium
-      - name: Test Google login UI remains clickable on live workers
+      - name: Verify Google account selection and app-specific email UI
         shell: bash
         run: |
           node <<'NODE'
           const { chromium } = require('/tmp/oidc-smoke/node_modules/playwright');
           const assert = require('node:assert/strict');
+          const luth = 'luth.blueprint-ninjastudios.workers.dev';
           (async () => {
-            const browser = await chromium.launch({ headless: true });
+            const browser = await chromium.launch({headless:true});
             try {
-              for (const base of [
-                'https://aiko.todadjp.workers.dev',
-                'https://srkl-engine.todadjp.workers.dev',
+              for (const [base, label] of [
+                ['https://aiko.todadjp.workers.dev', 'AIKO'],
+                ['https://srkl-engine.todadjp.workers.dev', 'SRKL ENGINE'],
               ]) {
-                const page = await browser.newPage();
-                await page.goto(base, { waitUntil: 'domcontentloaded', timeout: 45000 });
-                const link = page.getByRole('link', { name: 'CONTINUE WITH GOOGLE' });
-                await link.waitFor({ state: 'visible', timeout: 30000 });
-                assert.equal(await link.getAttribute('href'), '/api/auth/oidc/start');
-                await link.click({ timeout: 20000 });
-                await page.waitForURL(url => url.origin !== new URL(base).origin, { timeout: 30000 });
-                console.log('LIVE_LOGIN_GOOGLE_CLICK_PASS', new URL(base).hostname);
-                await page.close();
+                const google = await browser.newPage();
+                await google.goto(base, { waitUntil:'domcontentloaded', timeout:45000 });
+                const googleLink=google.getByRole('link', { name:'CONTINUE WITH GOOGLE' });
+                await googleLink.waitFor({state:'visible',timeout:25000});
+                assert.equal(await googleLink.getAttribute('href'), '/api/auth/oidc/start?method=google');
+                const googleIntent=google.waitForResponse(r=>r.url().includes(luth+'/api/login-intent/verified'), {timeout:60000});
+                await googleLink.click({timeout:15000});
+                const googleResponse=await googleIntent;
+                assert.equal(googleResponse.status(),200,'Verified Google login intent');
+                const googleData=await googleResponse.json();
+                assert.equal(googleData.method,'google');
+                await google.waitForURL(url=>url.hostname==='accounts.google.com', {timeout:60000});
+                console.log('GOOGLE_ACCOUNT_SELECTOR_PASS',new URL(base).hostname);
+                await google.close();
+
+                const email = await browser.newPage();
+                await email.goto(base, {waitUntil:'domcontentloaded',timeout:45000});
+                const emailLink=email.getByRole('link', {name:'CONTINUE WITH EMAIL'});
+                await emailLink.waitFor({state:'visible',timeout:25000});
+                assert.equal(await emailLink.getAttribute('href'),'/api/auth/oidc/start?method=email');
+                const emailIntent=email.waitForResponse(r=>r.url().includes(luth+'/api/login-intent/verified'), {timeout:60000});
+                await emailLink.click({timeout:15000});
+                const emailResponse=await emailIntent;
+                assert.equal(emailResponse.status(),200,'Verified email login intent');
+                const emailData=await emailResponse.json();
+                assert.equal(emailData.method,'email');
+                await email.getByText('Continue securely to your application').waitFor({state:'visible',timeout:30000});
+                assert((await email.locator('body').innerText()).includes(label),'Origin application branding');
+                console.log('EMAIL_APP_BRANDED_LOGIN_PASS',new URL(base).hostname);
+                await email.close();
               }
-            } finally {
-              await browser.close();
-            }
-          })().catch(error => {
-            console.error('LIVE_LOGIN_GOOGLE_CLICK_FAILED', error.message);
-            process.exitCode = 1;
-          });
+            }finally{await browser.close();}
+          })().catch(e=>{console.error('CANONICAL_LOGIN_E2E_FAILURE',e.message);process.exitCode=1;});
           NODE
