@@ -1,22 +1,32 @@
-name: Verify Floks 2.0.12 registry integrity
+name: Verify published canonical auth npm integrity
 on:
   pull_request:
     paths: ['.github/workflows/verify-floks-registry-integrity.yml']
 jobs:
   registry-metadata:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 7
     steps:
-      - name: Verify npm metadata for 2.0.12 with bounded retries
+      - name: Inspect exact public registry hashes for canonical auth packages
         shell: bash
         run: |
           set -euo pipefail
-          for i in {1..20}; do
-            if npm view @ultrst-armada/floks@2.0.12 dist.integrity dist.tarball --json > /tmp/registry.json 2>/dev/null; then
-              cat /tmp/registry.json
-              exit 0
-            fi
-            sleep 10
+          for package in '@ultrst-armada/floks@2.0.14' '@ultrst-armada/kloks@3.0.6'; do
+            found=0
+            for i in {1..30}; do
+              if npm view "$package" dist.integrity dist.tarball version --json > /tmp/registry.json 2>/dev/null; then
+                if node - /tmp/registry.json <<'NODE'
+          const fs = require('node:fs');
+          const m = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
+          if (!m['dist.integrity']?.startsWith('sha512-') ||
+              new URL(m['dist.tarball']).hostname !== 'registry.npmjs.org') process.exit(1);
+          console.log('AUTH_REGISTRY_VERSION=' + m.version);
+          console.log('AUTH_REGISTRY_SRI=' + m['dist.integrity']);
+          console.log('AUTH_REGISTRY_TARBALL=' + m['dist.tarball']);
+          NODE
+                then found=1; break; fi
+              fi
+              sleep 5
+            done
+            if [[ "$found" != 1 ]]; then echo "AUTH_REGISTRY_UNAVAILABLE=$package"; exit 1; fi
           done
-          echo "Floks 2.0.12 not in public registry" >&2
-          exit 1
