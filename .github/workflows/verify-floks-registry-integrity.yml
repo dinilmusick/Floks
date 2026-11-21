@@ -1,0 +1,22 @@
+name: Verify Floks 2.0.12 registry integrity
+on:
+  pull_request:
+    paths: ['.github/workflows/verify-floks-registry-integrity.yml']
+jobs:
+  registry-metadata:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Verify npm metadata for 2.0.12 with bounded retries
+        shell: bash
+        run: |
+          set -euo pipefail
+          for i in {1..20}; do
+            if npm view @ultrst-armada/floks@2.0.12 dist.integrity dist.tarball --json > /tmp/registry.json 2>/dev/null; then
+              cat /tmp/registry.json
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "Floks 2.0.12 not in public registry" >&2
+          exit 1
