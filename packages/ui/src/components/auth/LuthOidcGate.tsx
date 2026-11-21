@@ -156,7 +156,7 @@ export function LuthOidcGate({
           )}
           <GoogleSignInButton
             label="CONTINUE WITH GOOGLE"
-            onSignIn={() => auth.signIn()}
+            href="/api/auth/oidc/start"
             className="mb-3"
           />
           <div className="flex items-center gap-2 mb-3 text-[9px] text-[var(--skipo-text-muted,#94a3b8)]">
@@ -164,13 +164,12 @@ export function LuthOidcGate({
             OR
             <span className="h-px flex-1 bg-[var(--skipo-border-color,#252d3d)]" />
           </div>
-          <button
-            type="button"
-            onClick={() => auth.signIn()}
-            className="w-full py-3 px-4 text-xs font-black uppercase tracking-wide border-2 border-[var(--skipo-accent,#6366f1)] bg-[var(--skipo-accent,#6366f1)] text-[var(--skipo-accent-fg,#000000)] hover:brightness-110 transition-all cursor-pointer"
+          <a
+            href="/api/auth/oidc/start"
+            className="block text-center w-full py-3 px-4 text-xs font-black uppercase tracking-wide border-2 border-[var(--skipo-accent,#6366f1)] bg-[var(--skipo-accent,#6366f1)] text-[var(--skipo-accent-fg,#000000)] hover:brightness-110 transition-all cursor-pointer"
           >
             CONTINUE WITH EMAIL
-          </button>
+          </a>
           <p className="mt-3 text-[10px] leading-relaxed text-[var(--skipo-text-muted,#94a3b8)]">
             Google, email sign-in and account registration are handled on the secure Luth identity page.
             This application never asks for, stores, or transmits your password.
