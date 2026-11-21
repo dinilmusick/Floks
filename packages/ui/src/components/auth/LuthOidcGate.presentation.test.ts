@@ -9,7 +9,7 @@ describe('polished canonical OAuth login gate', () => {
     expect(gate).toContain('createApplicationAuthClient()');
     expect(gate).toContain('client.getSession()');
     expect(gate).toContain('signIn: (returnTo?: string) => client.startSignIn(returnTo)');
-    expect(gate).toContain('href="/api/auth/oidc/start"');
+    expect(gate).toContain('href="/api/auth/oidc/start?method=google"');
     expect(gate).toContain('onAuthenticatedRef.current?.(auth.user)');
     expect(gate).toContain('onContinueAsGuest');
   });
@@ -20,6 +20,7 @@ describe('polished canonical OAuth login gate', () => {
     expect(gate).toContain('SIGN IN TO WORKSPACE');
     expect(gate).toContain('CONTINUE WITH GOOGLE');
     expect(gate).toContain('CONTINUE WITH EMAIL');
+    expect(gate).toContain('href="/api/auth/oidc/start?method=email"');
     expect(gate).toContain('CREATE ACCOUNT');
     expect(gate).toContain('<GoogleSignInButton');
     expect(gate).toContain('{appName} WORKSPACE SYSTEM');
@@ -36,7 +37,7 @@ describe('polished canonical OAuth login gate', () => {
     expect(gate).not.toContain('No authenticated workspace access');
     expect(gate).toContain('CONTINUE WITH EMAIL');
     expect(gate).not.toContain('RETRY SESSION');
-    expect(gate).toContain('href="/api/auth/oidc/start"');
+    expect(gate).toContain('href="/api/auth/oidc/start?method=google"');
     expect(gate).not.toContain('onClick={() => auth.signIn()}');
     expect(gate).not.toContain('<input type="password"');
     expect(gate).not.toContain('localStorage');
