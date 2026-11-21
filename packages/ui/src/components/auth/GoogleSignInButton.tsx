@@ -1,7 +1,9 @@
 import React from 'react';
 
 export interface GoogleSignInButtonProps {
-  onSignIn: () => Promise<void> | void;
+  onSignIn?: () => Promise<void> | void;
+  /** Same-origin OAuth navigation works even when session verification fails. */
+  href?: string;
   disabled?: boolean;
   loading?: boolean;
   label?: string;
@@ -31,14 +33,30 @@ export const GoogleIcon: React.FC<{ size?: number; className?: string }> = ({ si
 
 export const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({
   onSignIn,
+  href,
   disabled = false,
   loading = false,
   label = 'CONTINUE WITH GOOGLE',
   className = '',
-}) => (
+}) => href ? (
+  <a
+    href={href}
+    aria-label={label}
+    aria-disabled={disabled || loading}
+    onClick={disabled || loading ? (event) => event.preventDefault() : undefined}
+    className={`w-full py-2.5 text-[10px] font-black border-2 border-[var(--skipo-border-color)] bg-[var(--skipo-bg)] hover:bg-[var(--skipo-surface-hover,var(--skipo-surface))] text-[var(--skipo-text)] flex items-center justify-center gap-2.5 transition-colors cursor-pointer select-none ${disabled || loading ? 'opacity-50 pointer-events-none' : ''} ${className}`}
+  >
+    {loading ? (
+      <span className="inline-block w-3.5 h-3.5 border-2 border-[var(--skipo-accent)] border-t-transparent rounded-full animate-spin" />
+    ) : (
+      <GoogleIcon size={14} />
+    )}
+    <span>{loading ? 'CONNECTING GOOGLE...' : label}</span>
+  </a>
+) : (
   <button
     type="button"
-    onClick={() => void onSignIn()}
+    onClick={() => void onSignIn?.()}
     disabled={disabled || loading}
     className={`w-full py-2.5 text-[10px] font-black border-2 border-[var(--skipo-border-color)] bg-[var(--skipo-bg)] hover:bg-[var(--skipo-surface-hover,var(--skipo-surface))] text-[var(--skipo-text)] flex items-center justify-center gap-2.5 transition-colors cursor-pointer select-none disabled:opacity-50 ${className}`}
     aria-label={label}

@@ -1,0 +1,48 @@
+name: Owner-approved exact-head Floks npm release request
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  contents: read
+  actions: write
+  issues: read
+
+jobs:
+  request:
+    if: >-
+      github.event.issue.user.id == 155351357 &&
+      github.event.issue.title == '[floks-npm-release] publish'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Verify exact owner-approved current main commit and release metadata
+        shell: bash
+        env:
+          REQUEST_SHA: ${{ github.event.issue.body }}
+          EXPECTED_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          [[ "$REQUEST_SHA" =~ ^[0-9a-f]{40}$ ]] || exit 1
+          test "$EXPECTED_SHA" = "$REQUEST_SHA"
+          test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const p = JSON.parse(fs.readFileSync('package.json','utf8'));
+          if (p.private || p.name !== '@ultrst-armada/floks' || !/^\d+\.\d+\.\d+$/.test(p.version))
+            throw new Error('Release metadata invalid');
+          console.log('Exact Floks release source validated', p.version);
+          NODE
+      - name: Trigger pre-existing main-only OIDC trusted npm publisher
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          latest="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq '.object.sha')"
+          test "$latest" = "$GITHUB_SHA"
+          gh api -X POST "repos/$GITHUB_REPOSITORY/actions/workflows/npm-release.yml/dispatches" -f ref=main -F 'inputs[publish]=true'
+          echo 'Dispatched npm release; publication requires downstream success.' >> "$GITHUB_STEP_SUMMARY"
