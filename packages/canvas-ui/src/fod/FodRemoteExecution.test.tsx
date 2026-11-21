@@ -137,3 +137,50 @@ it('filters target workspace without leaking operations from another target',asy
   expect(screen.queryByRole('button',{name:'skipo-one calculate'})).toBeNull();
   expect(screen.getByRole('button',{name:'skipo-two calculate'})).toBeTruthy();
 });
+
+it('filters authenticated remote category surface without changing execution',async()=>{
+  const backend=descriptor('skipo-one');
+  const workflow={...descriptor('skipo-one'),type:'remote.skipo-one.workflow',label:'skipo-one workflow',
+    category:'agent.workflow',metadata:{...descriptor('skipo-one').metadata,surface:'agent.workflow'}};
+  const mock=mockRuntime(async()=>[backend,workflow]);
+  render(<FodModule workspaceId='source-workspace' scopeKey='authorized' runtime={mock.runtime} nodeDefinitions={[]}/>);
+  await screen.findByRole('button',{name:'skipo-one workflow'});
+  fireEvent.change(screen.getByRole('combobox',{name:'Remote capability category'}),{target:{value:'raw.backend'}});
+  expect(screen.getByRole('button',{name:'skipo-one calculate'})).toBeTruthy();
+  expect(screen.queryByRole('button',{name:'skipo-one workflow'})).toBeNull();
+  fireEvent.change(screen.getByRole('combobox',{name:'Remote capability category'}),{target:{value:'agent.workflow'}});
+  expect(screen.getByRole('button',{name:'skipo-one workflow'})).toBeTruthy();
+  expect(screen.queryByRole('button',{name:'skipo-one calculate'})).toBeNull();
+});
+it('presents timeout without leaking backend errors or retrying on another transport',async()=>{
+  const mock=mockRuntime(async()=>[descriptor('skipo-one')]);
+  const call=vi.fn(async()=>{throw Object.assign(new Error('Bearer secret-session'),{code:'TIMEOUT'});});
+  mock.runtime.executeAuthorizedRemoteFlow=call;
+  render(<FodModule workspaceId='source-workspace' scopeKey='authorized' runtime={mock.runtime} nodeDefinitions={[]}/>);
+  await screen.findByRole('button',{name:'skipo-one calculate'});
+  fireEvent.click(screen.getByRole('button',{name:'New flow'}));
+  fireEvent.click(screen.getByRole('button',{name:'skipo-one calculate'}));
+  fireEvent.click(screen.getByRole('button',{name:'Run'}));
+  await screen.findByText(/timed out; completion may be unknown/);
+  expect(screen.queryByText(/secret-session/)).toBeNull();
+  expect(call).toHaveBeenCalledTimes(1);
+  expect(mock.runtime.executeFlow).not.toHaveBeenCalled();
+});
+it('renders 403 denial and exhausted fallback without another implicit dispatch',async()=>{
+  const mock=mockRuntime(async()=>[descriptor('skipo-one')]);
+  const call=vi.fn()
+    .mockResolvedValueOnce({success:false,output:null,errors:[{status:403,message:'secret'}]})
+    .mockResolvedValueOnce({success:false,output:null,errors:[{code:'FALLBACK_EXHAUSTED',message:'secret'}]});
+  mock.runtime.executeAuthorizedRemoteFlow=call;
+  render(<FodModule workspaceId='source-workspace' scopeKey='authorized' runtime={mock.runtime} nodeDefinitions={[]}/>);
+  await screen.findByRole('button',{name:'skipo-one calculate'});
+  fireEvent.click(screen.getByRole('button',{name:'New flow'}));
+  fireEvent.click(screen.getByRole('button',{name:'skipo-one calculate'}));
+  fireEvent.click(screen.getByRole('button',{name:'Run'}));
+  await screen.findByText(/Operation denied by the target/);
+  expect(call).toHaveBeenCalledTimes(1);
+  fireEvent.click(screen.getByRole('button',{name:'Run'}));
+  await screen.findByText(/fallback exhausted/);
+  expect(call).toHaveBeenCalledTimes(2);
+  expect(mock.runtime.executeFlow).not.toHaveBeenCalled();
+});
