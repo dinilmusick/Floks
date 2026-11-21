@@ -1,0 +1,44 @@
+name: Verify live Aiko SRKL login click
+on:
+  pull_request:
+    paths: ['.github/workflows/live-oidc-login-click-smoke.yml']
+jobs:
+  browser-login:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Install isolated headless browser
+        run: |
+          npm install --prefix /tmp/oidc-smoke --no-audit --no-fund --no-save playwright@1.56.1
+          /tmp/oidc-smoke/node_modules/.bin/playwright install --with-deps chromium
+      - name: Test Google login UI remains clickable on live workers
+        shell: bash
+        run: |
+          node <<'NODE'
+          const { chromium } = require('/tmp/oidc-smoke/node_modules/playwright');
+          const assert = require('node:assert/strict');
+          (async () => {
+            const browser = await chromium.launch({ headless: true });
+            try {
+              for (const base of [
+                'https://aiko.todadjp.workers.dev',
+                'https://srkl-engine.todadjp.workers.dev',
+              ]) {
+                const page = await browser.newPage();
+                await page.goto(base, { waitUntil: 'domcontentloaded', timeout: 45000 });
+                const link = page.getByRole('link', { name: 'CONTINUE WITH GOOGLE' });
+                await link.waitFor({ state: 'visible', timeout: 30000 });
+                assert.equal(await link.getAttribute('href'), '/api/auth/oidc/start');
+                await link.click({ timeout: 20000 });
+                await page.waitForURL(url => url.origin !== new URL(base).origin, { timeout: 30000 });
+                console.log('LIVE_LOGIN_GOOGLE_CLICK_PASS', new URL(base).hostname);
+                await page.close();
+              }
+            } finally {
+              await browser.close();
+            }
+          })().catch(error => {
+            console.error('LIVE_LOGIN_GOOGLE_CLICK_FAILED', error.message);
+            process.exitCode = 1;
+          });
+          NODE
