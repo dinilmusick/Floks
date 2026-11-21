@@ -8,7 +8,8 @@ describe('polished canonical OAuth login gate', () => {
   it('keeps canonical first-party auth and verified callback lifecycle', () => {
     expect(gate).toContain('createApplicationAuthClient()');
     expect(gate).toContain('client.getSession()');
-    expect(gate).toContain('auth.signIn()');
+    expect(gate).toContain('signIn: (returnTo?: string) => client.startSignIn(returnTo)');
+    expect(gate).toContain('href="/api/auth/oidc/start"');
     expect(gate).toContain('onAuthenticatedRef.current?.(auth.user)');
     expect(gate).toContain('onContinueAsGuest');
   });
@@ -33,6 +34,8 @@ describe('polished canonical OAuth login gate', () => {
     expect(gate).toContain('Session verification is unavailable');
     expect(gate).toContain('No authenticated workspace access');
     expect(gate).toContain('CONTINUE WITH EMAIL');
+    expect(gate).toContain('href="/api/auth/oidc/start"');
+    expect(gate).not.toContain('onClick={() => auth.signIn()}');
     expect(gate).not.toContain('<input type="password"');
     expect(gate).not.toContain('localStorage');
   });
