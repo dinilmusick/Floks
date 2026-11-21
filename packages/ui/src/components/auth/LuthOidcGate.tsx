@@ -116,7 +116,9 @@ export function LuthOidcGate({
       onAuthenticatedRef.current?.(auth.user);
     }
   }, [auth.session.authenticated, auth.user]);
-  if (auth.initializing || auth.loading) {
+  // Do not hold an unauthenticated sign-in screen behind a network session check.
+  // Authenticated content remains gated by a positively verified app session.
+  if (auth.session.authenticated && (auth.initializing || auth.loading)) {
     return <>{loadingContent ?? <AuthLoadingScreen label="VERIFYING SESSION..." />}</>;
   }
   if (auth.session.authenticated && auth.user) {
@@ -148,12 +150,6 @@ export function LuthOidcGate({
           <p className="mt-2 mb-5 text-xs text-[var(--skipo-text-muted,#94a3b8)]">
             Access your workspace with your existing account or create one.
           </p>
-          {auth.error && (
-            <div role="alert" className="mb-4 border-2 border-red-500/80 bg-red-950/30 p-3 text-xs text-red-300 space-y-2">
-              <p>Session verification is unavailable. No authenticated workspace access will be granted until the service recovers.</p>
-              <p>{auth.error}</p>
-            </div>
-          )}
           <GoogleSignInButton
             label="CONTINUE WITH GOOGLE"
             href="/api/auth/oidc/start"
@@ -174,15 +170,6 @@ export function LuthOidcGate({
             Google, email sign-in and account registration are handled on the secure Luth identity page.
             This application never asks for, stores, or transmits your password.
           </p>
-          {auth.error && (
-            <button
-              type="button"
-              onClick={() => { void auth.refresh().catch(() => undefined); }}
-              className="mt-3 w-full border-2 border-[var(--skipo-border-color,#252d3d)] px-4 py-2 text-xs font-black uppercase"
-            >
-              RETRY SESSION
-            </button>
-          )}
           {onContinueAsGuest && (
             <>
               <div aria-hidden="true" className="my-4 flex items-center gap-2 text-[9px] text-[var(--skipo-text-muted,#94a3b8)]">
