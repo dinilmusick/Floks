@@ -152,7 +152,7 @@ export function LuthOidcGate({
           </p>
           <GoogleSignInButton
             label="CONTINUE WITH GOOGLE"
-            href="/api/auth/oidc/start"
+            href="/api/auth/oidc/start?method=google"
             className="mb-3"
           />
           <div className="flex items-center gap-2 mb-3 text-[9px] text-[var(--skipo-text-muted,#94a3b8)]">
@@ -161,7 +161,7 @@ export function LuthOidcGate({
             <span className="h-px flex-1 bg-[var(--skipo-border-color,#252d3d)]" />
           </div>
           <a
-            href="/api/auth/oidc/start"
+            href="/api/auth/oidc/start?method=email"
             className="block text-center w-full py-3 px-4 text-xs font-black uppercase tracking-wide border-2 border-[var(--skipo-accent,#6366f1)] bg-[var(--skipo-accent,#6366f1)] text-[var(--skipo-accent-fg,#000000)] hover:brightness-110 transition-all cursor-pointer"
           >
             CONTINUE WITH EMAIL
