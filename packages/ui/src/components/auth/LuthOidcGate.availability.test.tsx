@@ -26,7 +26,9 @@ describe('LuthOidcGate public sign-in availability', () => {
     render(<LuthOidcGate appName="Sample" authenticatedContent={<main>Protected workspace</main>} />);
 
     const google = screen.getByRole('link', { name: 'CONTINUE WITH GOOGLE' });
-    expect(google.getAttribute('href')).toBe('/api/auth/oidc/start');
+    expect(google.getAttribute('href')).toBe('/api/auth/oidc/start?method=google');
+    expect(screen.getByRole('link', { name: 'CONTINUE WITH EMAIL' }).getAttribute('href'))
+      .toBe('/api/auth/oidc/start?method=email');
     expect(screen.queryByText('Protected workspace')).toBeNull();
 
     await act(async () => { resolveSession({ authenticated: false }); });
