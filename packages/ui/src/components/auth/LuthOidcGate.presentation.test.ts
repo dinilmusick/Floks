@@ -21,14 +21,16 @@ describe('polished canonical OAuth login gate', () => {
     expect(gate).toContain('CONTINUE WITH GOOGLE');
     expect(gate).toContain('CONTINUE WITH EMAIL');
     expect(gate).toContain('href="/api/auth/oidc/start?method=email"');
-    expect(gate).toContain('CREATE ACCOUNT');
     expect(gate).toContain('<GoogleSignInButton');
-    expect(gate).toContain('{appName} WORKSPACE SYSTEM');
   });
 
   it('contains no user-facing provider attribution or obsolete sign-in button', () => {
     expect(gate).not.toContain('Sign in securely through Luth');
     expect(gate).not.toContain('Continue with Luth');
+    expect(gate).not.toContain('handled on the secure Luth identity page');
+    expect(gate).not.toContain('This application never asks for');
+    expect(gate).not.toContain('Access your workspace with your existing account');
+    expect(gate).not.toContain('WORKSPACE SYSTEM');
     expect(gate).not.toContain('VERIFYING LUTH SESSION');
     expect(gate).toContain('VERIFYING SESSION...');
     expect(gate).toContain('auth.session.authenticated && (auth.initializing || auth.loading)');
