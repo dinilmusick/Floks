@@ -90,3 +90,4 @@ jobs:
             process.exitCode=1;
           }finally{await browser.close();}
           NODE
+# Production verification of exact deployed Aiko/SRKL single-session-gate commits 20261122
