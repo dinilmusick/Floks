@@ -621,12 +621,21 @@ export function WorkspaceCreateDialog({
 
   useEffect(() => {
     if (!open) return;
+    // A completed OAuth callback has priority over the generic default/fallback.
+    // Otherwise the pending render can overwrite the restored account.
+    const restored = googleDriveConnectionId && availableOptions.find((option) =>
+      option.id === googleDriveConnectionId && option.provider === 'google_drive',
+    );
+    if (restored) {
+      if (selectedStorageId !== restored.id) setSelectedStorageId(restored.id);
+      return;
+    }
     const selectedStillExists = backblazeMode || availableOptions.some((option) => option.id === selectedStorageId);
     if (!selectedStillExists) {
       const primary = availableOptions.find((option) => option.role === 'primary');
       setSelectedStorageId(primary?.id || availableOptions[0]?.id || '');
     }
-  }, [open, availableOptions, selectedStorageId, backblazeMode]);
+  }, [open, availableOptions, selectedStorageId, backblazeMode, googleDriveConnectionId]);
 
   if (!open) return null;
 
