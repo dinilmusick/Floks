@@ -69,3 +69,4 @@ jobs:
           const google=await inspect('/api/auth/oidc/start?method=google');
           if(![303,500,503].includes(google?.response.status))process.exitCode=1;
           NODE
+# Production authentication endpoint verification after exact main deployments 20261122
