@@ -18,6 +18,13 @@ describe('Floks shared authentication UI contract', () => {
     expect(source).toMatch(/if \(!result\.success\) throw new Error/);
   });
 
+  it('keeps the hosted email form concise and allows a blank footer', () => {
+    expect(source).not.toContain("'SIGN IN TO WORKSPACE'");
+    expect(source).not.toMatch(/>\\s*OR\\s*</);
+    expect(source).toContain('footerText === undefined || footerText.length > 0');
+    expect(source).toContain('onGoogleSignIn && enableGoogleSignIn');
+  });
+
   it('keeps Google loading and error state independent from email form state', () => {
     expect(source).toMatch(/const \[googleLoading, setGoogleLoading\]/);
     expect(source).toMatch(/setGoogleLoading\(true\)/);
