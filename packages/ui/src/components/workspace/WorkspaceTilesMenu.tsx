@@ -78,15 +78,20 @@ export function WorkspaceTilesMenu({
   const componentId = `workspaceTilesMenu.${generated}`;
   const [creating, setCreating] = useState(false);
   const [googleDriveConnectionId, setGoogleDriveConnectionId] = useState<string | undefined>();
+  const [googleDriveErrorCode, setGoogleDriveErrorCode] = useState<string | undefined>();
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const url = new URL(window.location.href);
     const connected = url.searchParams.get('googleDriveConnected') === '1';
     const failed = url.searchParams.get('googleDriveError') === '1';
     const connectionId = url.searchParams.get('googleDriveConnectionId') || undefined;
+    const rawErrorCode = url.searchParams.get('googleDriveErrorCode');
+    const errorCode = rawErrorCode && /^[A-Za-z0-9_:-]{1,80}$/.test(rawErrorCode)
+      ? rawErrorCode : 'GOOGLE_DRIVE_AUTH_FAILED';
     if (connected || failed) {
       setCreating(true);
-      setGoogleDriveConnectionId(connectionId);
+      setGoogleDriveConnectionId(connected ? connectionId : undefined);
+      setGoogleDriveErrorCode(failed ? errorCode : connected && !connectionId ? 'GOOGLE_DRIVE_MISSING_CONNECTION' : undefined);
       url.searchParams.delete('googleDriveConnected');
       url.searchParams.delete('googleDriveError');
       url.searchParams.delete('googleDriveConnectionId');
@@ -94,6 +99,16 @@ export function WorkspaceTilesMenu({
       window.history.replaceState(window.history.state, '', url.toString());
     }
   }, []);
+
+  // A callback ID must not survive a principal switch or a later dialog session.
+  const [callbackOwner, setCallbackOwner] = useState(effectiveUserId);
+  useEffect(() => {
+    if (callbackOwner === effectiveUserId) return;
+    setCallbackOwner(effectiveUserId);
+    setGoogleDriveConnectionId(undefined);
+    setGoogleDriveErrorCode(undefined);
+    setCreating(false);
+  }, [callbackOwner, effectiveUserId]);
 
   const handlers = useMemo(() => ({
     'workspaceTilesMenu.idle.select': (value: unknown) => onSelectWorkspace(value as WorkspaceRecord),
@@ -132,7 +147,7 @@ export function WorkspaceTilesMenu({
           </>
         )}
       />
-      <WorkspaceCreateDialog open={creating} userId={effectiveUserId} currentUser={currentUser} appName={appName} storageOptions={storageOptions} storageService={storageService} visibility={visibility} googleDriveConnectionId={googleDriveConnectionId} onClose={() => setCreating(false)} onSubmit={onCreateWorkspace} />
+      <WorkspaceCreateDialog open={creating} userId={effectiveUserId} currentUser={currentUser} appName={appName} storageOptions={storageOptions} storageService={storageService} visibility={visibility} googleDriveConnectionId={googleDriveConnectionId} googleDriveErrorCode={googleDriveErrorCode} onClose={() => { setCreating(false); setGoogleDriveConnectionId(undefined); setGoogleDriveErrorCode(undefined); }} onSubmit={onCreateWorkspace} />
     </section>
   );
 }
