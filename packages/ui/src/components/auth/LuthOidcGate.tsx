@@ -142,17 +142,11 @@ export function LuthOidcGate({
           aria-label={`${appName} sign in`}
           className="w-full max-w-md border-2 border-[var(--skipo-border-color,#252d3d)] bg-[var(--skipo-surface,#121722)] shadow-[6px_6px_0px_var(--skipo-border-color,#252d3d)] p-6 my-auto"
         >
-          <h1 className="font-black text-sm tracking-wider uppercase mb-5">SIGN IN TO WORKSPACE</h1>
           <GoogleSignInButton
             label="CONTINUE WITH GOOGLE"
             href="/api/auth/oidc/start?method=google"
             className="mb-3"
           />
-          <div className="flex items-center gap-2 mb-3 text-[9px] text-[var(--skipo-text-muted,#94a3b8)]">
-            <span className="h-px flex-1 bg-[var(--skipo-border-color,#252d3d)]" />
-            OR
-            <span className="h-px flex-1 bg-[var(--skipo-border-color,#252d3d)]" />
-          </div>
           <a
             href="/api/auth/oidc/start?method=email"
             className="block text-center w-full py-3 px-4 text-xs font-black uppercase tracking-wide border-2 border-[var(--skipo-accent,#6366f1)] bg-[var(--skipo-accent,#6366f1)] text-[var(--skipo-accent-fg,#000000)] hover:brightness-110 transition-all cursor-pointer"
@@ -161,15 +155,10 @@ export function LuthOidcGate({
           </a>
           {onContinueAsGuest && (
             <>
-              <div aria-hidden="true" className="my-4 flex items-center gap-2 text-[9px] text-[var(--skipo-text-muted,#94a3b8)]">
-                <span className="h-px flex-1 bg-[var(--skipo-border-color,#252d3d)]" />
-                OR
-                <span className="h-px flex-1 bg-[var(--skipo-border-color,#252d3d)]" />
-              </div>
               <button
                 type="button"
                 onClick={onContinueAsGuest}
-                className="w-full py-2 text-[10px] font-black border-2 border-[var(--skipo-border-color,#252d3d)] text-[var(--skipo-text-muted,#94a3b8)] hover:text-[var(--skipo-text,#f8fafc)] transition-colors cursor-pointer"
+                className="mt-3 w-full py-2 text-[10px] font-black border-2 border-[var(--skipo-border-color,#252d3d)] text-[var(--skipo-text-muted,#94a3b8)] hover:text-[var(--skipo-text,#f8fafc)] transition-colors cursor-pointer"
               >
                 CONTINUE AS GUEST
               </button>
