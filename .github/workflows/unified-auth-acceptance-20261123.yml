@@ -1,0 +1,132 @@
+name: Unified Aiko SRKL Kone production OAuth acceptance
+on:
+  push:
+    paths:
+      - '.github/workflows/unified-auth-acceptance-20261123.yml'
+permissions:
+  contents: read
+jobs:
+  acceptance:
+    if: github.ref == 'refs/heads/ops/live-unified-auth-20261123'
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    strategy:
+      fail-fast: false
+      matrix:
+        app: [aiko, srkl-engine, kone]
+    steps:
+      - uses: actions/setup-node@v4
+        with: {node-version: 24}
+      - name: Verify hosted first-party OAuth route and credential boundary
+        shell: bash
+        env:
+          APP: ${{ matrix.app }}
+        run: |
+          node --input-type=module <<'JS'
+          import assert from 'node:assert/strict';
+          const app = process.env.APP;
+          const base = 'https://' + app + '.todadjp.workers.dev';
+          const report=[];
+          async function check(name,path,init={}) {
+            const url=base+path;
+            const response=await fetch(url,{redirect:'manual',signal:AbortSignal.timeout(16000),...init});
+            let error='';
+            if(response.headers.get('content-type')?.includes('application/json')) {
+              const data=await response.json().catch(()=>null);
+              error=String(data?.error||'');
+            }
+            const result={name,status:response.status,error,
+              flowCookie:Boolean(response.headers.get('set-cookie')?.includes('ultrst_oidc_flow')),
+              oauthRedirect:Boolean(response.headers.get('location')?.includes('/api/auth/oauth2/authorize'))};
+            report.push(result);
+            console.log('BOUNDARY_RESULT',app,JSON.stringify(result));
+            return result;
+          }
+          const root=await check('page','/');
+          assert.equal(root.status,200,'Hosted app root must be healthy');
+          const sess=await check('no-session','/api/auth/oidc/session');
+          assert.equal(sess.status,401,'No anonymous session');
+          const invalid=await check('invalid-email-body','/api/auth/oidc/email/sign-in',{
+            method:'POST',headers:{Origin:base,'Sec-Fetch-Site':'same-origin','Content-Type':'application/json'},
+            body:JSON.stringify({email:'invalid',password:'a'})
+          });
+          assert.equal(invalid.status,400,'Inline email validation');
+          const register=await check('invalid-registration','/api/auth/oidc/email/sign-up',{
+            method:'POST',headers:{Origin:base,'Sec-Fetch-Site':'same-origin','Content-Type':'application/json'},
+            body:JSON.stringify({email:'invalid',password:'a',name:''})
+          });
+          assert.equal(register.status,400,'Inline registration validation');
+          const google=await check('google-initiation','/api/auth/oidc/start?method=google');
+          assert.equal(google.status,303,'Google OAuth initiation redirect');
+          assert.equal(google.flowCookie,true,'Short-lived first-party OAuth flow cookie');
+          assert.equal(google.oauthRedirect,true,'Redirect to issuer authorization endpoint');
+          const cross=await check('cross-origin-denial','/api/auth/oidc/email/sign-in',{
+            method:'POST',headers:{Origin:'https://invalid.invalid','Sec-Fetch-Site':'cross-site','Content-Type':'application/json'},
+            body:JSON.stringify({email:'unknown@example.invalid',password:'SecretForTesting1!'})
+          });
+          assert.equal(cross.status,403,'Cross-site request must fail closed');
+          const unknown=await check('unknown-valid-email','/api/auth/oidc/email/sign-in',{
+            method:'POST',headers:{Origin:base,'Sec-Fetch-Site':'same-origin','Content-Type':'application/json'},
+            body:JSON.stringify({email:'not-an-existing-account-'+Date.now()+'@example.invalid',password:'NotASecret123456!'})
+          });
+          assert.notEqual(unknown.status,500,'Valid format must not throw');
+          assert.ok(unknown.status!==503,'Luth email flow unavailable: investigate production');
+          assert.ok([400,401,403,409,422].includes(unknown.status),'Invalid credentials must fail safely');
+          console.log('BOUNDARY_ACCEPTED',app,report.length);
+          JS
+      - name: Install isolated browser acceptance tester
+        run: |
+          npm install --prefix /tmp/ultrst-browser --no-audit --no-fund playwright@1.64.1
+          /tmp/ultrst-browser/node_modules/.bin/playwright install chromium
+      - name: Verify real login UI, account creation, and pending session isolation
+        shell: bash
+        env:
+          APP: ${{ matrix.app }}
+        run: |
+          node --input-type=module <<'JS'
+          import assert from 'node:assert/strict';
+          import { chromium } from '/tmp/ultrst-browser/node_modules/playwright/index.mjs';
+          const app=process.env.APP;
+          const url='https://'+app+'.todadjp.workers.dev/';
+          const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
+          try {
+            const page=await browser.newPage();
+            const errors=[];page.on('pageerror',e=>errors.push(e.message));
+            const response=await page.goto(url,{waitUntil:'domcontentloaded',timeout:35000});
+            assert.equal(response?.status(),200);
+            await page.locator('input[type="email"]').first().waitFor({timeout:35000});
+            const first={email:await page.locator('input[type="email"]').count(),
+              password:await page.locator('input[type="password"]').count(),
+              google:await page.getByRole('button',{name:/google/i}).count(),
+              create:await page.getByRole('button',{name:/create account|sign up/i}).count()};
+            console.log('BROWSER_LOGIN',app,JSON.stringify(first));
+            assert.ok(first.email&&first.password&&first.google&&first.create,'Floks unified login');
+            await page.getByRole('button',{name:/create account|sign up/i}).first().click();
+            assert.ok(await page.locator('input[type="email"]').count());
+            assert.ok(await page.locator('input[type="password"]').count());
+            assert.ok(await page.getByText(/full name/i).count(),'Inline registration name');
+            assert.equal(errors.length,0,'No browser JavaScript exceptions');
+
+            const pending=await browser.newPage();
+            let count=0;let outstanding=0;let release;
+            const hold=new Promise(resolve=>{release=resolve});
+            await pending.route('**/api/auth/oidc/session',async route=>{
+              count++;outstanding++;await hold;
+              await route.fulfill({status:401,contentType:'application/json',body:'{"authenticated":false}'});
+              outstanding--;
+            });
+            await pending.goto(url,{waitUntil:'domcontentloaded',timeout:35000});
+            for(let i=0;i<28&&count===0;i++)await pending.waitForTimeout(120);
+            const before=await pending.locator('input[type="email"]').count();
+            const info={sessionIntercepted:count,pending:outstanding,
+              loginVisibleBeforeVerification:before>0};
+            console.log('BROWSER_HYDRATION',app,JSON.stringify(info));
+            release();
+            await pending.locator('input[type="email"]').first().waitFor({timeout:35000});
+            assert.ok(count>0,'Canonical session verification must run');
+            assert.ok(info.pending>0,'Held session must still be pending at gate inspection');
+            assert.equal(before,0,'Login cannot flash before session verification');
+            await pending.close();await page.close();
+            console.log('BROWSER_ACCEPTED',app);
+          }finally{await browser.close();}
+          JS
