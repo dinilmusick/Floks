@@ -25,6 +25,23 @@ function options() {
 }
 
 describe('workspace connection lifecycle and isolation', () => {
+  it('never browses Drive folders before the selected connection is verified for this owner', async () => {
+    let confirmIdentity!: (identity: { accountId: string }) => void;
+    const deferred = new Promise<{ accountId: string }>((resolve) => { confirmIdentity = resolve; });
+    const verifyIdentity = vi.fn().mockReturnValue(deferred);
+    const folders = vi.fn().mockResolvedValue([{ id: 'verified-folder', name: 'Verified Folder' }]);
+    render(<WorkspaceCreateDialog open userId="user-a" storageOptions={[drive('drive-a')]}
+      storageService={{ getGoogleDriveAccountIdentity: verifyIdentity, listGoogleDriveFolders: folders }}
+      visibility={{ storagePolicy: { providers: ['google_drive'] } }}
+      onClose={() => undefined} onSubmit={() => undefined} />);
+    await waitFor(() => expect(verifyIdentity).toHaveBeenCalledWith('user-a', 'drive-a'));
+    expect(folders).not.toHaveBeenCalled();
+    expect(screen.getByRole('status')).toHaveTextContent(/verification is required/i);
+    confirmIdentity({ accountId: 'verified-subject' });
+    expect(await screen.findByText('Verified Folder')).toBeInTheDocument();
+    expect(folders).toHaveBeenCalledWith('drive-a', undefined, 'user-a');
+  });
+
   it('verifies one account once despite unstable storageService props and connected option enrichment', async () => {
     const identity = vi.fn().mockResolvedValue({ accountId: 'google-subject', email: 'a@example.test' });
     const folders = vi.fn().mockResolvedValue([{ id: 'folder-a', name: 'Folder A' }]);
