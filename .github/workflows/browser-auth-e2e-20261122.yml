@@ -60,24 +60,28 @@ jobs:
             console.log('BROWSER_REGISTER',app,JSON.stringify(after));
             if(!after.pathUnchanged||after.authPages!==1||after.nameLabels<1)throw Error('Registration not inline');
             const pending=await browser.newPage();
-            let intercepted=0;const authRequests=[];
-            pending.on('request', req=>{if(/auth|session|initialization/.test(req.url()))authRequests.push(req.url().split('?')[0].slice(0,150));});
+            let intercepted=0;let outstanding=0;const authRequests=[];
+            let releaseSession;
+            const sessionGate=new Promise(resolve=>{releaseSession=resolve;});
+            pending.on('request',req=>{if(/auth|session|initialization/.test(req.url()))authRequests.push(req.url().split('?')[0].slice(0,150));});
             await pending.route('**/api/auth/oidc/session',async route=>{
-              intercepted++;
-              await new Promise(resolve=>setTimeout(resolve,1800));
+              intercepted++;outstanding++;
+              await sessionGate;
               await route.fulfill({status:401,contentType:'application/json',body:'{"authenticated":false}'});
+              outstanding--;
             });
             await pending.goto(url,{waitUntil:'domcontentloaded',timeout:45000});
-            await pending.waitForTimeout(400);
+            for(let i=0;i<25&&intercepted===0;i++)await pending.waitForTimeout(120);
+            const activeBeforeRelease=outstanding>0;
             const flashed=await pending.locator('[data-frnl-component="AuthPage"]').count();
             const loadingLabel=await pending.getByText(/VERIFYING SESSION/i).count();
-            await pending.locator('[data-frnl-component="AuthPage"]').waitFor({state:'visible',timeout:20000});
             console.log('BROWSER_HYDRATION',app,JSON.stringify({
               loginFlashedBeforeSession:flashed>0,loadingScreenObserved:loadingLabel>0,
-              intercepted,authRequests:authRequests.slice(0,12),
-              loginShownAfter401:true}));
-            if(intercepted>0 && flashed>0)throw Error('Login screen rendered before session revalidation completed');
-            if(intercepted===0)console.log('BROWSER_HYDRATION_UNTESTED',app,'canonical endpoint not requested by this page');
+              intercepted,activeBeforeRelease,authRequests:authRequests.slice(0,12)}));
+            releaseSession();
+            await pending.locator('[data-frnl-component="AuthPage"]').waitFor({state:'visible',timeout:20000});
+            if(!activeBeforeRelease)throw Error('Session request did not remain pending for hydration assertion');
+            if(flashed>0)throw Error('Login screen rendered before pending session verification completed');
             await pending.close();
             console.log('BROWSER_RESULT',app,'PASS','pageErrors='+errors.length);
           }catch(e) {
