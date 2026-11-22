@@ -59,6 +59,21 @@ jobs:
               passwords:await page.locator('input[type="password"]').count()};
             console.log('BROWSER_REGISTER',app,JSON.stringify(after));
             if(!after.pathUnchanged||after.authPages!==1||after.nameLabels<1)throw Error('Registration not inline');
+            const pending=await browser.newPage();
+            await pending.route('**/api/auth/oidc/session',async route=>{
+              await new Promise(resolve=>setTimeout(resolve,1800));
+              await route.fulfill({status:401,contentType:'application/json',body:'{"authenticated":false}'});
+            });
+            await pending.goto(url,{waitUntil:'domcontentloaded',timeout:45000});
+            await pending.waitForTimeout(400);
+            const flashed=await pending.locator('[data-frnl-component="AuthPage"]').count();
+            const loadingLabel=await pending.getByText(/VERIFYING SESSION/i).count();
+            await pending.locator('[data-frnl-component="AuthPage"]').waitFor({state:'visible',timeout:20000});
+            console.log('BROWSER_HYDRATION',app,JSON.stringify({
+              loginFlashedBeforeSession:flashed>0,loadingScreenObserved:loadingLabel>0,
+              loginShownAfter401:true}));
+            if(flashed>0)throw Error('Login screen rendered before session revalidation completed');
+            await pending.close();
             console.log('BROWSER_RESULT',app,'PASS','pageErrors='+errors.length);
           }catch(e) {
             console.log('BROWSER_RESULT',app,'FAIL',String(e.message||e).slice(0,180),
