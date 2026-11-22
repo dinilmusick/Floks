@@ -116,9 +116,11 @@ export function LuthOidcGate({
       onAuthenticatedRef.current?.(auth.user);
     }
   }, [auth.session.authenticated, auth.user]);
-  // Do not hold an unauthenticated sign-in screen behind a network session check.
-  // Authenticated content remains gated by a positively verified app session.
-  if (auth.session.authenticated && (auth.initializing || auth.loading)) {
+  // Do not render the sign-in form while any initial or return-from-OAuth
+  // session verification is pending. Otherwise the login page flashes briefly
+  // after the provider redirects back, before the app session is hydrated.
+  // Protected content is still allowed only for positively verified sessions.
+  if (auth.initializing || auth.loading) {
     return <>{loadingContent ?? <AuthLoadingScreen label="VERIFYING SESSION..." />}</>;
   }
   if (auth.session.authenticated && auth.user) {
