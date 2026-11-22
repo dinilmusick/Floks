@@ -73,7 +73,7 @@ export function WorkspaceTilesMenu({
   error = null,
 }: WorkspaceTilesMenuProps) {
   const store = useFloksFrnlStore();
-  const effectiveUserId = userId || currentUser?.id || 'system';
+  const effectiveUserId = (userId && userId !== 'system' ? userId : currentUser?.id) || userId || 'system';
   const generated = useId().replace(/[:/]/g, '');
   const componentId = `workspaceTilesMenu.${generated}`;
   const [creating, setCreating] = useState(false);
