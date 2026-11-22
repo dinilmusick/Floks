@@ -103,9 +103,9 @@ describe('canonical Kloks workspace storage adapter', () => {
     };
     vi.stubGlobal('window', { location });
     try {
-      const invoke = vi.fn().mockResolvedValue({ authorizationUrl: 'https://evil.example/steal' });
+      const invoke = vi.fn().mockResolvedValue({ authorizationUrl: 'http://evil.example/steal' });
       const service = createKloksWorkspaceStorageService({ invoke });
-      await expect(service.connectGoogleDrive?.('user-1')).rejects.toThrow(/untrusted/i);
+      await expect(service.connectGoogleDrive?.('user-1')).rejects.toThrow(/unsafe/i);
       expect(location.assign).not.toHaveBeenCalled();
     } finally {
       vi.unstubAllGlobals();
