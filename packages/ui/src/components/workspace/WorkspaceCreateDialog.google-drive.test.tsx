@@ -69,7 +69,8 @@ describe('WorkspaceCreateDialog Google Drive integration', () => {
     await waitFor(() => expect(getGoogleDriveAccountIdentity).toHaveBeenCalledWith('user-1', 'drive-auth-1'));
     fireEvent.click(screen.getByRole('button', { name: 'Create Workspace' }));
 
-    await waitFor(() => expect(selectGoogleDriveRootFolder).toHaveBeenCalledWith('user-1', 'drive-auth-1', 'drive-folder-1'));
+    // Workspace roots are persisted in the workspace payload, not on the shared account.
+    expect(selectGoogleDriveRootFolder).not.toHaveBeenCalled();
     await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
     const input = onSubmit.mock.calls[0][0];
     expect(input.storageProvider).toBe('google_drive');
@@ -259,7 +260,6 @@ describe('WorkspaceCreateDialog Google Drive integration', () => {
     expect(invoke).toHaveBeenCalledWith('kloks.backend.storage', 'createGoogleDriveAuthorizationRequest', {
       userId: 'user-1',
       returnTo: location.href,
-      callbackOrigin: location.origin,
     });
     await expect(service.listGoogleDriveFolders?.('drive-2', undefined, 'user-1')).resolves.toEqual([]);
     await expect(service.getGoogleDriveAccountIdentity?.('user-1', 'drive-2')).resolves.toEqual({
