@@ -1,0 +1,36 @@
+name: Verify npm artifact Kloks 3.0.12 lockfile metadata
+on:
+  push:
+    paths: [.github/workflows/kloks-release-lock-metadata-20261123.yml]
+permissions: {contents: read}
+jobs:
+  verify:
+    if: github.ref == 'refs/heads/ops/live-unified-auth-20261123'
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/setup-node@v4
+        with: {node-version: 24}
+      - name: Read public trusted-release tarball integrity and dependency-contract delta
+        run: |
+          node --input-type=module <<'JS'
+          const encode=x=>'https://registry.npmjs.org/%40ultrst-armada%2Fkloks/'+x;
+          let next;
+          for(let n=0;n<45;n++){
+            const response=await fetch(encode('3.0.12'),{signal:AbortSignal.timeout(12000)});
+            if(response.ok){next=await response.json();break;}
+            await new Promise(resolve=>setTimeout(resolve,9000));
+          }
+          if(!next)throw Error('NEW_KLOKS_ARTIFACT_NOT_AVAILABLE');
+          const oldResponse=await fetch(encode('3.0.11'),{signal:AbortSignal.timeout(12000)});
+          const old=await oldResponse.json();
+          const sameDep=JSON.stringify(Object.entries(next.dependencies||{}).sort())===
+            JSON.stringify(Object.entries(old.dependencies||{}).sort());
+          console.log('VERIFIED_KLOKS_NPM_METADATA',JSON.stringify({
+            version:next.version,integrity:next.dist?.integrity,
+            resolved:next.dist?.tarball,
+            sameDependenciesAs311:sameDep,
+            dependencies:next.dependencies
+          }));
+          if(next.version!=='3.0.12'||!next.dist?.integrity||!sameDep)process.exitCode=1;
+          JS
