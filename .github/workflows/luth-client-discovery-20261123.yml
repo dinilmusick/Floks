@@ -1,0 +1,38 @@
+name: Check Luth public client discovery without issuing registrations
+on:
+  push:
+    paths: [.github/workflows/luth-client-discovery-20261123.yml]
+permissions: {contents: read}
+jobs:
+  discover:
+    if: github.ref == 'refs/heads/ops/live-unified-auth-20261123'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-node@v4
+        with: {node-version: 24}
+      - name: Compare canonical app registration and official DCR discovery
+        run: |
+          node --input-type=module <<'JS'
+          const base='https://luth.blueprint-ninjastudios.workers.dev';
+          for(const app of ['aiko','srkl-engine','kone']){
+            const url=new URL('/api/app-session/v1/client',base);
+            url.searchParams.set('appId',app);
+            url.searchParams.set('origin','https://'+app+'.todadjp.workers.dev');
+            const r=await fetch(url,{redirect:'manual',signal:AbortSignal.timeout(15000)});
+            let body={};try{body=await r.json()}catch{};
+            console.log('LUTH_CLIENT_STATUS',app,JSON.stringify({
+              http:r.status,error:body.error||null,appId:body.appId||null,
+              redirectMatches:body.redirectUri==='https://'+app+'.todadjp.workers.dev/api/auth/oidc/callback',
+              issuedClientPresent:typeof body.clientId==='string'&&body.clientId.length>5
+            }));
+          }
+          for(const endpoint of ['/api/auth/.well-known/openid-configuration','/.well-known/oauth-authorization-server','/api/auth/oauth2/register']){
+            const r=await fetch(base+endpoint,{redirect:'manual',signal:AbortSignal.timeout(15000)});
+            let body={};try{body=await r.json()}catch{};
+            console.log('LUTH_METADATA_STATUS',endpoint,JSON.stringify({
+              http:r.status,registrationAvailable:typeof body.registration_endpoint==='string',
+              registrationPath:body.registration_endpoint?new URL(body.registration_endpoint).pathname:null,
+              error:body.error||null
+            }));
+          }
+          JS
