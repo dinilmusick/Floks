@@ -142,14 +142,7 @@ export function LuthOidcGate({
           aria-label={`${appName} sign in`}
           className="w-full max-w-md border-2 border-[var(--skipo-border-color,#252d3d)] bg-[var(--skipo-surface,#121722)] shadow-[6px_6px_0px_var(--skipo-border-color,#252d3d)] p-6 my-auto"
         >
-          <div className="grid grid-cols-2 gap-2 mb-5" aria-label="Sign-in options">
-            <span className="py-2 text-[10px] font-black border-2 flex items-center justify-center bg-[var(--skipo-accent,#6366f1)] text-[var(--skipo-accent-fg,#000000)] border-[var(--skipo-accent,#6366f1)]">SIGN IN</span>
-            <span className="py-2 text-[10px] font-black border-2 flex items-center justify-center text-[var(--skipo-text-muted,#94a3b8)] border-[var(--skipo-border-color,#252d3d)]">CREATE ACCOUNT</span>
-          </div>
-          <h1 className="font-black text-sm tracking-wider uppercase">SIGN IN TO WORKSPACE</h1>
-          <p className="mt-2 mb-5 text-xs text-[var(--skipo-text-muted,#94a3b8)]">
-            Access your workspace with your existing account or create one.
-          </p>
+          <h1 className="font-black text-sm tracking-wider uppercase mb-5">SIGN IN TO WORKSPACE</h1>
           <GoogleSignInButton
             label="CONTINUE WITH GOOGLE"
             href="/api/auth/oidc/start?method=google"
@@ -166,10 +159,6 @@ export function LuthOidcGate({
           >
             CONTINUE WITH EMAIL
           </a>
-          <p className="mt-3 text-[10px] leading-relaxed text-[var(--skipo-text-muted,#94a3b8)]">
-            Google, email sign-in and account registration are handled on the secure Luth identity page.
-            This application never asks for, stores, or transmits your password.
-          </p>
           {onContinueAsGuest && (
             <>
               <div aria-hidden="true" className="my-4 flex items-center gap-2 text-[9px] text-[var(--skipo-text-muted,#94a3b8)]">
@@ -186,9 +175,6 @@ export function LuthOidcGate({
               </button>
             </>
           )}
-          <p className="mt-5 pt-3 border-t border-[var(--skipo-border-color,#252d3d)] text-center text-[10px] text-[var(--skipo-text-muted,#94a3b8)]">
-            {appName} WORKSPACE SYSTEM
-          </p>
         </section>
       </main>
     </div>
