@@ -34,3 +34,5 @@ jobs:
           }));
           if(next.version!=='3.0.12'||!next.dist?.integrity||!sameDep)process.exitCode=1;
           JS
+
+# Registry now confirms trusted release completed; independently read metadata again
