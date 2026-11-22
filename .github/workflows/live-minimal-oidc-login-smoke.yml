@@ -1,0 +1,68 @@
+name: Verify live minimal first-party login
+on:
+  pull_request:
+    paths: ['.github/workflows/live-minimal-oidc-login-smoke.yml']
+jobs:
+  browser-login:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - name: Install headless Chromium
+        run: |
+          npm install --prefix /tmp/oidc-smoke --no-audit --no-fund --no-save playwright@1.56.1
+          /tmp/oidc-smoke/node_modules/.bin/playwright install --with-deps chromium
+      - name: Verify both app screens and official OAuth destinations
+        shell: bash
+        run: |
+          node <<'NODE'
+          const { chromium }=require('/tmp/oidc-smoke/node_modules/playwright');
+          const assert=require('node:assert/strict');
+          (async()=>{
+            const browser=await chromium.launch({headless:true});
+            try {
+              for(const [base,label] of [
+                ['https://aiko.todadjp.workers.dev','AIKO'],
+                ['https://srkl-engine.todadjp.workers.dev','SRKL ENGINE'],
+              ]){
+                const google=await browser.newPage();
+                await google.goto(base,{waitUntil:'domcontentloaded',timeout:45000});
+                const googleLink=google.getByRole('link',{name:'CONTINUE WITH GOOGLE'});
+                const emailLink=google.getByRole('link',{name:'CONTINUE WITH EMAIL'});
+                await googleLink.waitFor({state:'visible',timeout:30000});
+                await emailLink.waitFor({state:'visible',timeout:30000});
+                assert.equal(await googleLink.getAttribute('href'),'/api/auth/oidc/start?method=google');
+                assert.equal(await emailLink.getAttribute('href'),'/api/auth/oidc/start?method=email');
+                const text=(await google.locator('body').innerText()).toLowerCase();
+                for(const unwanted of [
+                  'handled on the secure luth identity page',
+                  'this application never asks for',
+                  'access your workspace with your existing account',
+                  'workspace system',
+                  'powered by luth',
+                  'canonical auth',
+                ]) assert(!text.includes(unwanted),'Unwanted login copy: '+unwanted);
+                console.log('MINIMAL_APP_LOGIN_PASS',new URL(base).hostname);
+                const gResponse=google.waitForResponse(r=>r.url().includes('luth.blueprint-ninjastudios.workers.dev/api/login-intent/verified'),{timeout:60000});
+                await googleLink.click({timeout:25000});
+                const g=await gResponse;
+                assert.equal(g.status(),200);
+                assert.equal((await g.json()).method,'google');
+                await google.waitForURL(u=>u.hostname==='accounts.google.com',{timeout:60000});
+                console.log('DIRECT_GOOGLE_CHOOSER_PASS',new URL(base).hostname);
+                await google.close();
+                const email=await browser.newPage();
+                await email.goto(base,{waitUntil:'domcontentloaded',timeout:45000});
+                const intent=email.waitForResponse(r=>r.url().includes('luth.blueprint-ninjastudios.workers.dev/api/login-intent/verified'),{timeout:60000});
+                await email.getByRole('link',{name:'CONTINUE WITH EMAIL'}).click({timeout:25000});
+                const e=await intent;
+                assert.equal(e.status(),200);
+                assert.equal((await e.json()).method,'email');
+                await email.locator('input[type="email"]').waitFor({state:'visible',timeout:30000});
+                assert((await email.locator('body').innerText()).includes(label),'App branding was not preserved');
+                assert(!(await email.locator('body').innerText()).includes('Canonical identity and authentication service'));
+                console.log('BRANDED_EMAIL_LOGIN_PASS',new URL(base).hostname);
+                await email.close();
+              }
+            }finally{await browser.close();}
+          })().catch(e=>{console.error('CANONICAL_LOGIN_FAILURE',e.message);process.exitCode=1;});
+          NODE
