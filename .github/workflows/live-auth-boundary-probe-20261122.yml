@@ -1,0 +1,64 @@
+name: Live Aiko and SRKL authentication boundary probe
+on:
+  push:
+    paths:
+      - '.github/workflows/live-auth-boundary-probe-20261122.yml'
+permissions:
+  contents: read
+jobs:
+  live:
+    if: github.ref == 'refs/heads/ops/rebuild-auth-consumer-locks-20261122'
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    strategy:
+      fail-fast: false
+      matrix:
+        app: [aiko, srkl-engine]
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Verify deployed auth routes and actual UI assets without real credentials
+        shell: bash
+        env:
+          APP: ${{ matrix.app }}
+        run: |
+          node --input-type=module <<'NODE'
+          const base = 'https://' + process.env.APP + '.todadjp.workers.dev';
+          async function inspect(route, options={}) {
+            let response;
+            try { response=await fetch(base+route,{redirect:'manual',signal:AbortSignal.timeout(18000),...options}) }
+            catch (e) { console.log('PROBE',process.env.APP,route,'NETWORK_ERROR',e.name); process.exitCode=1;return null; }
+            let data=null;
+            if(response.headers.get('content-type')?.includes('application/json')) {
+              try { data=await response.json() } catch {}
+            }
+            console.log('PROBE',process.env.APP,route,'status='+response.status,
+              'error='+String(data?.error||'none'),
+              'cookie='+Boolean(response.headers.get('set-cookie')),
+              'redirectToLuth='+Boolean(response.headers.get('location')?.includes('/api/auth/oauth2/authorize')),
+              'type='+String(response.headers.get('content-type')||'none').split(';')[0]);
+            return {response,data};
+          }
+          const root=await inspect('/');
+          if(root?.response.status!==200)process.exitCode=1;
+          const html=root?.response.status===200?await (await fetch(base+'/')).text():'';
+          const scripts=[...html.matchAll(/(?:src|href)=["']([^"']+\\.js(?:\\?[^"']*)?)["']/g)].map(m=>m[1]);
+          let js='';
+          for(const src of scripts.slice(0,12)){
+            try{const u=new URL(src,base);if(u.origin===new URL(base).origin){const s=await fetch(u,{signal:AbortSignal.timeout(18000)});if(s.ok)js+=await s.text()}}catch{}
+          }
+          console.log('ASSETS',process.env.APP,'jsFiles='+scripts.length,'jsBytes='+js.length,
+            'hasLegacyContinueWithEmail='+js.includes('Continue with Email'),
+            'hasCreateAccount='+(/Create account|Create Account|Sign up|Sign Up/.test(js)),
+            'hasLogin='+(/Sign in|Sign In|Log in|Log In/.test(js)));
+          const session=await inspect('/api/auth/oidc/session');
+          if(session?.response.status!==401 && session?.response.status!==503)process.exitCode=1;
+          const invalid=await inspect('/api/auth/oidc/email/sign-in',{
+            method:'POST',headers:{Origin:base,'Content-Type':'application/json'},
+            body:JSON.stringify({email:'not-a-real-email',password:'invalid'})
+          });
+          if(invalid?.response.status!==400 && invalid?.response.status!==403)process.exitCode=1;
+          const google=await inspect('/api/auth/oidc/start?method=google');
+          if(![303,500,503].includes(google?.response.status))process.exitCode=1;
+          NODE
