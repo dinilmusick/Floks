@@ -34,7 +34,7 @@ describe('polished canonical OAuth login gate', () => {
     expect(gate).not.toContain('WORKSPACE SYSTEM');
     expect(gate).not.toContain('VERIFYING LUTH SESSION');
     expect(gate).toContain('VERIFYING SESSION...');
-    expect(gate).toContain('auth.session.authenticated && (auth.initializing || auth.loading)');
+    expect(gate).toContain('if (auth.initializing || auth.loading)');
     expect(gate).not.toContain('disabled={Boolean(auth.error)}');
     expect(gate).not.toContain('Session verification is unavailable');
     expect(gate).not.toContain('No authenticated workspace access');
