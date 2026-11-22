@@ -1,0 +1,36 @@
+name: Read-only existing Aiko and SRKL Worker probe
+on:
+  push:
+    paths:
+      - .github/workflows/auth-worker-smoke.yml
+permissions:
+  contents: read
+jobs:
+  probe:
+    if: github.ref == 'refs/heads/ops/rebuild-auth-consumer-locks-20261122'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        url:
+          - https://aiko.todadjp.workers.dev/
+          - https://srkl-engine.todadjp.workers.dev/
+    steps:
+      - name: Read-only public Worker HTTP and login-page probe
+        shell: bash
+        env:
+          TARGET: ${{ matrix.url }}
+        run: |
+          set -euo pipefail
+          echo "PROBED_WORKER_URL=$TARGET"
+          for attempt in 1 2 3; do
+            status="$(curl -sS -L --max-time 20 -o /tmp/worker-page -w '%{http_code}' "$TARGET" || true)"
+            echo "WORKER_HTTP_STATUS=$status"
+            if [[ "$status" =~ ^2[0-9][0-9]$ ]]; then
+              echo "WORKER_CONTENT_SIZE=$(wc -c </tmp/worker-page)"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo 'Existing configured Worker did not return a successful browser page.' >&2
+          exit 1
