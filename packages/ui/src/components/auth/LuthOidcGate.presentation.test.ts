@@ -17,7 +17,8 @@ describe('polished canonical OAuth login gate', () => {
   it('preserves the original full-screen branded workspace aesthetic', () => {
     expect(gate).toContain('border-b-2 border-[var(--skipo-border-color');
     expect(gate).toContain('shadow-[6px_6px_0px_var(--skipo-border-color');
-    expect(gate).toContain('SIGN IN TO WORKSPACE');
+    expect(gate).not.toContain('SIGN IN TO WORKSPACE');
+    expect(gate).not.toMatch(/>\s*OR\s*</);
     expect(gate).toContain('CONTINUE WITH GOOGLE');
     expect(gate).toContain('CONTINUE WITH EMAIL');
     expect(gate).toContain('href="/api/auth/oidc/start?method=email"');

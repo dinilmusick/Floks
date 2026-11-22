@@ -30,6 +30,8 @@ describe('LuthOidcGate public sign-in availability', () => {
     expect(screen.getByRole('link', { name: 'CONTINUE WITH EMAIL' }).getAttribute('href'))
       .toBe('/api/auth/oidc/start?method=email');
     expect(screen.queryByText('Protected workspace')).toBeNull();
+    expect(screen.queryByText('SIGN IN TO WORKSPACE')).toBeNull();
+    expect(screen.queryByText('OR')).toBeNull();
 
     await act(async () => { resolveSession({ authenticated: false }); });
     expect(screen.getByRole('link', { name: 'CONTINUE WITH GOOGLE' })).toBeTruthy();

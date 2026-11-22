@@ -149,12 +149,12 @@ export const AuthPage: React.FC<AuthPageProps> = ({
             <div>
               {React.createElement(frnlTextInput, { id: componentId + '.password', label: 'Password', value: password, onChange: (e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value), type: showPassword ? 'text' : 'password', autoComplete: mode === 'login' ? 'current-password' : 'new-password', trailingIcon: <button type="button" aria-label="Toggle password visibility" onClick={() => setShowPassword((v) => !v)}>{showPassword ? <EyeOff size={13} /> : <Eye size={13} />}</button> })}
             </div>
-            {React.createElement(frnlButton, { type: 'submit', disabled: loading, loading, variant: 'accent', size: 'lg', className: 'w-full', icon: <ArrowRight size={13} /> }, mode === 'login' ? 'SIGN IN TO WORKSPACE' : 'CREATE ACCOUNT')}
+            {React.createElement(frnlButton, { type: 'submit', disabled: loading, loading, variant: 'accent', size: 'lg', className: 'w-full', icon: <ArrowRight size={13} /> }, mode === 'login' ? 'SIGN IN' : 'CREATE ACCOUNT')}
           </form>
           {onGoogleSignIn && enableGoogleSignIn && (
             <>
-              <div className="my-4 flex items-center gap-2 text-[9px] text-[var(--skipo-text-muted)]"><span className="h-px flex-1 bg-[var(--skipo-border-color)]" /> OR <span className="h-px flex-1 bg-[var(--skipo-border-color)]" /></div>
               <GoogleSignInButton
+                className="mt-3"
                 label={mode === 'register' ? 'SIGN UP WITH GOOGLE' : 'CONTINUE WITH GOOGLE'}
                 onSignIn={async () => {
                   setGoogleLoading(true);
@@ -180,11 +180,12 @@ export const AuthPage: React.FC<AuthPageProps> = ({
           )}
           {onContinueAsGuest && (
             <>
-              <div className="my-4 flex items-center gap-2 text-[9px] text-[var(--skipo-text-muted)]"><span className="h-px flex-1 bg-[var(--skipo-border-color)]" /> OR <span className="h-px flex-1 bg-[var(--skipo-border-color)]" /></div>
-              <button type="button" onClick={onContinueAsGuest} disabled={loading} className="w-full py-2 text-[10px] font-black border-2 border-[var(--skipo-border-color)] text-[var(--skipo-text-muted)] bg-[var(--skipo-surface)] hover:text-[var(--skipo-text)] hover:bg-[var(--skipo-surface-hover)] transition-all cursor-pointer select-none rounded-sm">CONTINUE AS GUEST</button>
+              <button type="button" onClick={onContinueAsGuest} disabled={loading} className="mt-3 w-full py-2 text-[10px] font-black border-2 border-[var(--skipo-border-color)] text-[var(--skipo-text-muted)] bg-[var(--skipo-surface)] hover:text-[var(--skipo-text)] hover:bg-[var(--skipo-surface-hover)] transition-all cursor-pointer select-none rounded-sm">CONTINUE AS GUEST</button>
             </>
           )}
-          <p className="mt-5 pt-3 border-t border-[var(--skipo-border-color)] text-center text-[10px] text-[var(--skipo-text-muted)]">{footerText || `${appName} WORKSPACE SYSTEM`}</p>
+          {(footerText === undefined || footerText.length > 0) && (
+            <p className="mt-5 pt-3 border-t border-[var(--skipo-border-color)] text-center text-[10px] text-[var(--skipo-text-muted)]">{footerText ?? `${appName} WORKSPACE SYSTEM`}</p>
+          )}
         </div>
       </main>
     </div>

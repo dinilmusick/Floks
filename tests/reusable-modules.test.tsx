@@ -36,7 +36,7 @@ describe('reusable application modules', () => {
     expect(Object.keys(floksFrnlStore.getState().entities).some((id) => id.startsWith('AuthPage.'))).toBe(true);
     fireEvent.change(screen.getByLabelText('Email Address'), { target: { value: 'user@example.com' } });
     fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'secret' } });
-    fireEvent.click(screen.getByRole('button', { name: /sign in to workspace/i }));
+    fireEvent.click(screen.getAllByRole('button', { name: /^sign in$/i }).at(-1)!);
     await new Promise((resolve) => setTimeout(resolve, 0));
     expect(loginCalled).toBe(true);
   });
