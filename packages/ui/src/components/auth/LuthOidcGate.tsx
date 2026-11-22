@@ -5,7 +5,7 @@ import {
   type LuthSessionResult,
 } from '@dinilmusick/gutts/auth';
 import { AuthLoadingScreen } from './AuthLoadingScreen.js';
-import { GoogleSignInButton } from './GoogleSignInButton.js';
+import { AuthPage, type AuthResult } from './AuthPage.js';
 export interface ApplicationOidcAuth {
   client: ApplicationAuthClient;
   session: LuthSessionResult;
@@ -19,7 +19,8 @@ export interface ApplicationOidcAuth {
 }
 /**
  * Canonical application identity gate. Browser receives only an opaque
- * app-origin cookie; Luth/Better Auth hosts the actual Google/email login.
+ * app-origin cookie; Luth/Better Auth verifies identity, while the
+ * shared Floks form offers first-party email and registration inline.
  * All Skipo-generated and migrated app shells should use this one gate,
  * rather than reimplementing callback or session hydration.
  */
@@ -127,48 +128,45 @@ export function LuthOidcGate({
     return typeof authenticatedContent === 'function'
       ? <>{authenticatedContent(auth)}</> : <>{authenticatedContent}</>;
   }
+  const resultFor = (verified: LuthSessionResult): AuthResult =>
+    verified.authenticated && verified.user
+      ? { success: true, user: verified.user }
+      : { success: false, error: 'The application session could not be verified.' };
+
+  const signInEmail = async (email: string, password: string): Promise<AuthResult> => {
+    try {
+      const session = await auth.client.signInWithEmailCredentials({ email, password });
+      if (!session.authenticated) return resultFor(session);
+      // Only the canonical session endpoint establishes the authenticated gate.
+      return resultFor(await auth.refresh());
+    } catch (cause) {
+      return { success: false, error: cause instanceof Error ? cause.message : 'Email sign-in failed.' };
+    }
+  };
+
+  const signUpEmail = async (input: { name: string; email: string; password: string }): Promise<AuthResult> => {
+    try {
+      const session = await auth.client.signUpWithEmailCredentials(input);
+      if (!session.authenticated) return resultFor(session);
+      return resultFor(await auth.refresh());
+    } catch (cause) {
+      return { success: false, error: cause instanceof Error ? cause.message : 'Account creation failed.' };
+    }
+  };
+
   return (
-    <div
-      data-frnl-component="LuthOidcGate"
-      className="min-h-screen h-screen w-screen bg-[var(--skipo-bg,#0a0e17)] text-[var(--skipo-text,#f8fafc)] font-mono flex flex-col overflow-hidden"
-    >
-      <header className="border-b-2 border-[var(--skipo-border-color,#252d3d)] bg-[var(--skipo-surface,#121722)] px-6 py-3.5 flex items-center gap-3 shrink-0">
-        <div aria-hidden="true" className="w-8 h-8 shrink-0 bg-[var(--skipo-accent,#6366f1)] text-black font-black flex items-center justify-center text-xs rounded-sm">
-          ▲
-        </div>
-        <span className="text-sm font-black uppercase tracking-wider">{appName}</span>
-        <span className="text-[10px] text-[var(--skipo-text-muted,#94a3b8)] tracking-tight">WORKSPACE</span>
-      </header>
-      <main className="flex-1 flex items-center justify-center p-4 overflow-auto">
-        <section
-          aria-label={`${appName} sign in`}
-          className="w-full max-w-md border-2 border-[var(--skipo-border-color,#252d3d)] bg-[var(--skipo-surface,#121722)] shadow-[6px_6px_0px_var(--skipo-border-color,#252d3d)] p-6 my-auto"
-        >
-          <GoogleSignInButton
-            label="CONTINUE WITH GOOGLE"
-            href="/api/auth/oidc/start?method=google"
-            className="mb-3"
-          />
-          <a
-            href="/api/auth/oidc/start?method=email"
-            className="block text-center w-full py-3 px-4 text-xs font-black uppercase tracking-wide border-2 border-[var(--skipo-accent,#6366f1)] bg-[var(--skipo-accent,#6366f1)] text-[var(--skipo-accent-fg,#000000)] hover:brightness-110 transition-all cursor-pointer"
-          >
-            CONTINUE WITH EMAIL
-          </a>
-          {onContinueAsGuest && (
-            <>
-              <button
-                type="button"
-                onClick={onContinueAsGuest}
-                className="mt-3 w-full py-2 text-[10px] font-black border-2 border-[var(--skipo-border-color,#252d3d)] text-[var(--skipo-text-muted,#94a3b8)] hover:text-[var(--skipo-text,#f8fafc)] transition-colors cursor-pointer"
-              >
-                CONTINUE AS GUEST
-              </button>
-            </>
-          )}
-        </section>
-      </main>
-    </div>
+    <AuthPage
+      appName={appName}
+      appSubtitle="WORKSPACE"
+      footerText=""
+      onLogin={signInEmail}
+      onRegister={signUpEmail}
+      onGoogleSignIn={async () => {
+        auth.client.signInWithGoogle();
+        return { success: true };
+      }}
+      onContinueAsGuest={onContinueAsGuest}
+    />
   );
 }
 
