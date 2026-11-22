@@ -43,7 +43,7 @@ jobs:
           const root=await inspect('/');
           if(root?.response.status!==200)process.exitCode=1;
           const html=root?.response.status===200?await (await fetch(base+'/')).text():'';
-          const scripts=[...html.matchAll(/(?:src|href)=["']([^"']+\\.js(?:\\?[^"']*)?)["']/g)].map(m=>m[1]);
+          const scripts=[...html.matchAll(/(?:src|href)=[\"']([^\"']+)[\"']/g)].map(m=>m[1]).filter(s=>s.split('?')[0].endsWith('.js'));
           let js='';
           for(const src of scripts.slice(0,12)){
             try{const u=new URL(src,base);if(u.origin===new URL(base).origin){const s=await fetch(u,{signal:AbortSignal.timeout(18000)});if(s.ok)js+=await s.text()}}catch{}
@@ -59,6 +59,13 @@ jobs:
             body:JSON.stringify({email:'not-a-real-email',password:'invalid'})
           });
           if(invalid?.response.status!==400 && invalid?.response.status!==403)process.exitCode=1;
+          const fakeEmail='no-real-user-'+Date.now()+'@example.invalid';
+          const unknown=await inspect('/api/auth/oidc/email/sign-in',{
+            method:'POST',headers:{Origin:base,'Content-Type':'application/json','Sec-Fetch-Site':'same-origin'},
+            body:JSON.stringify({email:fakeEmail,password:'DummyNeverValid-NotASecret123!'})
+          });
+          console.log('EMAIL_UNKNOWN_ACCOUNT',process.env.APP,
+            'status='+unknown?.response.status,'error='+String(unknown?.data?.error||'none'));
           const google=await inspect('/api/auth/oidc/start?method=google');
           if(![303,500,503].includes(google?.response.status))process.exitCode=1;
           NODE
