@@ -61,7 +61,7 @@ export const WorkspaceGate: React.FC<WorkspaceGateProps> = ({
     }));
   }, [workspaces]);
 
-  const effectiveUserId = userId || currentUser?.id || 'system';
+  const effectiveUserId = (userId && userId !== 'system' ? userId : currentUser?.id) || userId || 'system';
 
   return (
     <div
