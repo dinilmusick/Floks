@@ -610,14 +610,14 @@ export function WorkspaceCreateDialog({
   }, [open, selectedStorageId, selectedGoogleProvider, effectiveUserId]);
 
   useEffect(() => {
-    if (!open || loadingStorage || defaultStorageApplied ||
+    if (!open || loadingStorage || defaultStorageApplied || googleDriveConnectionId ||
         (storageServiceRef.current.listStorageConnections && loadedOwnerId !== effectiveUserId)) return;
     const primary = availableOptions.find((option) => option.role === 'primary')
       || availableOptions.find((option) => option.provider !== 'local_fs' && option.id !== 'google_drive');
     const preferred = primary || availableOptions[0];
     if (preferred) setSelectedStorageId(preferred.id);
     setDefaultStorageApplied(true);
-  }, [open, loadingStorage, availableOptions, defaultStorageApplied, loadedOwnerId, effectiveUserId]);
+  }, [open, loadingStorage, availableOptions, defaultStorageApplied, loadedOwnerId, effectiveUserId, googleDriveConnectionId]);
 
   useEffect(() => {
     if (!open) return;
