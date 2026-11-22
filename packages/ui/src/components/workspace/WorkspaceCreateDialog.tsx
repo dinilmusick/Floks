@@ -646,8 +646,13 @@ export function WorkspaceCreateDialog({
   const backblazeCapability = providerCapabilities.find((capability) => capability.id === 'backblaze_b2');
   const canCreateBackblazeConnection = Boolean(backblazeCapability?.enabled && backblazeCapability.canCreateConnection);
   const canAuthorizeGoogleDrive = Boolean(googleDriveCapability?.enabled && googleDriveCapability.canCreateConnection);
-  const googleDriveConnection = selectedOption.provider === 'google_drive' && selectedOption.id !== 'google_drive'
+  // Do not expose an account to the folder browser until Kloks has confirmed
+  // the selected connection belongs to the active principal.
+  const unverifiedDriveConnection = selectedOption.provider === 'google_drive' && selectedOption.id !== 'google_drive'
     ? selectedOption as WorkspaceStorageOption & GoogleDriveConnection
+    : undefined;
+  const googleDriveConnection = verifiedGoogleDriveConnectionId === unverifiedDriveConnection?.id
+    ? unverifiedDriveConnection
     : undefined;
   const hiddenFields = new Set(visibility?.hiddenFields || []);
   const userName = currentUser?.username || currentUser?.name || currentUser?.email?.split('@')[0] || 'user';
@@ -986,7 +991,14 @@ export function WorkspaceCreateDialog({
             )}
           </div>
 
-          {selectedOption.provider === 'google_drive' && (
+          {selectedOption.provider === 'google_drive' && unverifiedDriveConnection && !googleDriveConnection ? (
+            <div role="status" className="border p-3 text-xs">
+              Google Drive account verification is required before browsing folders.
+              {canAuthorizeGoogleDrive && (
+                <p className="mt-2">You can choose “Connect Google Drive” in the storage selector to reconnect or add an account.</p>
+              )}
+            </div>
+          ) : selectedOption.provider === 'google_drive' && (
             <GoogleDriveWorkspacePicker
               userId={effectiveUserId}
               connection={googleDriveConnection}
