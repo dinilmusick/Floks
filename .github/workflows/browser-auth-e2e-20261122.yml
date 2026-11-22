@@ -1,0 +1,68 @@
+name: Browser E2E Aiko and SRKL unified auth screen
+on:
+  push:
+    paths: [.github/workflows/browser-auth-e2e-20261122.yml]
+permissions:
+  contents: read
+jobs:
+  browser:
+    if: github.ref == 'refs/heads/ops/rebuild-auth-consumer-locks-20261122'
+    runs-on: ubuntu-latest
+    timeout-minutes: 22
+    strategy:
+      fail-fast: false
+      matrix:
+        app: [aiko, srkl-engine]
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Install isolated pinned Playwright browser tester
+        run: |
+          npm install --prefix /tmp/auth-browser --no-audit --no-fund playwright@1.64.1
+          /tmp/auth-browser/node_modules/.bin/playwright install chromium
+      - name: Verify no second email page and registration inline
+        env:
+          APP: ${{ matrix.app }}
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          import {chromium} from '/tmp/auth-browser/node_modules/playwright/index.mjs';
+          const app=process.env.APP;
+          const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
+          const page=await browser.newPage({viewport:{width:1280,height:900}});
+          const errors=[];
+          page.on('pageerror',e=>errors.push(String(e.message||e).slice(0,170)));
+          const url='https://'+app+'.todadjp.workers.dev/';
+          try {
+            const response=await page.goto(url,{waitUntil:'domcontentloaded',timeout:45000});
+            const status=response?.status()||0;
+            const gate=page.locator('[data-frnl-component="AuthPage"]');
+            await gate.waitFor({state:'visible',timeout:38000});
+            const before=page.url();
+            const email=page.locator('input[type="email"]');
+            const password=page.locator('input[type="password"]');
+            const signIn=page.getByRole('button',{name:/SIGN IN/i});
+            const register=page.getByRole('button',{name:/CREATE ACCOUNT/i});
+            const google=page.getByRole('button',{name:/GOOGLE/i});
+            const initial={status,authPages:await gate.count(),emailInputs:await email.count(),
+              passwordInputs:await password.count(),signIn:await signIn.count(),
+              register:await register.count(),google:await google.count(),url:page.url()};
+            console.log('BROWSER_INITIAL',app,JSON.stringify(initial));
+            if(status!==200||initial.emailInputs<1||initial.passwordInputs<1||
+               initial.signIn<1||initial.register<1||initial.google<1)throw Error('Initial inline form missing');
+            await register.first().click();
+            await page.getByText('Full Name',{exact:false}).first().waitFor({state:'visible',timeout:8000});
+            const after={authPages:await gate.count(),pathUnchanged:page.url()===before,
+              nameLabels:await page.getByText('Full Name',{exact:false}).count(),
+              emailInputs:await page.locator('input[type="email"]').count(),
+              passwords:await page.locator('input[type="password"]').count()};
+            console.log('BROWSER_REGISTER',app,JSON.stringify(after));
+            if(!after.pathUnchanged||after.authPages!==1||after.nameLabels<1)throw Error('Registration not inline');
+            console.log('BROWSER_RESULT',app,'PASS','pageErrors='+errors.length);
+          }catch(e) {
+            console.log('BROWSER_RESULT',app,'FAIL',String(e.message||e).slice(0,180),
+              'pageErrors='+JSON.stringify(errors.slice(0,4)));
+            process.exitCode=1;
+          }finally{await browser.close();}
+          NODE
