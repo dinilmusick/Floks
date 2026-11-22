@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 
 export interface GoogleDriveConnection {
   id: string;
@@ -35,7 +35,7 @@ function getErrorCode(error: unknown): string {
   if (typeof candidate.code === 'string') return candidate.code.toUpperCase();
   if ((error as { name?: unknown }).name === 'AbortError') return 'GOOGLE_DRIVE_CANCELLED';
   const status = candidate.status ?? candidate.response?.status;
-  return status === 401 ? 'GOOGLE_DRIVE_AUTH_EXPIRED' : status === 403 ? 'GOOGLE_DRIVE_ACCESS_DENIED' : '';
+  return status === 401 ? 'GOOGLE_DRIVE_AUTH_EXPIRED' : status === 403 ? 'GOOGLE_DRIVE_ACCESS_DENIED' : status === 404 ? 'GOOGLE_DRIVE_CONNECTION_REVOKED' : status === 429 ? 'SERVICE_UNAVAILABLE' : '';
 }
 
 export function describeGoogleDriveError(error: unknown): string {
@@ -43,13 +43,19 @@ export function describeGoogleDriveError(error: unknown): string {
   if (code.includes('CANCEL') || code === 'ACCESS_DENIED' || code === 'OAUTH_ACCESS_DENIED') {
     return 'Google Drive authorization was cancelled or declined. No connection was added.';
   }
+  if (code.includes('REVOKED') || code === 'INVALID_GRANT' || code === 'GOOGLE_DRIVE_CONNECTION_NOT_FOUND') {
+    return 'Google Drive access was revoked or the connection was removed. Reconnect your Google account.';
+  }
+  if (code.includes('MISSING_CONNECTION') || code.includes('AUTH_FAILED')) {
+    return 'Google Drive authorization did not return a usable connection. Retry authorization.';
+  }
   if (code.includes('EXPIRED') || code === 'UNAUTHENTICATED') {
     return 'Your Google Drive authorization has expired. Reconnect your Google account to continue.';
   }
   if (code.includes('DENIED') || code.includes('FORBIDDEN')) {
     return 'Google Drive access was not granted. Authorize Drive access and try again.';
   }
-  if (code.includes('UNAVAILABLE') || code.includes('SERVICE_UNAVAILABLE')) {
+  if (code.includes('UNAVAILABLE') || code.includes('SERVICE_UNAVAILABLE') || code.includes('RETRY')) {
     return 'Google Drive is currently unavailable. Check Drive access and try again.';
   }
   if (error instanceof Error && error.message) return error.message;
@@ -78,34 +84,51 @@ export function GoogleDriveWorkspacePicker({
   const [folderPath, setFolderPath] = useState<FolderPathEntry[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [status, setStatus] = useState<string | null>(null);
+  const [authorizationErrorCode, setAuthorizationErrorCode] = useState('');
+  const listFoldersRef = useRef(listGoogleDriveFolders);
+  listFoldersRef.current = listGoogleDriveFolders;
+  const latestRequest = useRef(0);
 
-  const loadFolders = useCallback(async (connectionId: string, parentFolderId?: string) => {
-    if (!listGoogleDriveFolders) {
+  // Ref-backed callback prevents an unstable parent function from repeatedly
+  // starting folder discovery. Sequence fencing rejects stale owner/account responses.
+  const loadFolders = useCallback(async (connectionId: string, parentFolderId?: string): Promise<boolean> => {
+    const request = ++latestRequest.current;
+    const browse = listFoldersRef.current;
+    if (!browse) {
       setFolders([]);
       setError('Google Drive folder browsing is not configured for this storage service.');
-      return;
+      return false;
     }
-
     setLoading(true);
     setError(null);
+    setAuthorizationErrorCode('');
     try {
-      const items = await listGoogleDriveFolders(connectionId, parentFolderId, userId);
-      setFolders(Array.isArray(items) ? items.filter((item) => item && typeof item.id === 'string' && typeof item.name === 'string') : []);
+      const items = await browse(connectionId, parentFolderId, userId);
+      if (request !== latestRequest.current) return false;
+      setFolders(Array.isArray(items)
+        ? items.filter((item) => item && typeof item.id === 'string' && typeof item.name === 'string') : []);
+      return true;
     } catch (reason) {
+      if (request !== latestRequest.current) return false;
       setFolders([]);
+      setAuthorizationErrorCode(getErrorCode(reason));
       setError(describeGoogleDriveError(reason));
+      return false;
     } finally {
-      setLoading(false);
+      if (request === latestRequest.current) setLoading(false);
     }
-  }, [listGoogleDriveFolders, userId]);
+  }, [userId]);
 
   useEffect(() => {
+    latestRequest.current += 1;
     setFolderPath([]);
     setFolders([]);
     setError(null);
     setStatus(null);
+    setAuthorizationErrorCode('');
     if (connection?.id) void loadFolders(connection.id);
-  }, [connection?.id, loadFolders]);
+    return () => { latestRequest.current += 1; };
+  }, [connection?.id, userId, loadFolders]);
 
   const handleConnect = async () => {
     if (!connectGoogleDrive) {
@@ -136,17 +159,8 @@ export function GoogleDriveWorkspacePicker({
   };
 
   const openFolder = async (folder: GoogleDriveFolder) => {
-    if (!connection) return;
-    setLoading(true);
-    setError(null);
-    try {
-      const items = await listGoogleDriveFolders?.(connection.id, folder.id, userId);
-      setFolders(Array.isArray(items) ? items : []);
+    if (connection && await loadFolders(connection.id, folder.id)) {
       setFolderPath((current) => [...current, { id: folder.id, name: folder.name }]);
-    } catch (reason) {
-      setError(describeGoogleDriveError(reason));
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -154,17 +168,7 @@ export function GoogleDriveWorkspacePicker({
     if (!connection || folderPath.length === 0) return;
     const nextPath = folderPath.slice(0, -1);
     const parentFolderId = nextPath[nextPath.length - 1]?.id;
-    setLoading(true);
-    setError(null);
-    try {
-      const items = await listGoogleDriveFolders?.(connection.id, parentFolderId, userId);
-      setFolders(Array.isArray(items) ? items : []);
-      setFolderPath(nextPath);
-    } catch (reason) {
-      setError(describeGoogleDriveError(reason));
-    } finally {
-      setLoading(false);
-    }
+    if (await loadFolders(connection.id, parentFolderId)) setFolderPath(nextPath);
   };
 
   const selectCurrentFolder = () => {
@@ -224,6 +228,11 @@ export function GoogleDriveWorkspacePicker({
       )}
 
       {error && <p role="alert" className="text-xs text-red-300">{error}</p>}
+      {error && (authorizationErrorCode.includes('EXPIRED') || authorizationErrorCode.includes('REVOKED') || authorizationErrorCode === 'INVALID_GRANT') && connectGoogleDrive && (
+        <button type="button" onClick={() => void handleConnect()} disabled={connecting} className="border px-2 py-1 text-[10px] disabled:opacity-50">
+          {connecting ? 'Reconnecting…' : 'Reconnect Google Drive'}
+        </button>
+      )}
       {status && <p role="status" className="text-xs">{status}</p>}
       {selectedFolder && (
         <p className="text-[10px]">Selected workspace root: <strong>{selectedFolder.name}</strong></p>
