@@ -1,0 +1,30 @@
+name: Verify published Floks 2.0.15 registry digest
+on:
+  pull_request:
+    paths: ['.github/workflows/verify-floks-2015-registry.yml']
+jobs:
+  registry-digest:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - name: Verify exact npm SHA-512 integrity
+        shell: bash
+        run: |
+          set -euo pipefail
+          for i in {1..45}; do
+            if npm view @ultrst-armada/floks@2.0.15 dist.integrity dist.tarball version --json >/tmp/registry.json 2>/dev/null; then
+              if node - /tmp/registry.json <<'NODE'
+          const fs = require('node:fs');
+          const x = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
+          if (x.version !== '2.0.15' || !x['dist.integrity']?.startsWith('sha512-') ||
+              new URL(x['dist.tarball']).hostname !== 'registry.npmjs.org') process.exit(1);
+          console.log('FLOKS_AUTH_VERSION=' + x.version);
+          console.log('FLOKS_AUTH_SRI=' + x['dist.integrity']);
+          console.log('FLOKS_AUTH_TARBALL=' + x['dist.tarball']);
+          NODE
+              then exit 0; fi
+            fi
+            sleep 8
+          done
+          echo 'Published Floks 2.0.15 metadata unavailable' >&2
+          exit 1
