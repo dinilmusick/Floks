@@ -9,20 +9,20 @@ describe('polished canonical OAuth login gate', () => {
     expect(gate).toContain('createApplicationAuthClient()');
     expect(gate).toContain('client.getSession()');
     expect(gate).toContain('signIn: (returnTo?: string) => client.startSignIn(returnTo)');
-    expect(gate).toContain('href="/api/auth/oidc/start?method=google"');
+    expect(gate).toContain('auth.client.signInWithGoogle()');
     expect(gate).toContain('onAuthenticatedRef.current?.(auth.user)');
     expect(gate).toContain('onContinueAsGuest');
   });
 
   it('preserves the original full-screen branded workspace aesthetic', () => {
-    expect(gate).toContain('border-b-2 border-[var(--skipo-border-color');
-    expect(gate).toContain('shadow-[6px_6px_0px_var(--skipo-border-color');
+    expect(gate).toContain('appSubtitle="WORKSPACE"');
+    expect(gate).toContain('<AuthPage');
     expect(gate).not.toContain('SIGN IN TO WORKSPACE');
     expect(gate).not.toMatch(/>\s*OR\s*</);
-    expect(gate).toContain('CONTINUE WITH GOOGLE');
-    expect(gate).toContain('CONTINUE WITH EMAIL');
-    expect(gate).toContain('href="/api/auth/oidc/start?method=email"');
-    expect(gate).toContain('<GoogleSignInButton');
+    expect(gate).toContain('onGoogleSignIn={async () => {');
+    expect(gate).not.toContain('CONTINUE WITH EMAIL');
+    expect(gate).toContain('onLogin={signInEmail}');
+    expect(gate).toContain('onRegister={signUpEmail}');
   });
 
   it('contains no user-facing provider attribution or obsolete sign-in button', () => {
@@ -38,11 +38,11 @@ describe('polished canonical OAuth login gate', () => {
     expect(gate).not.toContain('disabled={Boolean(auth.error)}');
     expect(gate).not.toContain('Session verification is unavailable');
     expect(gate).not.toContain('No authenticated workspace access');
-    expect(gate).toContain('CONTINUE WITH EMAIL');
+    expect(gate).not.toContain('CONTINUE WITH EMAIL');
     expect(gate).not.toContain('RETRY SESSION');
-    expect(gate).toContain('href="/api/auth/oidc/start?method=google"');
+    expect(gate).toContain('auth.client.signInWithGoogle()');
     expect(gate).not.toContain('onClick={() => auth.signIn()}');
-    expect(gate).not.toContain('<input type="password"');
+    expect(gate).toContain('signUpWithEmailCredentials');
     expect(gate).not.toContain('localStorage');
   });
 });
