@@ -1,0 +1,61 @@
+name: Independent Aiko and SRKL canonical-auth lock regeneration
+on:
+  push:
+    paths:
+      - '.github/workflows/independent-auth-consumer-locks.yml'
+permissions:
+  contents: read
+jobs:
+  generate:
+    if: github.ref == 'refs/heads/ops/rebuild-auth-consumer-locks-20261122'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          registry-url: https://registry.npmjs.org/
+      - name: Wait for independently published canonical package versions
+        shell: bash
+        run: |
+          set -euo pipefail
+          ready=false
+          for attempt in $(seq 1 80); do
+            if test "$(npm view '@ultrst-armada/kloks@3.0.9' version 2>/dev/null)" = '3.0.9' &&
+               test "$(npm view '@ultrst-armada/floks@2.0.17' version 2>/dev/null)" = '2.0.17' &&
+               test "$(npm view '@dinilmusick/gutts@2.2.6' version 2>/dev/null)" = '2.2.6'; then ready=true; break; fi
+            sleep 15
+          done
+          test "$ready" = true
+      - name: Regenerate and encode consumer npm locks
+        shell: bash
+        run: |
+          set -euo pipefail
+          for repository in Aiko Srkl-Engine; do
+            git clone --depth 1 --branch release/auth-bff-floks-current-20261122 "https://github.com/dinilmusick/${repository}.git" "/tmp/${repository}"
+            pushd "/tmp/${repository}"
+            npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+            npm ci --ignore-scripts --no-audit --no-fund
+            node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const p=JSON.parse(fs.readFileSync('package.json','utf8'));
+          const l=JSON.parse(fs.readFileSync('package-lock.json','utf8'));
+          for (const [name,v] of Object.entries({'@dinilmusick/gutts':'2.2.6','@ultrst-armada/kloks':'3.0.9','@ultrst-armada/floks':'2.0.17'})) {
+            if(p.dependencies[name]!==v || l.packages[''].dependencies[name]!==v ||
+               l.packages['node_modules/'+name]?.version!==v ||
+               !l.packages['node_modules/'+name]?.integrity?.startsWith('sha512-')) throw Error('Invalid immutable lock '+name);
+          }
+          NODE
+            REPOSITORY="$repository" node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const v=process.env.REPOSITORY==='Aiko'?'AIKO':'SRKL';
+          const b64=fs.readFileSync('package-lock.json').toString('base64');
+          console.log('ULTRST_LOCK_BEGIN_'+v+' '+b64.length);
+          for(let i=0;i<b64.length;i+=1400) console.log('ULTRST_LOCK_'+v+'_CHUNK:'+b64.slice(i,i+1400));
+          console.log('ULTRST_LOCK_END_'+v);
+          NODE
+            popd
+          done
