@@ -1,0 +1,43 @@
+name: Luth official anonymous OAuth DCR acceptance
+on:
+  push:
+    paths: [.github/workflows/luth-dcr-acceptance-20261123.yml]
+permissions: {contents: read}
+jobs:
+  dcr:
+    if: github.ref == 'refs/heads/ops/live-unified-auth-20261123'
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - uses: actions/setup-node@v4
+        with: {node-version: 24}
+      - name: Register a public Kone callback using only standards-based anonymous DCR
+        shell: bash
+        run: |
+          node --input-type=module <<'JS'
+          const endpoint='https://luth.blueprint-ninjastudios.workers.dev/api/auth/oauth2/register';
+          const redirect='https://kone.todadjp.workers.dev/api/auth/oidc/callback';
+          const body={
+            client_name:'Kone public-client conformance '+Date.now(),
+            redirect_uris:[redirect],
+            token_endpoint_auth_method:'none',
+            grant_types:['authorization_code','refresh_token'],
+            response_types:['code'],
+            scope:'openid profile email offline_access',
+          };
+          const r=await fetch(endpoint,{
+            method:'POST',headers:{'content-type':'application/json','accept':'application/json'},
+            redirect:'manual',signal:AbortSignal.timeout(16000),body:JSON.stringify(body),
+          });
+          const reply=await r.json().catch(()=>({}));
+          console.log('LUTH_DCR',JSON.stringify({
+            status:r.status,clientIssued:typeof reply.client_id==='string'&&reply.client_id.length>5,
+            authMethod:reply.token_endpoint_auth_method||null,
+            redirectBound:Array.isArray(reply.redirect_uris)&&reply.redirect_uris.includes(redirect),
+            error:reply.error||null
+          }));
+          if(r.status!==201&&r.status!==200)process.exitCode=1;
+          if(typeof reply.client_id!=='string'||reply.client_id.length<5)process.exitCode=1;
+          if(reply.token_endpoint_auth_method!=='none')process.exitCode=1;
+          if(!Array.isArray(reply.redirect_uris)||!reply.redirect_uris.includes(redirect))process.exitCode=1;
+          JS
