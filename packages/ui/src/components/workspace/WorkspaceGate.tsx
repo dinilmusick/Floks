@@ -52,7 +52,7 @@ export const WorkspaceGate: React.FC<WorkspaceGateProps> = ({
       description: w.description || 'Workspace vault for workflows and graph state',
       workspacePath: w.workspacePath || './projects',
       storageProvider: w.storageProvider || w.storage?.provider || 'local_fs',
-      storageConnectionId: w.storageConnectionId || w.storage?.storageConnectionId,
+      storageConnectionId: w.storageConnectionId || w.storage?.connectionId,
       b2BucketName: w.b2BucketName || w.storage?.b2BucketName,
       b2Endpoint: w.b2Endpoint || w.storage?.b2Endpoint,
       b2Region: w.b2Region || w.storage?.b2Region,
