@@ -123,7 +123,8 @@ describe('workspace connection lifecycle and isolation', () => {
     await waitFor(() => expect((screen.getByLabelText('Workspace storage') as HTMLSelectElement).value).toBe('drive-a'));
     rerender(<WorkspaceCreateDialog {...props} userId="user-b" />);
     await waitFor(() => expect(listConnections).toHaveBeenCalledWith('user-b'));
-    await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent(/could not be restored for this account/i));
+    await waitFor(() => expect(screen.getAllByRole('alert').some((alert) =>
+      /could not be restored for this account/i.test(alert.textContent || ''))).toBe(true));
     expect(within(screen.getByLabelText('Workspace storage')).queryByRole('option', { name: 'drive-a' })).not.toBeInTheDocument();
     expect(identity).not.toHaveBeenCalledWith('user-b', 'drive-a');
   });
