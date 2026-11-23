@@ -1,9 +1,10 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { HardDrive, Loader2 } from 'lucide-react';
 import {
   GoogleDriveWorkspacePicker,
   type GoogleDriveConnection,
   type GoogleDriveFolder,
+  describeGoogleDriveError,
 } from './GoogleDriveWorkspacePicker.js';
 
 export type WorkspaceStorageProvider =
@@ -144,6 +145,7 @@ export interface WorkspaceCreateDialogProps {
   storageService?: WorkspaceStorageService;
   visibility?: WorkspaceCreateDialogVisibility;
   googleDriveConnectionId?: string;
+  googleDriveErrorCode?: string;
   onClose: () => void;
   onSubmit: (input: WorkspaceCreateInput) => Promise<void> | void;
 }
@@ -325,15 +327,16 @@ export function createKloksWorkspaceStorageService(
       const result = await invoker.invoke('kloks.backend.storage', 'createGoogleDriveAuthorizationRequest', {
         userId,
         returnTo: window.location.href,
-        callbackOrigin: window.location.origin,
       }) as { authorizationUrl?: unknown };
       const authorizationUrl = result?.authorizationUrl;
       if (typeof authorizationUrl !== 'string') {
         throw new Error('Kloks did not return a Google Drive authorization URL.');
       }
       const parsed = new URL(authorizationUrl);
-      if (parsed.origin !== 'https://accounts.google.com') {
-        throw new Error('Kloks returned an untrusted Google Drive authorization destination.');
+      // The central broker (not the client origin) owns Google callback routing.
+      // Never maintain a frontend trusted-app/broker origin registry.
+      if (parsed.protocol !== 'https:' && !(parsed.protocol === 'http:' && ['localhost', '127.0.0.1', '[::1]'].includes(parsed.hostname))) {
+        throw new Error('Kloks returned an unsafe Google Drive authorization destination.');
       }
       window.location.assign(parsed.toString());
     },
@@ -379,22 +382,27 @@ export function createKloksWorkspaceStorageService(
 
 export function WorkspaceCreateDialog({
   open,
-  userId = 'system',
+  userId,
   currentUser,
   appName = 'app',
   storageOptions,
   storageService = defaultWorkspaceStorageService,
   visibility,
   googleDriveConnectionId,
+  googleDriveErrorCode,
   onClose,
   onSubmit,
 }: WorkspaceCreateDialogProps) {
   const [loadedOptions, setLoadedOptions] = useState<WorkspaceStorageOption[]>([]);
   const [providerCapabilities, setProviderCapabilities] = useState<StorageProviderCapability[]>([]);
   const [connectedDriveOption, setConnectedDriveOption] = useState<WorkspaceStorageOption | null>(null);
+  const [loadedOwnerId, setLoadedOwnerId] = useState<string | null>(null);
+  const [refreshConnectionsVersion, setRefreshConnectionsVersion] = useState(0);
+  const [verifiedGoogleDrive, setVerifiedGoogleDrive] = useState<{ userId: string; connectionId: string } | null>(null);
+  const storageServiceRef = useRef(storageService);
+  storageServiceRef.current = storageService;
   const [connectedBackblazeOption, setConnectedBackblazeOption] = useState<WorkspaceStorageOption | null>(null);
   const [googleDriveFolder, setGoogleDriveFolder] = useState<GoogleDriveFolder | null>(null);
-  const [verifiedGoogleDriveConnectionId, setVerifiedGoogleDriveConnectionId] = useState<string | null>(null);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [localFolderName, setLocalFolderName] = useState('');
@@ -412,7 +420,13 @@ export function WorkspaceCreateDialog({
   const [loadingStorage, setLoadingStorage] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const effectiveUserId = userId || currentUser?.id || 'system';
+  const effectiveUserId = (userId && userId !== 'system' ? userId : currentUser?.id) || userId || 'system';
+  const verifiedGoogleDriveConnectionId = verifiedGoogleDrive?.userId === effectiveUserId ? verifiedGoogleDrive.connectionId : null;
+  const browseGoogleDriveFolders = useCallback((connectionId: string, parentFolderId?: string) => {
+    const browse = storageServiceRef.current.listGoogleDriveFolders;
+    if (!browse) return Promise.reject(new Error('Google Drive folder browsing is not configured.'));
+    return browse(connectionId, parentFolderId, effectiveUserId);
+  }, [effectiveUserId]);
 
   useEffect(() => {
     if (!open) return;
@@ -430,79 +444,78 @@ export function WorkspaceCreateDialog({
     setNewBackblazeBucketName('');
     setBackblazeCredentialsTested(false);
     setConnectedDriveOption(null);
+    setLoadedOptions([]);
+    setLoadedOwnerId(null);
+    setProviderCapabilities([]);
     setConnectedBackblazeOption(null);
     setGoogleDriveFolder(null);
-    setVerifiedGoogleDriveConnectionId(null);
-  }, [open]);
+    setVerifiedGoogleDrive(null);
+  }, [open, effectiveUserId]);
 
   useEffect(() => {
-    if (!open || !storageService.listStorageProviderCapabilities) return;
+    const listCapabilities = storageServiceRef.current.listStorageProviderCapabilities;
+    if (!open || !listCapabilities) return;
     let active = true;
-    storageService.listStorageProviderCapabilities(effectiveUserId)
+    listCapabilities(effectiveUserId)
       .then((items) => { if (active) setProviderCapabilities(Array.isArray(items) ? items : []); })
       .catch((reason) => {
         if (active) setError(reason instanceof Error ? reason.message : 'Unable to load storage provider capabilities.');
       });
     return () => { active = false; };
-  }, [open, effectiveUserId, storageService]);
+  }, [open, effectiveUserId]);
 
+  useEffect(() => {
+    if (!open || !googleDriveErrorCode) return;
+    setError(describeGoogleDriveError({ code: googleDriveErrorCode }));
+  }, [open, googleDriveErrorCode]);
+
+  // Only an owner-scoped, freshly fetched connection can satisfy the OAuth callback.
+  // Treat the returned ID as a lookup hint, never as proof of authorization.
   useEffect(() => {
     if (!open || !googleDriveConnectionId) return;
-    const exists = (storageOptions ?? loadedOptions).some((option) => option.id === googleDriveConnectionId);
-    if (exists) {
-      setSelectedStorageId(googleDriveConnectionId);
-      setBackblazeMode(false);
-    }
-  }, [open, googleDriveConnectionId, storageOptions, loadedOptions]);
-
-  useEffect(() => {
-    if (!open || !storageService.getGoogleDriveAccountIdentity) return;
-    const connection = (storageOptions ?? loadedOptions).find(
-      (option) => option.id === selectedStorageId && option.provider === 'google_drive',
-    ) || (connectedDriveOption?.id === selectedStorageId ? connectedDriveOption : undefined);
-    if (!connection) {
-      setVerifiedGoogleDriveConnectionId(null);
+    if (storageServiceRef.current.listStorageConnections && loadedOwnerId !== effectiveUserId) return;
+    const connections = storageServiceRef.current.listStorageConnections ? loadedOptions : (storageOptions ?? []);
+    const resumed = connections.find((option) =>
+      option.id === googleDriveConnectionId && option.provider === 'google_drive' && option.enabled !== false,
+    );
+    if (!resumed) {
+      setError('Google Drive connection could not be restored for this account. Retry authorization.');
       return;
     }
-    let active = true;
-    setVerifiedGoogleDriveConnectionId(null);
-    storageService.getGoogleDriveAccountIdentity(effectiveUserId, connection.id)
-      .then((identity) => {
-        if (!active) return;
-        setConnectedDriveOption({
-          ...connection,
-          googleAccountId: identity.accountId,
-          googleEmail: identity.email || connection.googleEmail,
-        });
-        setVerifiedGoogleDriveConnectionId(connection.id);
-      })
-      .catch((reason) => {
-        if (active) {
-          setVerifiedGoogleDriveConnectionId(null);
-          setError(reason instanceof Error ? reason.message : 'Unable to verify the Google Drive account identity.');
-        }
-      });
-    return () => { active = false; };
-  }, [open, selectedStorageId, storageOptions, loadedOptions, connectedDriveOption, effectiveUserId, storageService]);
+    setSelectedStorageId(resumed.id);
+    setBackblazeMode(false);
+    setDefaultStorageApplied(true);
+    setError(null);
+  }, [open, googleDriveConnectionId, effectiveUserId, loadedOwnerId, loadedOptions, storageOptions]);
 
   useEffect(() => {
-    if (!open || storageOptions) return;
+    if (!open) return;
     let active = true;
-    const listConnections = storageService.listStorageConnections;
+    const listConnections = storageServiceRef.current.listStorageConnections;
     if (!listConnections) {
       setLoadingStorage(false);
-      return () => { active = false; };
+      return;
     }
     setLoadingStorage(true);
+    setLoadedOwnerId(null);
+    setLoadedOptions([]);
     listConnections(effectiveUserId)
-      .then((options) => { if (active) setLoadedOptions(Array.isArray(options) ? options : []); })
-      .catch((reason) => { if (active) setError(reason instanceof Error ? reason.message : 'Unable to load storage connections.'); })
+      .then((options) => {
+        if (!active) return;
+        setLoadedOptions(Array.isArray(options) ? options : []);
+        setLoadedOwnerId(effectiveUserId);
+      })
+      .catch((reason) => {
+        if (active) setError(describeGoogleDriveError(reason));
+      })
       .finally(() => { if (active) setLoadingStorage(false); });
     return () => { active = false; };
-  }, [open, effectiveUserId, storageOptions, storageService]);
+  }, [open, effectiveUserId, refreshConnectionsVersion]);
 
   const availableOptions = useMemo(() => {
-    const supplied = storageOptions ?? loadedOptions;
+    const supplied = storageServiceRef.current.listStorageConnections
+      ? (loadedOwnerId === effectiveUserId ? loadedOptions : [])
+      : (storageOptions ?? loadedOptions);
     // Existing user connections remain selectable even when new provider
     // authorization is currently unavailable (for example, an OAuth system
     // credential rotation). Capabilities control discovery/creation state;
@@ -535,7 +548,12 @@ export function WorkspaceCreateDialog({
           const label = canAuthorize
             ? 'Connect Google Drive'
             : 'Google Drive authorization unavailable';
-          return connections.length > 0 ? connections : [{ id: 'google_drive', provider: 'google_drive', label }];
+          return [
+            ...connections,
+            ...(canAuthorize || connections.length === 0
+              ? [{ id: 'google_drive', provider: 'google_drive' as const, label }]
+              : []),
+          ];
         }
         if (provider === 'backblaze_b2') {
           const connections = [
@@ -552,25 +570,72 @@ export function WorkspaceCreateDialog({
         }
         return forProvider(provider);
       });
-  }, [storageOptions, loadedOptions, connectedDriveOption, connectedBackblazeOption, visibility, providerCapabilities]);
+  }, [storageOptions, loadedOptions, loadedOwnerId, effectiveUserId, connectedDriveOption, connectedBackblazeOption, visibility, providerCapabilities]);
+
+  const selectedGoogleProvider = availableOptions.find((option) => option.id === selectedStorageId)?.provider;
+  useEffect(() => {
+    setGoogleDriveFolder(null);
+  }, [effectiveUserId, selectedStorageId]);
+
+  // Verification must depend on the selected ID/owner, not on the object that
+  // this effect enriches. The old connectedDriveOption dependency caused loops.
+  useEffect(() => {
+    const identify = storageServiceRef.current.getGoogleDriveAccountIdentity;
+    if (!open || selectedGoogleProvider !== 'google_drive' || selectedStorageId === 'google_drive' || !identify) {
+      setVerifiedGoogleDrive(null);
+      return;
+    }
+    let active = true;
+    setVerifiedGoogleDrive(null);
+    identify(effectiveUserId, selectedStorageId)
+      .then((identity) => {
+        if (!active) return;
+        if (!identity || typeof identity.accountId !== 'string' || !identity.accountId) {
+          throw new Error('Kloks did not confirm a Google Drive account identity.');
+        }
+        setVerifiedGoogleDrive({ userId: effectiveUserId, connectionId: selectedStorageId });
+        setConnectedDriveOption((old) => {
+          const base = availableOptions.find((option) => option.id === selectedStorageId);
+          if (!base) return old;
+          return { ...base, googleAccountId: identity.accountId, googleEmail: identity.email || base.googleEmail };
+        });
+      })
+      .catch((reason) => {
+        if (active) {
+          setVerifiedGoogleDrive(null);
+          setError(describeGoogleDriveError(reason));
+        }
+      });
+    return () => { active = false; };
+  }, [open, selectedStorageId, selectedGoogleProvider, effectiveUserId]);
 
   useEffect(() => {
-    if (!open || loadingStorage || defaultStorageApplied) return;
+    if (!open || loadingStorage || defaultStorageApplied || googleDriveConnectionId ||
+        (storageServiceRef.current.listStorageConnections && loadedOwnerId !== effectiveUserId)) return;
     const primary = availableOptions.find((option) => option.role === 'primary')
       || availableOptions.find((option) => option.provider !== 'local_fs' && option.id !== 'google_drive');
     const preferred = primary || availableOptions[0];
     if (preferred) setSelectedStorageId(preferred.id);
     setDefaultStorageApplied(true);
-  }, [open, loadingStorage, availableOptions, defaultStorageApplied]);
+  }, [open, loadingStorage, availableOptions, defaultStorageApplied, loadedOwnerId, effectiveUserId, googleDriveConnectionId]);
 
   useEffect(() => {
     if (!open) return;
+    // A completed OAuth callback has priority over the generic default/fallback.
+    // Otherwise the pending render can overwrite the restored account.
+    const restored = googleDriveConnectionId && availableOptions.find((option) =>
+      option.id === googleDriveConnectionId && option.provider === 'google_drive',
+    );
+    if (restored) {
+      if (selectedStorageId !== restored.id) setSelectedStorageId(restored.id);
+      return;
+    }
     const selectedStillExists = backblazeMode || availableOptions.some((option) => option.id === selectedStorageId);
     if (!selectedStillExists) {
       const primary = availableOptions.find((option) => option.role === 'primary');
       setSelectedStorageId(primary?.id || availableOptions[0]?.id || '');
     }
-  }, [open, availableOptions, selectedStorageId, backblazeMode]);
+  }, [open, availableOptions, selectedStorageId, backblazeMode, googleDriveConnectionId]);
 
   if (!open) return null;
 
@@ -581,8 +646,13 @@ export function WorkspaceCreateDialog({
   const backblazeCapability = providerCapabilities.find((capability) => capability.id === 'backblaze_b2');
   const canCreateBackblazeConnection = Boolean(backblazeCapability?.enabled && backblazeCapability.canCreateConnection);
   const canAuthorizeGoogleDrive = Boolean(googleDriveCapability?.enabled && googleDriveCapability.canCreateConnection);
-  const googleDriveConnection = selectedOption.provider === 'google_drive' && selectedOption.id !== 'google_drive'
+  // Do not expose an account to the folder browser until Kloks has confirmed
+  // the selected connection belongs to the active principal.
+  const unverifiedDriveConnection = selectedOption.provider === 'google_drive' && selectedOption.id !== 'google_drive'
     ? selectedOption as WorkspaceStorageOption & GoogleDriveConnection
+    : undefined;
+  const googleDriveConnection = verifiedGoogleDriveConnectionId === unverifiedDriveConnection?.id
+    ? unverifiedDriveConnection
     : undefined;
   const hiddenFields = new Set(visibility?.hiddenFields || []);
   const userName = currentUser?.username || currentUser?.name || currentUser?.email?.split('@')[0] || 'user';
@@ -728,16 +798,6 @@ export function WorkspaceCreateDialog({
     setSubmitting(true);
     setError(null);
     try {
-      if (selectedOption.provider === 'google_drive' && googleDriveFolder) {
-        if (!googleDriveConnection || !storageService.selectGoogleDriveRootFolder) {
-          throw new Error('Google Drive root selection is not configured through the canonical Kloks storage service.');
-        }
-        await storageService.selectGoogleDriveRootFolder(
-          effectiveUserId,
-          googleDriveConnection.id,
-          googleDriveFolder.id,
-        );
-      }
       const option: WorkspaceStorageOption = selectedOption.provider === 'local_fs'
         ? { ...selectedOption, localFolderName: localFolderName.trim() || selectedOption.localFolderName || name.trim() }
         : selectedOption.provider === 'google_drive' && googleDriveFolder
@@ -931,22 +991,34 @@ export function WorkspaceCreateDialog({
             )}
           </div>
 
-          {selectedOption.provider === 'google_drive' && (
+          {selectedOption.provider === 'google_drive' && unverifiedDriveConnection && !googleDriveConnection ? (
+            <div role="status" className="border p-3 text-xs">
+              Google Drive account verification is required before browsing folders.
+              {canAuthorizeGoogleDrive && (
+                <p className="mt-2">You can choose “Connect Google Drive” in the storage selector to reconnect or add an account.</p>
+              )}
+            </div>
+          ) : selectedOption.provider === 'google_drive' && (
             <GoogleDriveWorkspacePicker
               userId={effectiveUserId}
               connection={googleDriveConnection}
               connectGoogleDrive={canAuthorizeGoogleDrive ? storageService.connectGoogleDrive : undefined}
-              listGoogleDriveFolders={storageService.listGoogleDriveFolders
-                ? (connectionId, parentFolderId) => storageService.listGoogleDriveFolders!(connectionId, parentFolderId, effectiveUserId)
-                : undefined}
+              listGoogleDriveFolders={storageService.listGoogleDriveFolders ? browseGoogleDriveFolders : undefined}
               selectedFolder={googleDriveFolder}
               onConnected={(connection) => {
                 if (connection.provider !== 'google_drive') {
                   setError('The storage service returned a non-Google Drive connection.');
                   return;
                 }
+                if (!connection.id || connection.id === 'google_drive') {
+                  setError('Kloks did not return an opaque Google Drive connection ID.');
+                  return;
+                }
                 setConnectedDriveOption(connection as WorkspaceStorageOption);
                 setSelectedStorageId(connection.id);
+                if (storageServiceRef.current.listStorageConnections) {
+                  setRefreshConnectionsVersion((version) => version + 1);
+                }
                 setGoogleDriveFolder(null);
                 setError(null);
               }}
