@@ -190,7 +190,7 @@ export function GoogleDriveWorkspacePicker({
           disabled={connecting || !connectGoogleDrive}
           className="border px-3 py-2 text-xs font-bold disabled:opacity-50"
         >
-          {connecting ? 'Connecting to Google…' : connectGoogleDrive ? 'Connect Google Drive' : 'Google Drive authorization unavailable'}
+          {connecting ? 'Opening Google account chooser…' : connectGoogleDrive ? 'Add Google account' : 'Google Drive authorization unavailable'}
         </button>
       </section>
     );
@@ -203,14 +203,21 @@ export function GoogleDriveWorkspacePicker({
           <p className="text-xs font-bold">Google Drive connected</p>
           <p className="truncate text-[10px] opacity-70">{connection.googleEmail || connection.label || connection.name || connection.id}</p>
         </div>
-        <button
-          type="button"
-          onClick={() => void loadFolders(connection.id, folderPath[folderPath.length - 1]?.id)}
-          disabled={loading}
-          className="border px-2 py-1 text-[10px] disabled:opacity-50"
-        >
-          {loading ? 'Loading…' : 'Refresh'}
-        </button>
+        <div className="flex shrink-0 flex-wrap gap-2">
+          {connectGoogleDrive && (
+            <button type="button" onClick={() => void handleConnect()}
+              disabled={connecting} className="border px-2 py-1 text-[10px] disabled:opacity-50">
+              {connecting ? 'Opening Google…' : 'Add Google account'}
+            </button>
+          )}
+          <button type="button"
+            onClick={() => void loadFolders(connection.id, folderPath[folderPath.length - 1]?.id)}
+            disabled={loading}
+            className="border px-2 py-1 text-[10px] disabled:opacity-50"
+          >
+            {loading ? 'Loading…' : 'Refresh'}
+          </button>
+        </div>
       </div>
 
       {folderPath.length > 0 && (

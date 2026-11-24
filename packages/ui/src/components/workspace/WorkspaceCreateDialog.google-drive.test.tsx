@@ -59,7 +59,7 @@ describe('WorkspaceCreateDialog Google Drive integration', () => {
 
     fireEvent.change(screen.getByLabelText('Workspace name'), { target: { value: 'Studio' } });
     fireEvent.change(screen.getByLabelText('Workspace storage'), { target: { value: 'google_drive' } });
-    fireEvent.click(await screen.findByRole('button', { name: 'Connect Google Drive' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Add Google account' }));
 
     await waitFor(() => expect(connectGoogleDrive).toHaveBeenCalledWith('user-1'));
     expect(await screen.findByText('Studio Archive')).toBeInTheDocument();

@@ -892,7 +892,8 @@ export function WorkspaceCreateDialog({
               >
                 {availableOptions.map((option) => (
                   <option key={option.id} value={option.id}>
-                    {providerLabel(option) + ' — ' + (option.label || option.name || option.id)}
+                    {providerLabel(option) + ' — ' + (option.provider === 'google_drive' && option.googleEmail
+                      ? option.googleEmail : (option.label || option.name || option.id))}
                   </option>
                 ))}
               </select>

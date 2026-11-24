@@ -78,6 +78,8 @@ describe('workspace connection lifecycle and isolation', () => {
 
     const storage = screen.getByLabelText('Workspace storage');
     expect(within(storage).getAllByRole('option')).toHaveLength(2);
+    expect(within(storage).getByRole('option', { name: /drive-a@example\.test/ })).toBeInTheDocument();
+    expect(within(storage).getByRole('option', { name: /drive-b@example\.test/ })).toBeInTheDocument();
     fireEvent.change(storage, { target: { value: 'drive-a' } });
     await screen.findByText('Folder A');
     fireEvent.click(screen.getByRole('button', { name: 'Select' }));

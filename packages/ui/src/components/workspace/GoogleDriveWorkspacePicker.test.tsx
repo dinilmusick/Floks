@@ -27,12 +27,24 @@ describe('canonical Google Drive workspace picker', () => {
       />,
     );
 
-    expect(screen.getByRole('button', { name: 'Connect Google Drive' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Add Google account' })).toBeInTheDocument();
     expect(screen.queryByLabelText(/google password|client secret|client id/i)).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Connect Google Drive' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Add Google account' }));
 
     await waitFor(() => expect(connectGoogleDrive).toHaveBeenCalledWith('user-1'));
     await waitFor(() => expect(onConnected).toHaveBeenCalledWith(connection));
+  });
+
+  it('reuses a saved Google account without starting OAuth and offers Add account separately', async () => {
+    const authorize = vi.fn().mockResolvedValue(undefined);
+    const folders = vi.fn().mockResolvedValue([{ id: 'existing-folder', name: 'Existing Folder' }]);
+    render(<GoogleDriveWorkspacePicker userId="owner-1" connection={connection}
+      connectGoogleDrive={authorize} listGoogleDriveFolders={folders}
+      onConnected={() => undefined} onSelectFolder={() => undefined} />);
+    expect(await screen.findByText('Existing Folder')).toBeInTheDocument();
+    expect(authorize).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: 'Add Google account' }));
+    await waitFor(() => expect(authorize).toHaveBeenCalledWith('owner-1'));
   });
 
   it('browses the authenticated Drive and returns the selected folder', async () => {
@@ -97,7 +109,7 @@ describe('canonical Google Drive workspace picker', () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole('button', { name: 'Connect Google Drive' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Add Google account' }));
     expect(await screen.findByRole('status')).toHaveTextContent(/cancelled or declined/i);
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
@@ -114,7 +126,7 @@ describe('canonical Google Drive workspace picker', () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole('button', { name: 'Connect Google Drive' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Add Google account' }));
     expect(await screen.findByRole('alert')).toHaveTextContent('OAuth exchange failed');
     expect(describeGoogleDriveError({ status: 401 })).toMatch(/authorization has expired/i);
     expect(describeGoogleDriveError({ status: 403 })).toMatch(/access was not granted/i);
@@ -149,7 +161,7 @@ describe('canonical Google Drive workspace picker', () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole('button', { name: 'Connect Google Drive' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Add Google account' }));
     expect(await screen.findByRole('alert')).toHaveTextContent(/invalid connection/i);
   });
 });
