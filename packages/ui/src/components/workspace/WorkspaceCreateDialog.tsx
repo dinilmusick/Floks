@@ -420,6 +420,7 @@ export function WorkspaceCreateDialog({
   const [loadingStorage, setLoadingStorage] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [oauthRestoreStage, setOauthRestoreStage] = useState<'idle' | 'refreshing' | 'failed'>('idle');
   const effectiveUserId = (userId && userId !== 'system' ? userId : currentUser?.id) || userId || 'system';
   const verifiedGoogleDriveConnectionId = verifiedGoogleDrive?.userId === effectiveUserId ? verifiedGoogleDrive.connectionId : null;
   const browseGoogleDriveFolders = useCallback((connectionId: string, parentFolderId?: string) => {
@@ -450,6 +451,7 @@ export function WorkspaceCreateDialog({
     setConnectedBackblazeOption(null);
     setGoogleDriveFolder(null);
     setVerifiedGoogleDrive(null);
+    setOauthRestoreStage('idle');
   }, [open, effectiveUserId]);
 
   useEffect(() => {
@@ -470,23 +472,38 @@ export function WorkspaceCreateDialog({
   }, [open, googleDriveErrorCode]);
 
   // Only an owner-scoped, freshly fetched connection can satisfy the OAuth callback.
-  // Treat the returned ID as a lookup hint, never as proof of authorization.
+  // Treat the returned ID as a lookup hint, never as proof of authorization. When the
+  // callback lands on a stale connection snapshot, force exactly one fresh owner-scoped
+  // lookup before reporting the restore as failed; the connection may have been created
+  // server-side after the initial list load. The stage lives in state so the
+  // post-refresh pass re-enters this effect even when the refetched list is
+  // identical to the previous one.
   useEffect(() => {
     if (!open || !googleDriveConnectionId) return;
     if (storageServiceRef.current.listStorageConnections && loadedOwnerId !== effectiveUserId) return;
-    const connections = storageServiceRef.current.listStorageConnections ? loadedOptions : (storageOptions ?? []);
+    const ownerScoped = Boolean(storageServiceRef.current.listStorageConnections);
+    const connections = ownerScoped ? loadedOptions : (storageOptions ?? []);
     const resumed = connections.find((option) =>
       option.id === googleDriveConnectionId && option.provider === 'google_drive' && option.enabled !== false,
     );
     if (!resumed) {
+      if (ownerScoped && oauthRestoreStage === 'idle') {
+        setOauthRestoreStage('refreshing');
+        setRefreshConnectionsVersion((version) => version + 1);
+        return;
+      }
+      if (ownerScoped && oauthRestoreStage === 'refreshing') {
+        setOauthRestoreStage('failed');
+      }
       setError('Google Drive connection could not be restored for this account. Retry authorization.');
       return;
     }
+    setOauthRestoreStage('idle');
     setSelectedStorageId(resumed.id);
     setBackblazeMode(false);
     setDefaultStorageApplied(true);
     setError(null);
-  }, [open, googleDriveConnectionId, effectiveUserId, loadedOwnerId, loadedOptions, storageOptions]);
+  }, [open, googleDriveConnectionId, effectiveUserId, loadedOwnerId, loadedOptions, storageOptions, oauthRestoreStage]);
 
   useEffect(() => {
     if (!open) return;
@@ -578,7 +595,11 @@ export function WorkspaceCreateDialog({
   }, [effectiveUserId, selectedStorageId]);
 
   // Verification must depend on the selected ID/owner, not on the object that
-  // this effect enriches. The old connectedDriveOption dependency caused loops.
+  // this effect enriches. The old connectedDriveOption dependency caused loops;
+  // availableOptions is read through a ref so option-list refreshes neither rerun
+  // this effect nor leak a stale snapshot into the enrichment below.
+  const availableOptionsRef = useRef(availableOptions);
+  availableOptionsRef.current = availableOptions;
   useEffect(() => {
     const identify = storageServiceRef.current.getGoogleDriveAccountIdentity;
     if (!open || selectedGoogleProvider !== 'google_drive' || selectedStorageId === 'google_drive' || !identify) {
@@ -595,7 +616,7 @@ export function WorkspaceCreateDialog({
         }
         setVerifiedGoogleDrive({ userId: effectiveUserId, connectionId: selectedStorageId });
         setConnectedDriveOption((old) => {
-          const base = availableOptions.find((option) => option.id === selectedStorageId);
+          const base = availableOptionsRef.current.find((option) => option.id === selectedStorageId);
           if (!base) return old;
           return { ...base, googleAccountId: identity.accountId, googleEmail: identity.email || base.googleEmail };
         });

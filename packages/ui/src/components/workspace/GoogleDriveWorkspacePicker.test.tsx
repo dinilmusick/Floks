@@ -204,4 +204,60 @@ describe('canonical Google Drive workspace picker', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Add Google account' }));
     expect(await screen.findByRole('alert')).toHaveTextContent(/invalid connection/i);
   });
+
+  it('represents an aborted folder browse as a clear cancellation and allows an immediate retry', async () => {
+    const abortError = new Error('The operation was aborted.');
+    abortError.name = 'AbortError';
+    const listGoogleDriveFolders = vi.fn()
+      .mockRejectedValueOnce(abortError)
+      .mockResolvedValueOnce([{ id: 'folder-retry', name: 'Recovered Projects' }]);
+
+    render(
+      <GoogleDriveWorkspacePicker
+        userId="user-1"
+        connection={connection}
+        listGoogleDriveFolders={listGoogleDriveFolders}
+        onConnected={() => undefined}
+        onSelectFolder={() => undefined}
+      />,
+    );
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(/cancelled or declined/i);
+    fireEvent.click(screen.getByRole('button', { name: 'Refresh' }));
+    expect(await screen.findByText('Recovered Projects')).toBeInTheDocument();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
+  it('fences stale folder responses so a superseded request cannot clobber the current one', async () => {
+    let resolveFirst: (items: { id: string; name: string }[]) => void = () => undefined;
+    const listGoogleDriveFolders = vi.fn()
+      .mockImplementationOnce(() => new Promise((resolve) => { resolveFirst = resolve; }))
+      .mockResolvedValueOnce([{ id: 'folder-new', name: 'Latest Folder' }]);
+
+    const { rerender } = render(
+      <GoogleDriveWorkspacePicker
+        userId="user-1"
+        connection={connection}
+        listGoogleDriveFolders={listGoogleDriveFolders}
+        onConnected={() => undefined}
+        onSelectFolder={() => undefined}
+      />,
+    );
+
+    expect(await screen.findByText(/loading google drive folders/i)).toBeInTheDocument();
+    rerender(
+      <GoogleDriveWorkspacePicker
+        userId="user-1"
+        connection={{ ...connection, id: 'drive-connection-2' }}
+        listGoogleDriveFolders={listGoogleDriveFolders}
+        onConnected={() => undefined}
+        onSelectFolder={() => undefined}
+      />,
+    );
+    expect(await screen.findByText('Latest Folder')).toBeInTheDocument();
+
+    resolveFirst([{ id: 'folder-stale', name: 'Stale Folder' }]);
+    await waitFor(() => expect(screen.queryByText('Stale Folder')).not.toBeInTheDocument());
+    expect(screen.getByText('Latest Folder')).toBeInTheDocument();
+  });
 });

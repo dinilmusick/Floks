@@ -343,4 +343,67 @@ describe('WorkspaceCreateDialog Google Drive integration', () => {
     expect(JSON.stringify(input)).not.toContain('test-key-id');
   });
 
+  it('restores an OAuth callback connection through a fresh owner-scoped lookup when the loaded list is stale', async () => {
+    const driveConnection = {
+      id: 'drive-callback-1',
+      provider: 'google_drive',
+      label: 'Drive — artist@example.test',
+      googleEmail: 'artist@example.test',
+    } as unknown as WorkspaceStorageOption;
+    const localOption = { id: 'local_fs', provider: 'local_fs', label: 'Local Folder' };
+    const listStorageConnections = vi.fn()
+      .mockResolvedValueOnce([localOption])
+      .mockResolvedValueOnce([localOption, driveConnection]);
+    const getGoogleDriveAccountIdentity = vi.fn().mockResolvedValue({
+      accountId: 'google-account-1',
+      email: 'artist@example.test',
+    });
+
+    render(
+      <WorkspaceCreateDialog
+        open
+        userId="user-1"
+        storageService={{
+          listStorageConnections,
+          listStorageProviderCapabilities: vi.fn().mockResolvedValue([]),
+          listGoogleDriveFolders: vi.fn().mockResolvedValue([]),
+          getGoogleDriveAccountIdentity,
+        }}
+        visibility={{ storagePolicy: { providers: ['local_fs', 'google_drive'] } }}
+        googleDriveConnectionId="drive-callback-1"
+        onClose={() => undefined}
+        onSubmit={vi.fn()}
+      />,
+    );
+
+    await waitFor(() => expect(listStorageConnections).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(screen.getByLabelText('Workspace storage')).toHaveValue('drive-callback-1'));
+    expect(await screen.findByText(/google drive connected/i)).toBeInTheDocument();
+    expect(getGoogleDriveAccountIdentity).toHaveBeenCalledWith('user-1', 'drive-callback-1');
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
+  it('reports a failed OAuth callback restore only after the fresh owner-scoped lookup also misses', async () => {
+    const localOption = { id: 'local_fs', provider: 'local_fs', label: 'Local Folder' };
+    const listStorageConnections = vi.fn().mockResolvedValue([localOption]);
+
+    render(
+      <WorkspaceCreateDialog
+        open
+        userId="user-1"
+        storageService={{
+          listStorageConnections,
+          listStorageProviderCapabilities: vi.fn().mockResolvedValue([]),
+        }}
+        visibility={{ storagePolicy: { providers: ['local_fs', 'google_drive'] } }}
+        googleDriveConnectionId="drive-missing-1"
+        onClose={() => undefined}
+        onSubmit={vi.fn()}
+      />,
+    );
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(/could not be restored for this account/i);
+    expect(listStorageConnections).toHaveBeenCalledTimes(2);
+  });
+
 });
