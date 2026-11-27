@@ -18,6 +18,8 @@ export interface GoogleDriveWorkspacePickerProps {
   userId: string;
   connection?: GoogleDriveConnection;
   connectGoogleDrive?: (userId: string) => Promise<GoogleDriveConnection | void>;
+  /** Why the backend disabled Drive authorization, when connectGoogleDrive is absent. */
+  availabilityReason?: string;
   listGoogleDriveFolders?: (connectionId: string, parentFolderId?: string, userId?: string) => Promise<GoogleDriveFolder[]>;
   onConnected: (connection: GoogleDriveConnection) => void;
   onSelectFolder: (folder: GoogleDriveFolder) => void;
@@ -73,6 +75,7 @@ export function GoogleDriveWorkspacePicker({
   userId,
   connection,
   connectGoogleDrive,
+  availabilityReason,
   listGoogleDriveFolders,
   onConnected,
   onSelectFolder,
@@ -189,9 +192,13 @@ export function GoogleDriveWorkspacePicker({
           onClick={handleConnect}
           disabled={connecting || !connectGoogleDrive}
           className="border px-3 py-2 text-xs font-bold disabled:opacity-50"
+          {...(!connectGoogleDrive && availabilityReason ? { title: availabilityReason } : {})}
         >
           {connecting ? 'Opening Google account chooser…' : connectGoogleDrive ? 'Add Google account' : 'Google Drive authorization unavailable'}
         </button>
+        {!connectGoogleDrive && availabilityReason && (
+          <p role="note" className="text-[10px] opacity-70">{availabilityReason}</p>
+        )}
       </section>
     );
   }

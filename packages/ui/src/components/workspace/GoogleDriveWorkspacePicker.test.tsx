@@ -133,6 +133,35 @@ describe('canonical Google Drive workspace picker', () => {
     expect(describeGoogleDriveError({ code: 'SERVICE_UNAVAILABLE' })).toMatch(/currently unavailable/i);
   });
 
+  it('shows the backend availability reason when Drive authorization is disabled', () => {
+    render(
+      <GoogleDriveWorkspacePicker
+        userId="user-1"
+        onConnected={() => undefined}
+        onSelectFolder={() => undefined}
+        availabilityReason="[STORAGE_PROVIDER_CONFIGURATION_MISSING] Google Drive OAuth system configuration is incomplete: client secret."
+      />,
+    );
+
+    const button = screen.getByRole('button', { name: 'Google Drive authorization unavailable' });
+    expect(button).toBeDisabled();
+    expect(screen.getByRole('note')).toHaveTextContent(/STORAGE_PROVIDER_CONFIGURATION_MISSING/);
+    expect(screen.getByRole('note')).toHaveTextContent(/client secret/);
+  });
+
+  it('omits the availability note when no reason is supplied', () => {
+    render(
+      <GoogleDriveWorkspacePicker
+        userId="user-1"
+        onConnected={() => undefined}
+        onSelectFolder={() => undefined}
+      />,
+    );
+
+    expect(screen.getByRole('button', { name: 'Google Drive authorization unavailable' })).toBeDisabled();
+    expect(screen.queryByRole('note')).not.toBeInTheDocument();
+  });
+
   it('surfaces authenticated Drive access errors from folder browsing', async () => {
     const listGoogleDriveFolders = vi.fn().mockRejectedValue({ status: 401 });
 

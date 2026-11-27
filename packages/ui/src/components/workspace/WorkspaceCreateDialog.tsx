@@ -1004,6 +1004,9 @@ export function WorkspaceCreateDialog({
               userId={effectiveUserId}
               connection={googleDriveConnection}
               connectGoogleDrive={canAuthorizeGoogleDrive ? storageService.connectGoogleDrive : undefined}
+              {...(!canAuthorizeGoogleDrive && googleDriveCapability?.availabilityReason
+                ? { availabilityReason: googleDriveCapability.availabilityReason }
+                : {})}
               listGoogleDriveFolders={storageService.listGoogleDriveFolders ? browseGoogleDriveFolders : undefined}
               selectedFolder={googleDriveFolder}
               onConnected={(connection) => {
