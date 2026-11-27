@@ -131,6 +131,9 @@ describe('canonical Google Drive workspace picker', () => {
     expect(describeGoogleDriveError({ status: 401 })).toMatch(/authorization has expired/i);
     expect(describeGoogleDriveError({ status: 403 })).toMatch(/access was not granted/i);
     expect(describeGoogleDriveError({ code: 'SERVICE_UNAVAILABLE' })).toMatch(/currently unavailable/i);
+    expect(describeGoogleDriveError({ code: 'GOOGLE_DRIVE_TOKEN_EXCHANGE_FAILED' })).toMatch(/rejected the Drive authorization exchange/i);
+    expect(describeGoogleDriveError({ code: 'GOOGLE_DRIVE_PROFILE_FAILED' })).toMatch(/Google Drive API/i);
+    expect(describeGoogleDriveError({ code: 'GOOGLE_DRIVE_PERSIST_FAILED' })).toMatch(/connection could not be stored/i);
   });
 
   it('shows the backend availability reason when Drive authorization is disabled', () => {
