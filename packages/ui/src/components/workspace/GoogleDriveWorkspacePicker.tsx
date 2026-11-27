@@ -51,6 +51,15 @@ export function describeGoogleDriveError(error: unknown): string {
   if (code.includes('MISSING_CONNECTION') || code.includes('AUTH_FAILED')) {
     return 'Google Drive authorization did not return a usable connection. Retry authorization.';
   }
+  if (code.includes('TOKEN_EXCHANGE')) {
+    return 'Google rejected the Drive authorization exchange. Retry authorization; if it persists, verify the Google OAuth client credentials of the ecosystem broker.';
+  }
+  if (code.includes('PROFILE')) {
+    return 'Google Drive could not verify the authorized account. Enable the Google Drive API for the Google Cloud project, then retry authorization.';
+  }
+  if (code.includes('PERSIST')) {
+    return 'Google Drive was authorized, but the connection could not be stored. Retry authorization.';
+  }
   if (code.includes('EXPIRED') || code === 'UNAUTHENTICATED') {
     return 'Your Google Drive authorization has expired. Reconnect your Google account to continue.';
   }
