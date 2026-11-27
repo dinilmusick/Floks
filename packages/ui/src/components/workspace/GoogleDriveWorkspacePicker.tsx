@@ -41,17 +41,25 @@ function getErrorCode(error: unknown): string {
 }
 
 export function describeGoogleDriveError(error: unknown): string {
+  const reason = (error as { reason?: unknown } | null)?.reason;
+  if (reason === 'accessNotConfigured' || reason === 'SERVICE_DISABLED') {
+    return 'Google Drive could not verify the authorized account. Enable the Google Drive API for the Google Cloud project, then retry authorization.';
+  }
   const code = getErrorCode(error);
   if (code.includes('CANCEL') || code === 'ACCESS_DENIED' || code === 'OAUTH_ACCESS_DENIED') {
     return 'Google Drive authorization was cancelled or declined. No connection was added.';
   }
-  if (code.includes('REVOKED') || code === 'INVALID_GRANT' || code === 'GOOGLE_DRIVE_CONNECTION_NOT_FOUND') {
+  if (code.includes('REVOKED') || code === 'INVALID_GRANT' || code.includes('CONNECTION_NOT_FOUND')
+    || code.includes('RECONNECT_REQUIRED') || code.includes('CREDENTIALS_MISSING') || code.includes('CREDENTIALS_INVALID')) {
     return 'Google Drive access was revoked or the connection was removed. Reconnect your Google account.';
+  }
+  if (code.includes('IDENTITY_MISMATCH')) {
+    return 'Google Drive returned a different account than the saved connection. Reconnect the correct Google account.';
   }
   if (code.includes('MISSING_CONNECTION') || code.includes('AUTH_FAILED')) {
     return 'Google Drive authorization did not return a usable connection. Retry authorization.';
   }
-  if (code.includes('TOKEN_EXCHANGE')) {
+  if (code.includes('TOKEN_EXCHANGE') || code.includes('TOKEN_REQUEST_FAILED')) {
     return 'Google rejected the Drive authorization exchange. Retry authorization; if it persists, verify the Google OAuth client credentials of the ecosystem broker.';
   }
   if (code.includes('PROFILE')) {
@@ -60,10 +68,13 @@ export function describeGoogleDriveError(error: unknown): string {
   if (code.includes('PERSIST')) {
     return 'Google Drive was authorized, but the connection could not be stored. Retry authorization.';
   }
-  if (code.includes('EXPIRED') || code === 'UNAUTHENTICATED') {
+  if (code.includes('EXPIRED') || code === 'UNAUTHENTICATED' || code.endsWith('HTTP_401')) {
     return 'Your Google Drive authorization has expired. Reconnect your Google account to continue.';
   }
-  if (code.includes('DENIED') || code.includes('FORBIDDEN')) {
+  if (code.includes('DRIVE_API_DISABLED')) {
+    return 'Google Drive could not verify the authorized account. Enable the Google Drive API for the Google Cloud project, then retry authorization.';
+  }
+  if (code.includes('DENIED') || code.includes('FORBIDDEN') || code.endsWith('HTTP_403')) {
     return 'Google Drive access was not granted. Authorize Drive access and try again.';
   }
   if (code.includes('UNAVAILABLE') || code.includes('SERVICE_UNAVAILABLE') || code.includes('RETRY')) {
